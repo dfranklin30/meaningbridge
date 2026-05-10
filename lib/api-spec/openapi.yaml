@@ -3,20 +3,35 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: MeaningBridge API — grief support, continuing bonds, journaling, assessments
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: anthropic
+    description: Anthropic AI chat operations
+  - name: profile
+    description: User profile, onboarding, deceased profile
+  - name: chat
+    description: Grief support chat sessions
+  - name: journal
+    description: Journaling
+  - name: assessments
+    description: Self-assessment check-ins
+  - name: practices
+    description: Self-guided practices and resources
+  - name: dashboard
+    description: Dashboard summaries and trends
+  - name: safety
+    description: Safety and crisis events
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +39,875 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /anthropic/conversations:
+    get:
+      operationId: listAnthropicConversations
+      tags: [anthropic]
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicConversation"
+    post:
+      operationId: createAnthropicConversation
+      tags: [anthropic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnthropicConversationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicConversation"
+  /anthropic/conversations/{id}:
+    get:
+      operationId: getAnthropicConversation
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+    delete:
+      operationId: deleteAnthropicConversation
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+  /anthropic/conversations/{id}/messages:
+    get:
+      operationId: listAnthropicMessages
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicMessage"
+    post:
+      operationId: sendAnthropicMessage
+      tags: [anthropic]
+      summary: Send a message and stream the AI response (SSE)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnthropicMessageInput"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream: {}
+
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    put:
+      operationId: updateProfile
+      tags: [profile]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  /deceased:
+    get:
+      operationId: listDeceasedProfiles
+      tags: [profile]
+      responses:
+        "200":
+          description: All deceased profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeceasedProfile"
+    post:
+      operationId: createDeceasedProfile
+      tags: [profile]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeceasedProfileInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeceasedProfile"
+  /deceased/{id}:
+    get:
+      operationId: getDeceasedProfile
+      tags: [profile]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Deceased profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeceasedProfile"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    put:
+      operationId: updateDeceasedProfile
+      tags: [profile]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeceasedProfileInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeceasedProfile"
+    delete:
+      operationId: deleteDeceasedProfile
+      tags: [profile]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /chat/sessions:
+    get:
+      operationId: listChatSessions
+      tags: [chat]
+      responses:
+        "200":
+          description: All chat sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatSession"
+    post:
+      operationId: createChatSession
+      tags: [chat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatSessionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSession"
+  /chat/sessions/{id}:
+    get:
+      operationId: getChatSession
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Chat session with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatSessionWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    delete:
+      operationId: deleteChatSession
+      tags: [chat]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+  /chat/sessions/{id}/messages:
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a chat message and stream the AI response (SSE)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageInput"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream: {}
+
+  /journal:
+    get:
+      operationId: listJournalEntries
+      tags: [journal]
+      responses:
+        "200":
+          description: All journal entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalEntry"
+    post:
+      operationId: createJournalEntry
+      tags: [journal]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+  /journal/{id}:
+    get:
+      operationId: getJournalEntry
+      tags: [journal]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Journal entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    put:
+      operationId: updateJournalEntry
+      tags: [journal]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalEntryInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+    delete:
+      operationId: deleteJournalEntry
+      tags: [journal]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+  /journal/prompts:
+    get:
+      operationId: listJournalPrompts
+      tags: [journal]
+      summary: Curated journaling prompts grouped by category
+      responses:
+        "200":
+          description: Prompts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalPrompt"
+
+  /assessments/checkins:
+    get:
+      operationId: listCheckIns
+      tags: [assessments]
+      responses:
+        "200":
+          description: Check-in history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CheckIn"
+    post:
+      operationId: createCheckIn
+      tags: [assessments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckInInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckIn"
+
+  /practices:
+    get:
+      operationId: listPractices
+      tags: [practices]
+      summary: Self-guided practice library (breathwork, meditation, art prompts, rituals)
+      responses:
+        "200":
+          description: Practices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Practice"
+  /practices/{id}:
+    get:
+      operationId: getPractice
+      tags: [practices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Practice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Practice"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /resources/therapists:
+    get:
+      operationId: findTherapists
+      tags: [practices]
+      summary: Therapist directory placeholder (Portland Institute–style)
+      parameters:
+        - name: zip
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Therapist results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Therapist"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Headline numbers, recent activity, suggested next exercises
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /dashboard/trends:
+    get:
+      operationId: getDashboardTrends
+      tags: [dashboard]
+      summary: Time-series of distress, meaning, connection, functioning
+      responses:
+        "200":
+          description: Trends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardTrends"
+
+  /safety/events:
+    get:
+      operationId: listSafetyEvents
+      tags: [safety]
+      responses:
+        "200":
+          description: Safety events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SafetyEvent"
+    post:
+      operationId: createSafetyEvent
+      tags: [safety]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SafetyEventInput"
+      responses:
+        "201":
+          description: Logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafetyEvent"
+  /safety/resources:
+    get:
+      operationId: getSafetyResources
+      tags: [safety]
+      summary: Crisis hotlines and immediate help cards
+      responses:
+        "200":
+          description: Crisis resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrisisResource"
+
 components:
   schemas:
     HealthStatus:
       type: object
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
+      required: [status]
 
+    AnthropicError:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    AnthropicConversation:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, createdAt]
+    AnthropicMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        conversationId: { type: integer }
+        role: { type: string }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, conversationId, role, content, createdAt]
+    AnthropicConversationInput:
+      type: object
+      properties:
+        title: { type: string }
+      required: [title]
+    AnthropicMessageInput:
+      type: object
+      properties:
+        content: { type: string }
+      required: [content]
+    AnthropicConversationWithMessages:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/AnthropicMessage" }
+      required: [id, title, createdAt, messages]
+
+    Profile:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: ["string", "null"] }
+        supportSystem: { type: ["string", "null"] }
+        workingWithTherapist: { type: boolean }
+        preferredMode: { type: ["string", "null"] }
+        crisisAcknowledged: { type: boolean }
+        consentJournal: { type: boolean }
+        consentContinuingBonds: { type: boolean }
+        onboardingComplete: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required:
+        - id
+        - workingWithTherapist
+        - crisisAcknowledged
+        - consentJournal
+        - consentContinuingBonds
+        - onboardingComplete
+        - createdAt
+        - updatedAt
+    ProfileInput:
+      type: object
+      properties:
+        name: { type: ["string", "null"] }
+        supportSystem: { type: ["string", "null"] }
+        workingWithTherapist: { type: boolean }
+        preferredMode: { type: ["string", "null"] }
+        crisisAcknowledged: { type: boolean }
+        consentJournal: { type: boolean }
+        consentContinuingBonds: { type: boolean }
+        onboardingComplete: { type: boolean }
+
+    DeceasedProfile:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        relationship: { type: string }
+        lossDate: { type: ["string", "null"], format: date }
+        lossType: { type: ["string", "null"] }
+        personality: { type: ["string", "null"] }
+        commonPhrases: { type: ["string", "null"] }
+        memories: { type: ["string", "null"] }
+        values: { type: ["string", "null"] }
+        comfortLanguage: { type: ["string", "null"] }
+        boundaries: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, name, relationship, createdAt, updatedAt]
+    DeceasedProfileInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        relationship: { type: string, minLength: 1 }
+        lossDate: { type: ["string", "null"], format: date }
+        lossType: { type: ["string", "null"] }
+        personality: { type: ["string", "null"] }
+        commonPhrases: { type: ["string", "null"] }
+        memories: { type: ["string", "null"] }
+        values: { type: ["string", "null"] }
+        comfortLanguage: { type: ["string", "null"] }
+        boundaries: { type: ["string", "null"] }
+      required: [name, relationship]
+
+    ChatSession:
+      type: object
+      properties:
+        id: { type: integer }
+        mode: { type: string, description: "meaning | continuing-bonds | journaling | practices" }
+        title: { type: string }
+        deceasedId: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, mode, title, createdAt]
+    ChatSessionInput:
+      type: object
+      properties:
+        mode: { type: string }
+        title: { type: string }
+        deceasedId: { type: ["integer", "null"] }
+      required: [mode, title]
+    ChatMessageRecord:
+      type: object
+      properties:
+        id: { type: integer }
+        sessionId: { type: integer }
+        role: { type: string }
+        content: { type: string }
+        crisisFlag: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, sessionId, role, content, crisisFlag, createdAt]
+    ChatSessionWithMessages:
+      type: object
+      properties:
+        id: { type: integer }
+        mode: { type: string }
+        title: { type: string }
+        deceasedId: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/ChatMessageRecord" }
+      required: [id, mode, title, createdAt, messages]
+    ChatMessageInput:
+      type: object
+      properties:
+        content: { type: string, minLength: 1 }
+      required: [content]
+
+    JournalEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        body: { type: string }
+        category: { type: string }
+        promptId: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, body, category, createdAt, updatedAt]
+    JournalEntryInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        body: { type: string }
+        category: { type: string }
+        promptId: { type: ["integer", "null"] }
+      required: [title, body, category]
+    JournalPrompt:
+      type: object
+      properties:
+        id: { type: integer }
+        category: { type: string }
+        title: { type: string }
+        prompt: { type: string }
+      required: [id, category, title, prompt]
+
+    CheckIn:
+      type: object
+      properties:
+        id: { type: integer }
+        distress: { type: integer }
+        meaning: { type: integer }
+        connection: { type: integer }
+        functioning: { type: integer }
+        safetyConcern: { type: boolean }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, distress, meaning, connection, functioning, safetyConcern, createdAt]
+    CheckInInput:
+      type: object
+      properties:
+        distress: { type: integer, minimum: 0, maximum: 10 }
+        meaning: { type: integer, minimum: 0, maximum: 10 }
+        connection: { type: integer, minimum: 0, maximum: 10 }
+        functioning: { type: integer, minimum: 0, maximum: 10 }
+        safetyConcern: { type: boolean }
+        note: { type: ["string", "null"] }
+      required: [distress, meaning, connection, functioning, safetyConcern]
+
+    Practice:
+      type: object
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        title: { type: string }
+        category: { type: string, description: "breathwork | meditation | art | ritual | reflection" }
+        durationMinutes: { type: integer }
+        summary: { type: string }
+        steps:
+          type: array
+          items: { type: string }
+      required: [id, slug, title, category, durationMinutes, summary, steps]
+
+    Therapist:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        credentials: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zip: { type: string }
+        modality: { type: string }
+        bio: { type: string }
+        website: { type: ["string", "null"] }
+      required: [id, name, credentials, city, state, zip, modality, bio]
+
+    DashboardSummary:
+      type: object
+      properties:
+        latestCheckIn:
+          oneOf:
+            - $ref: "#/components/schemas/CheckIn"
+            - type: "null"
+        checkInCount: { type: integer }
+        journalCount: { type: integer }
+        sessionCount: { type: integer }
+        recentJournal:
+          type: array
+          items: { $ref: "#/components/schemas/JournalEntry" }
+        recentSessions:
+          type: array
+          items: { $ref: "#/components/schemas/ChatSession" }
+        suggestedPractices:
+          type: array
+          items: { $ref: "#/components/schemas/Practice" }
+        suggestedPrompts:
+          type: array
+          items: { $ref: "#/components/schemas/JournalPrompt" }
+        crisisFlagCount: { type: integer }
+      required:
+        - checkInCount
+        - journalCount
+        - sessionCount
+        - recentJournal
+        - recentSessions
+        - suggestedPractices
+        - suggestedPrompts
+        - crisisFlagCount
+    TrendPoint:
+      type: object
+      properties:
+        date: { type: string, format: date-time }
+        distress: { type: integer }
+        meaning: { type: integer }
+        connection: { type: integer }
+        functioning: { type: integer }
+      required: [date, distress, meaning, connection, functioning]
+    DashboardTrends:
+      type: object
+      properties:
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/TrendPoint" }
+      required: [points]
+
+    SafetyEvent:
+      type: object
+      properties:
+        id: { type: integer }
+        source: { type: string, description: "onboarding | checkin | chat | manual" }
+        severity: { type: string, description: "info | warning | critical" }
+        note: { type: ["string", "null"] }
+        acknowledged: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, source, severity, acknowledged, createdAt]
+    SafetyEventInput:
+      type: object
+      properties:
+        source: { type: string }
+        severity: { type: string }
+        note: { type: ["string", "null"] }
+      required: [source, severity]
+
+    CrisisResource:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        contact: { type: string }
+        description: { type: string }
+        region: { type: string }
+        url: { type: ["string", "null"] }
+      required: [id, name, contact, description, region]

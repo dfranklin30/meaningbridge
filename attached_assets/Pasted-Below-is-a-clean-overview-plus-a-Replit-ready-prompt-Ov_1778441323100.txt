@@ -1,0 +1,235 @@
+Below is a clean overview plus a Replit-ready prompt.
+
+Overview
+
+This concept is a grief-support AI platform with two main agents:
+
+1. Continuing Bonds Agent
+    Helps users maintain a meaningful, ethically bounded relationship with a deceased loved one through guided memory work, letters, imagined dialogue, legacy reflection, and optional avatar-style conversations.
+2. Meaning-Focused Grief Therapy Agent
+    Provides structured grief support based primarily on Bob Neimeyer’s meaning-reconstruction framework, including guided exercises, journaling, breath work, meditation, arts-based practices, and self-assessment tracking.
+
+The uploaded Neimeyer paper frames grief as a “quest for meaning” after loss and identifies meaning reconstruction across the event story, the relationship with the deceased, and the mourner’s self-story as central clinical targets.  ￼
+
+Core components:
+
+* User onboarding: loss history, relationship to deceased, communication preferences, support system, risk screening.
+* Assessment tools: brief grief-related measures repeated over time to track meaning-making, impairment, unfinished business, continuing bonds, spiritual struggle, social validation/invalidation, and crisis indicators.
+* AI support modes: therapist-like guided support, continuing-bonds dialogue, journaling coach, breathwork/meditation guide, memorialization assistant.
+* Clinical guardrails: no diagnosis, no replacement claim for licensed care, crisis escalation, suicide/self-harm detection, human therapist referral.
+* Therapist locator: especially Portland Institute-certified grief therapists.
+* Research/efficacy layer: longitudinal assessment dashboard showing change over time.
+* Ethics/legal layer: consent, privacy, transcript de-identification, no training on therapy transcripts without explicit permission, clear disclosure when interacting with an AI simulation.
+
+Replit Build Prompt
+
+Build a secure MVP web application called “MeaningBridge” for AI-assisted grief support.
+MISSION:
+Create a compassionate, clinically cautious grief-support platform that helps bereaved users with:
+1. Continuing Bonds work with a deceased loved one.
+2. Meaning-focused grief support based on Robert Neimeyer’s meaning reconstruction framework.
+3. Self-assessment and progress tracking.
+4. Guided self-help resources such as journaling, breathwork, meditation, arts-assisted grief work, and therapist referrals.
+IMPORTANT SAFETY POSITIONING:
+This app is not a replacement for emergency care, licensed therapy, or medical advice. It provides grief support, structured reflection, and psychoeducational tools. It must include crisis escalation protocols for self-harm, suicidal ideation, abuse, psychosis, or severe acute distress.
+TECH STACK:
+Use Replit with:
+- React or Next.js frontend
+- Node.js/Express backend or Next.js API routes
+- PostgreSQL database
+- OpenAI-compatible LLM API abstraction
+- Auth system with email/password and optional OAuth
+- Secure environment variables
+- Responsive mobile-first UI
+PRIMARY USER FLOWS:
+1. Landing Page
+Create a warm landing page explaining:
+- Continuing Bonds AI
+- Meaning-focused grief support
+- Self-assessment tracking
+- Safety and privacy
+- “This is not emergency care”
+Buttons:
+- Start Private Reflection
+- Create Account
+- Learn About Safety
+2. User Onboarding
+Collect:
+- User name
+- Who they lost
+- Relationship to deceased
+- Date or approximate time of loss
+- Type of loss: expected, sudden, violent, suicide, overdose, illness, accident, other
+- Current support system
+- Whether they are working with a therapist
+- Whether they want therapist-assisted or self-guided use
+- Current distress level 0–10
+- Crisis screening questions
+If user indicates self-harm or suicidal intent:
+- Interrupt normal flow
+- Show crisis message
+- Provide 988 Suicide & Crisis Lifeline in the U.S.
+- Encourage contacting emergency services or trusted person
+- Do not continue chatbot interaction until safety acknowledgement
+3. Deceased Profile / Continuing Bonds Setup
+Create a profile for the deceased:
+- Name/nickname
+- Relationship
+- Personality traits
+- Communication style
+- Common phrases
+- Important memories
+- Values
+- Things they would likely say for comfort
+- Boundaries: things the AI should never say or pretend
+- Optional upload placeholders for future email/SMS/chat history ingestion
+Important:
+The app must clearly state that the AI is not literally the deceased. It is a memory-informed conversational aid for grief processing and continuing bonds work.
+4. AI Support Modes
+Create four selectable modes:
+A. Meaning-Focused Support
+AI helps user explore:
+- What happened
+- What the loss changed
+- What remains meaningful
+- Identity after loss
+- Sense-making
+- Continuing bond
+- Future orientation
+B. Continuing Bonds Dialogue
+AI allows a carefully bounded dialogue with the deceased profile.
+Must include reminders:
+- “This is an AI-generated reflection based on what you shared.”
+- “You can pause at any time.”
+- “This may bring up strong emotions.”
+C. Journaling Coach
+Prompt categories:
+- Letter to the deceased
+- Unfinished business
+- Memory preservation
+- Meaning after loss
+- Anger, guilt, regret
+- New identity
+- Continuing bond
+- Gratitude and legacy
+D. Self-Guided Practices
+Include:
+- 3-minute grounding breathwork
+- Guided memorial ritual
+- Art prompt
+- Meaning reconstruction journal
+- Values reflection
+- “What would I carry forward?” exercise
+5. Assessment Module
+Create a modular self-assessment system.
+Do not claim formal clinical scoring unless validated scoring rights are confirmed.
+Create placeholder assessment categories:
+- Grief-related impairment
+- Meaning integration
+- Continuing bonds
+- Unfinished business
+- Spiritual struggle
+- Social validation/invalidation
+- Grief attacks
+- Coping behaviors
+- Distress level
+- Hope/meaning rating
+Allow short check-ins over time:
+- Daily distress 0–10
+- Meaning today 0–10
+- Connection to deceased 0–10
+- Functioning today 0–10
+- Safety risk yes/no
+Create dashboard:
+- Trends over time
+- Recent journal themes
+- Suggested next exercises
+- Crisis risk flags
+6. Therapist Locator Placeholder
+Create page:
+- “Find Human Support”
+- Portland Institute certified grief therapy link placeholder
+- User can enter ZIP code
+- For MVP, show static referral guidance and placeholder search results
+- Add emergency resources
+7. Admin / Clinical Oversight Dashboard
+Create admin role with:
+- View anonymized usage metrics
+- View flagged crisis events
+- Manage prompt templates
+- Manage resource library
+- Manage assessment modules
+- Upload therapy procedure templates
+- Do not expose private user journal content unless explicit consent is implemented
+8. Data Model
+Create database tables:
+- users
+- deceased_profiles
+- conversations
+- messages
+- journal_entries
+- assessments
+- assessment_responses
+- safety_events
+- resources
+- prompt_templates
+- consent_records
+9. LLM Prompting Requirements
+Create system prompts for each agent mode.
+Global AI rules:
+- Be warm, grounded, nonjudgmental.
+- Do not diagnose.
+- Do not claim to be a licensed therapist.
+- Do not encourage dependence on the AI.
+- Encourage human support when distress is high.
+- Detect self-harm, suicidal ideation, abuse, hallucinations, or severe crisis.
+- Never say the deceased is actually present.
+- In Continuing Bonds mode, speak as a reflective simulation only if user explicitly chooses that mode.
+- Prefer questions over conclusions.
+- Use meaning-focused grief language: story of the death, continuing bond, identity reconstruction, values, sense-making, unfinished business, and legacy.
+10. Crisis Escalation
+Implement keyword and LLM-based crisis detection.
+If detected:
+- Stop normal response.
+- Show crisis support card.
+- For U.S. users: call or text 988.
+- Encourage contacting emergency services if immediate danger.
+- Encourage contacting therapist, doctor, trusted person.
+- Log safety_event.
+- Continue only with grounding and safety planning language.
+11. Privacy / Consent
+Add consent screens for:
+- AI grief support
+- Continuing Bonds simulation
+- Storing journal entries
+- Future training-data use
+- Therapy transcript uploads
+Default:
+No user content or therapy transcript is used for model training unless explicit consent is given.
+12. MVP UI Style
+Use a gentle, clean, trauma-informed design:
+- Soft colors
+- Large readable text
+- Calm spacing
+- Minimal visual clutter
+- Mobile-first cards
+- Clear “Pause” and “Exit” buttons during emotional exercises
+13. Deliverables
+Build:
+- Functional landing page
+- Auth
+- Onboarding
+- Deceased profile creation
+- Chat interface with 4 modes
+- Journal module
+- Assessment/check-in module
+- Dashboard
+- Safety escalation flow
+- Admin dashboard
+- Database schema
+- Seed resources
+- Clear README with setup instructions
+APP NAME:
+MeaningBridge
+TAGLINE:
+AI-supported grief reflection, continuing bonds, and meaning reconstruction — with safety, consent, and human care at the center.

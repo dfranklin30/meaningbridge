@@ -42,10 +42,24 @@ export interface AnthropicConversationWithMessages {
   messages: AnthropicMessage[];
 }
 
+/**
+ * Care tier assigned by the GIS screener (null = not yet screened)
+ * @nullable
+ */
+export type ProfileTier = (typeof ProfileTier)[keyof typeof ProfileTier] | null;
+
+export const ProfileTier = {
+  universal: "universal",
+  targeted: "targeted",
+  clinical: "clinical",
+} as const;
+
 export interface Profile {
   id: number;
   /** @nullable */
   name?: string | null;
+  /** @nullable */
+  firstName?: string | null;
   /** @nullable */
   supportSystem?: string | null;
   workingWithTherapist: boolean;
@@ -55,6 +69,15 @@ export interface Profile {
   consentJournal: boolean;
   consentContinuingBonds: boolean;
   onboardingComplete: boolean;
+  /**
+   * Care tier assigned by the GIS screener (null = not yet screened)
+   * @nullable
+   */
+  tier?: ProfileTier;
+  /** @nullable */
+  gisScore?: number | null;
+  /** @nullable */
+  gisCompletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +85,8 @@ export interface Profile {
 export interface ProfileInput {
   /** @nullable */
   name?: string | null;
+  /** @nullable */
+  firstName?: string | null;
   /** @nullable */
   supportSystem?: string | null;
   workingWithTherapist?: boolean;
@@ -71,6 +96,59 @@ export interface ProfileInput {
   consentJournal?: boolean;
   consentContinuingBonds?: boolean;
   onboardingComplete?: boolean;
+}
+
+/**
+ * Five integers 0-4 keyed by GIS item id (1-5).
+ */
+export interface GisSubmission {
+  /**
+   * @minimum 0
+   * @maximum 4
+   */
+  item1: number;
+  /**
+   * @minimum 0
+   * @maximum 4
+   */
+  item2: number;
+  /**
+   * @minimum 0
+   * @maximum 4
+   */
+  item3: number;
+  /**
+   * @minimum 0
+   * @maximum 4
+   */
+  item4: number;
+  /**
+   * @minimum 0
+   * @maximum 4
+   */
+  item5: number;
+}
+
+export type GisResultTier = (typeof GisResultTier)[keyof typeof GisResultTier];
+
+export const GisResultTier = {
+  universal: "universal",
+  targeted: "targeted",
+  clinical: "clinical",
+} as const;
+
+export type GisResultItemResponses = { [key: string]: number };
+
+export interface GisResult {
+  id: number;
+  score: number;
+  tier: GisResultTier;
+  /** True if total >= 9 (clinical cut-score) */
+  cutPointFlag: boolean;
+  /** True if item 3 >= 2 (self-destructive coping) */
+  safetyFlag: boolean;
+  itemResponses: GisResultItemResponses;
+  completedAt: string;
 }
 
 export interface DeceasedProfile {

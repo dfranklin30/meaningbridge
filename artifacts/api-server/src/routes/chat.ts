@@ -6,6 +6,7 @@ import {
   chatMessagesTable,
   deceasedTable,
   safetyEventsTable,
+  profileTable,
 } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import {
@@ -64,6 +65,8 @@ router.post("/sessions/:id/messages", async (req, res) => {
     });
   }
 
+  const [profile] = await db.select().from(profileTable).orderBy(profileTable.id).limit(1);
+
   let systemPrompt: string;
   if (session.mode === "continuing-bonds") {
     let deceased = null;
@@ -71,9 +74,9 @@ router.post("/sessions/:id/messages", async (req, res) => {
       const [d] = await db.select().from(deceasedTable).where(eq(deceasedTable.id, session.deceasedId));
       deceased = d ?? null;
     }
-    systemPrompt = continuingBondsSystemPrompt(deceased);
+    systemPrompt = continuingBondsSystemPrompt({ profile: profile ?? null, deceased });
   } else {
-    systemPrompt = meaningSystemPrompt();
+    systemPrompt = meaningSystemPrompt({ profile: profile ?? null });
   }
 
   const history = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.sessionId, id)).orderBy(asc(chatMessagesTable.createdAt));

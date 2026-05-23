@@ -35,6 +35,8 @@ import type {
   DeceasedProfile,
   DeceasedProfileInput,
   FindTherapistsParams,
+  GisResult,
+  GisSubmission,
   HealthStatus,
   JournalEntry,
   JournalEntryInput,
@@ -2002,6 +2004,167 @@ export function useListJournalPrompts<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListJournalPromptsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit the 5-item Grief Impairment Scale (Lee & Neimeyer 2022). Scores, assigns a care tier, and logs a safety event if item 3 indicates self-destructive coping.
+ */
+export const getSubmitGisScreenerUrl = () => {
+  return `/api/assessments/gis`;
+};
+
+export const submitGisScreener = async (
+  gisSubmission: GisSubmission,
+  options?: RequestInit,
+): Promise<GisResult> => {
+  return customFetch<GisResult>(getSubmitGisScreenerUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(gisSubmission),
+  });
+};
+
+export const getSubmitGisScreenerMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitGisScreener>>,
+    TError,
+    { data: BodyType<GisSubmission> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitGisScreener>>,
+  TError,
+  { data: BodyType<GisSubmission> },
+  TContext
+> => {
+  const mutationKey = ["submitGisScreener"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitGisScreener>>,
+    { data: BodyType<GisSubmission> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitGisScreener(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitGisScreenerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitGisScreener>>
+>;
+export type SubmitGisScreenerMutationBody = BodyType<GisSubmission>;
+export type SubmitGisScreenerMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit the 5-item Grief Impairment Scale (Lee & Neimeyer 2022). Scores, assigns a care tier, and logs a safety event if item 3 indicates self-destructive coping.
+ */
+export const useSubmitGisScreener = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitGisScreener>>,
+    TError,
+    { data: BodyType<GisSubmission> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitGisScreener>>,
+  TError,
+  { data: BodyType<GisSubmission> },
+  TContext
+> => {
+  return useMutation(getSubmitGisScreenerMutationOptions(options));
+};
+
+/**
+ * @summary History of GIS screenings (most recent first)
+ */
+export const getListGisResultsUrl = () => {
+  return `/api/assessments/gis`;
+};
+
+export const listGisResults = async (
+  options?: RequestInit,
+): Promise<GisResult[]> => {
+  return customFetch<GisResult[]>(getListGisResultsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGisResultsQueryKey = () => {
+  return [`/api/assessments/gis`] as const;
+};
+
+export const getListGisResultsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGisResults>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGisResults>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListGisResultsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGisResults>>> = ({
+    signal,
+  }) => listGisResults({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGisResults>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGisResultsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGisResults>>
+>;
+export type ListGisResultsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary History of GIS screenings (most recent first)
+ */
+
+export function useListGisResults<
+  TData = Awaited<ReturnType<typeof listGisResults>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGisResults>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGisResultsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -5,11 +5,14 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileTier } from "./profileTier";
 
 export interface Profile {
   id: number;
   /** @nullable */
   name?: string | null;
+  /** @nullable */
+  firstName?: string | null;
   /** @nullable */
   supportSystem?: string | null;
   workingWithTherapist: boolean;
@@ -19,6 +22,15 @@ export interface Profile {
   consentJournal: boolean;
   consentContinuingBonds: boolean;
   onboardingComplete: boolean;
+  /**
+   * Care tier assigned by the GIS screener (null = not yet screened)
+   * @nullable
+   */
+  tier?: ProfileTier;
+  /** @nullable */
+  gisScore?: number | null;
+  /** @nullable */
+  gisCompletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

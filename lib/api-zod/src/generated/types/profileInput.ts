@@ -10,6 +10,8 @@ export interface ProfileInput {
   /** @nullable */
   name?: string | null;
   /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
   supportSystem?: string | null;
   workingWithTherapist?: boolean;
   /** @nullable */

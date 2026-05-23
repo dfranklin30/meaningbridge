@@ -41,6 +41,15 @@ A warm, trauma-informed grief-support web app: Continuing Bonds and Meaning Reco
 - Onboarding gate lives in the shared layout: if `profile.onboardingComplete === false`, redirect to `/onboarding` (except `/onboarding` and `/crisis`).
 - Drizzle `deceased.lossDate` uses `mode: "string"` and the profile route normalizes Zod-coerced `Date` back to ISO date strings before insert.
 
+## Clinical model (GIS + tier routing)
+
+- GIS = Grief Impairment Scale (Lee & Neimeyer, Death Studies 2022). 5 items, 0-4 days-per-30 scale, total 0-20. Public domain with citation.
+- Tier mapping (configurable in `artifacts/api-server/src/lib/clinical.ts`): 0-4 Universal, 5-8 Targeted, ≥9 Clinical (validated cut-score).
+- Safety triggers escalate regardless of total: GIS item 3 ≥ 2 (self-destructive coping) and item 5 ≥ 3 (social withdrawal). Both log a `safety_event` and divert the onboarding flow to a calm crisis prompt — never silently scored.
+- Companion system prompts in `artifacts/api-server/src/lib/prompts.ts` are tier-aware (Section D of the build spec). They receive `{ profile, deceased }` and inject `firstName` + tier-specific behavior. Hard limits: never claim to be human/therapist, never name self-harm methods, never state cut-scores to the user.
+- UI rule: "shift from numbers to narratives." The tier is surfaced as a warm sentence on the dashboard; the numeric GIS score is never shown to the user.
+- Clinical wording lives in two mirrored modules — server (`artifacts/api-server/src/lib/clinical.ts`) is source of truth for scoring/tier; client (`artifacts/meaningbridge/src/lib/clinical.ts`) carries item wording and the scale for rendering.
+
 ## Product
 
 Public (no onboarding gate, no app chrome):

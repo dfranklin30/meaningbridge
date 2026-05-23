@@ -440,6 +440,38 @@ paths:
                 items:
                   $ref: "#/components/schemas/JournalPrompt"
 
+  /assessments/gis:
+    post:
+      operationId: submitGisScreener
+      tags: [assessments]
+      summary: Submit the 5-item Grief Impairment Scale (Lee & Neimeyer 2022). Scores, assigns a care tier, and logs a safety event if item 3 indicates self-destructive coping.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GisSubmission"
+      responses:
+        "200":
+          description: Screening result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GisResult"
+    get:
+      operationId: listGisResults
+      tags: [assessments]
+      summary: History of GIS screenings (most recent first)
+      responses:
+        "200":
+          description: GIS history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GisResult"
+
   /assessments/checkins:
     get:
       operationId: listCheckIns
@@ -683,6 +715,7 @@ components:
       properties:
         id: { type: integer }
         name: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
         supportSystem: { type: ["string", "null"] }
         workingWithTherapist: { type: boolean }
         preferredMode: { type: ["string", "null"] }
@@ -690,6 +723,12 @@ components:
         consentJournal: { type: boolean }
         consentContinuingBonds: { type: boolean }
         onboardingComplete: { type: boolean }
+        tier:
+          type: ["string", "null"]
+          enum: ["universal", "targeted", "clinical", null]
+          description: "Care tier assigned by the GIS screener (null = not yet screened)"
+        gisScore: { type: ["integer", "null"] }
+        gisCompletedAt: { type: ["string", "null"], format: date-time }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
       required:
@@ -705,6 +744,7 @@ components:
       type: object
       properties:
         name: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
         supportSystem: { type: ["string", "null"] }
         workingWithTherapist: { type: boolean }
         preferredMode: { type: ["string", "null"] }
@@ -712,6 +752,32 @@ components:
         consentJournal: { type: boolean }
         consentContinuingBonds: { type: boolean }
         onboardingComplete: { type: boolean }
+
+    GisSubmission:
+      type: object
+      description: Five integers 0-4 keyed by GIS item id (1-5).
+      properties:
+        item1: { type: integer, minimum: 0, maximum: 4 }
+        item2: { type: integer, minimum: 0, maximum: 4 }
+        item3: { type: integer, minimum: 0, maximum: 4 }
+        item4: { type: integer, minimum: 0, maximum: 4 }
+        item5: { type: integer, minimum: 0, maximum: 4 }
+      required: [item1, item2, item3, item4, item5]
+    GisResult:
+      type: object
+      properties:
+        id: { type: integer }
+        score: { type: integer }
+        tier:
+          type: string
+          enum: ["universal", "targeted", "clinical"]
+        cutPointFlag: { type: boolean, description: "True if total >= 9 (clinical cut-score)" }
+        safetyFlag: { type: boolean, description: "True if item 3 >= 2 (self-destructive coping)" }
+        itemResponses:
+          type: object
+          additionalProperties: { type: integer }
+        completedAt: { type: string, format: date-time }
+      required: [id, score, tier, cutPointFlag, safetyFlag, itemResponses, completedAt]
 
     DeceasedProfile:
       type: object

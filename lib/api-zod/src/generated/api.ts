@@ -79,6 +79,7 @@ export const SendAnthropicMessageBody = zod.object({
 export const GetProfileResponse = zod.object({
   id: zod.number(),
   name: zod.string().nullish(),
+  firstName: zod.string().nullish(),
   supportSystem: zod.string().nullish(),
   workingWithTherapist: zod.boolean(),
   preferredMode: zod.string().nullish(),
@@ -86,12 +87,26 @@ export const GetProfileResponse = zod.object({
   consentJournal: zod.boolean(),
   consentContinuingBonds: zod.boolean(),
   onboardingComplete: zod.boolean(),
+  tier: zod
+    .union([
+      zod.literal("universal"),
+      zod.literal("targeted"),
+      zod.literal("clinical"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe(
+      "Care tier assigned by the GIS screener (null = not yet screened)",
+    ),
+  gisScore: zod.number().nullish(),
+  gisCompletedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
 
 export const UpdateProfileBody = zod.object({
   name: zod.string().nullish(),
+  firstName: zod.string().nullish(),
   supportSystem: zod.string().nullish(),
   workingWithTherapist: zod.boolean().optional(),
   preferredMode: zod.string().nullish(),
@@ -104,6 +119,7 @@ export const UpdateProfileBody = zod.object({
 export const UpdateProfileResponse = zod.object({
   id: zod.number(),
   name: zod.string().nullish(),
+  firstName: zod.string().nullish(),
   supportSystem: zod.string().nullish(),
   workingWithTherapist: zod.boolean(),
   preferredMode: zod.string().nullish(),
@@ -111,6 +127,19 @@ export const UpdateProfileResponse = zod.object({
   consentJournal: zod.boolean(),
   consentContinuingBonds: zod.boolean(),
   onboardingComplete: zod.boolean(),
+  tier: zod
+    .union([
+      zod.literal("universal"),
+      zod.literal("targeted"),
+      zod.literal("clinical"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe(
+      "Care tier assigned by the GIS screener (null = not yet screened)",
+    ),
+  gisScore: zod.number().nullish(),
+  gisCompletedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -329,6 +358,81 @@ export const ListJournalPromptsResponseItem = zod.object({
 export const ListJournalPromptsResponse = zod.array(
   ListJournalPromptsResponseItem,
 );
+
+/**
+ * @summary Submit the 5-item Grief Impairment Scale (Lee & Neimeyer 2022). Scores, assigns a care tier, and logs a safety event if item 3 indicates self-destructive coping.
+ */
+export const submitGisScreenerBodyItem1Min = 0;
+export const submitGisScreenerBodyItem1Max = 4;
+
+export const submitGisScreenerBodyItem2Min = 0;
+export const submitGisScreenerBodyItem2Max = 4;
+
+export const submitGisScreenerBodyItem3Min = 0;
+export const submitGisScreenerBodyItem3Max = 4;
+
+export const submitGisScreenerBodyItem4Min = 0;
+export const submitGisScreenerBodyItem4Max = 4;
+
+export const submitGisScreenerBodyItem5Min = 0;
+export const submitGisScreenerBodyItem5Max = 4;
+
+export const SubmitGisScreenerBody = zod
+  .object({
+    item1: zod
+      .number()
+      .min(submitGisScreenerBodyItem1Min)
+      .max(submitGisScreenerBodyItem1Max),
+    item2: zod
+      .number()
+      .min(submitGisScreenerBodyItem2Min)
+      .max(submitGisScreenerBodyItem2Max),
+    item3: zod
+      .number()
+      .min(submitGisScreenerBodyItem3Min)
+      .max(submitGisScreenerBodyItem3Max),
+    item4: zod
+      .number()
+      .min(submitGisScreenerBodyItem4Min)
+      .max(submitGisScreenerBodyItem4Max),
+    item5: zod
+      .number()
+      .min(submitGisScreenerBodyItem5Min)
+      .max(submitGisScreenerBodyItem5Max),
+  })
+  .describe("Five integers 0-4 keyed by GIS item id (1-5).");
+
+export const SubmitGisScreenerResponse = zod.object({
+  id: zod.number(),
+  score: zod.number(),
+  tier: zod.enum(["universal", "targeted", "clinical"]),
+  cutPointFlag: zod
+    .boolean()
+    .describe("True if total >= 9 (clinical cut-score)"),
+  safetyFlag: zod
+    .boolean()
+    .describe("True if item 3 >= 2 (self-destructive coping)"),
+  itemResponses: zod.record(zod.string(), zod.number()),
+  completedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary History of GIS screenings (most recent first)
+ */
+export const ListGisResultsResponseItem = zod.object({
+  id: zod.number(),
+  score: zod.number(),
+  tier: zod.enum(["universal", "targeted", "clinical"]),
+  cutPointFlag: zod
+    .boolean()
+    .describe("True if total >= 9 (clinical cut-score)"),
+  safetyFlag: zod
+    .boolean()
+    .describe("True if item 3 >= 2 (self-destructive coping)"),
+  itemResponses: zod.record(zod.string(), zod.number()),
+  completedAt: zod.coerce.date(),
+});
+export const ListGisResultsResponse = zod.array(ListGisResultsResponseItem);
 
 export const ListCheckInsResponseItem = zod.object({
   id: zod.number(),

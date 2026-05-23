@@ -5,6 +5,7 @@ import { Copy, Check, Maximize2, ArrowRight } from "lucide-react";
 import { QRCodeImage } from "@/components/qr-code";
 import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
+import { SceneGallery } from "@/components/scene-gallery";
 
 export default function LandingPage() {
   const [origin, setOrigin] = useState("");
@@ -189,6 +190,23 @@ export default function LandingPage() {
             first visit.
           </p>
         </motion.section>
+
+        {/* Scenes of love, loss, and transformation */}
+        <section className="max-w-6xl mx-auto mt-24 md:mt-32">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
+            <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
+              Love · Loss · Transformation
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl tracking-tight">
+              The shape of a continuing bond.
+            </h2>
+            <p className="text-muted-foreground">
+              The people and animals we love stay with us, even as the relationship changes.
+              MeaningBridge is built around that truth.
+            </p>
+          </div>
+          <SceneGallery />
+        </section>
 
         {/* What's inside */}
         <section className="max-w-6xl mx-auto mt-24 md:mt-32">

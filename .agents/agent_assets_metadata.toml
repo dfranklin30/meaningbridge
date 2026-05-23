@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "j8nA6R4dviR3AhxNUnYoR"
+uri = "file://artifacts/meaningbridge/src/assets/scene-bonds.png"
+type = "image"
+title = "scene-bonds"
+
+[[generated]]
+id = "lCogwhxU8JkH65IcjDMgt"
+uri = "file://artifacts/meaningbridge/src/assets/scene-loss.png"
+type = "image"
+title = "scene-loss"
+
+[[generated]]
+id = "VOAdusSRgRo88I8_0MSon"
+uri = "file://artifacts/meaningbridge/src/assets/scene-transformation.png"
+type = "image"
+title = "scene-transformation"
+
+[[generated]]
+id = "3knx219pJirXJsIin3k2b"
+uri = "file://artifacts/meaningbridge/src/assets/scene-companion.png"
+type = "image"
+title = "scene-companion"

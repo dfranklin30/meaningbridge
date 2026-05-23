@@ -540,3 +540,36 @@ export const GetSafetyResourcesResponseItem = zod.object({
 export const GetSafetyResourcesResponse = zod.array(
   GetSafetyResourcesResponseItem,
 );
+
+/**
+ * @summary Public launch notification signup
+ */
+export const CreateNotifyOptInBody = zod.object({
+  email: zod.string().email(),
+  roleInterest: zod.string().nullish().describe("seeker | therapist"),
+  source: zod.string().nullish(),
+});
+
+export const CreateNotifyOptInResponse = zod.object({
+  ok: zod.boolean(),
+  alreadySubscribed: zod.boolean(),
+  signup: zod.object({
+    id: zod.number(),
+    email: zod.string(),
+    roleInterest: zod.string().nullish(),
+    source: zod.string(),
+    createdAt: zod.coerce.date(),
+  }),
+});
+
+/**
+ * @summary Admin export of launch-notification signups
+ */
+export const ListNotifyOptInsResponseItem = zod.object({
+  id: zod.number(),
+  email: zod.string(),
+  roleInterest: zod.string().nullish(),
+  source: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListNotifyOptInsResponse = zod.array(ListNotifyOptInsResponseItem);

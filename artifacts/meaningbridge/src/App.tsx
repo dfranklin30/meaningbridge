@@ -4,6 +4,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 
+import Landing from "@/pages/landing";
+import NotifyPage from "@/pages/notify";
+import PresentPage from "@/pages/present";
+
 import Home from "@/pages/home";
 import Onboarding from "@/pages/onboarding";
 import CheckIn from "@/pages/checkin";
@@ -29,11 +33,11 @@ const queryClient = new QueryClient({
   },
 });
 
-function Router() {
+function AppRoutes() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/app" component={Home} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/checkin" component={CheckIn} />
         <Route path="/dashboard" component={Dashboard} />
@@ -48,10 +52,20 @@ function Router() {
         <Route path="/therapists" component={Therapists} />
         <Route path="/crisis" component={Crisis} />
         <Route path="/settings" component={Settings} />
-        
         <Route component={NotFound} />
       </Switch>
     </Layout>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={Landing} />
+      <Route path="/notify" component={NotifyPage} />
+      <Route path="/present" component={PresentPage} />
+      <Route component={AppRoutes} />
+    </Switch>
   );
 }
 

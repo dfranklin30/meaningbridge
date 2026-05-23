@@ -39,6 +39,9 @@ import type {
   JournalEntry,
   JournalEntryInput,
   JournalPrompt,
+  NotifyOptIn,
+  NotifyOptInInput,
+  NotifyOptInResult,
   Practice,
   Profile,
   ProfileInput,
@@ -2769,6 +2772,167 @@ export function useGetSafetyResources<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetSafetyResourcesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Public launch notification signup
+ */
+export const getCreateNotifyOptInUrl = () => {
+  return `/api/notify`;
+};
+
+export const createNotifyOptIn = async (
+  notifyOptInInput: NotifyOptInInput,
+  options?: RequestInit,
+): Promise<NotifyOptInResult> => {
+  return customFetch<NotifyOptInResult>(getCreateNotifyOptInUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(notifyOptInInput),
+  });
+};
+
+export const getCreateNotifyOptInMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNotifyOptIn>>,
+    TError,
+    { data: BodyType<NotifyOptInInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createNotifyOptIn>>,
+  TError,
+  { data: BodyType<NotifyOptInInput> },
+  TContext
+> => {
+  const mutationKey = ["createNotifyOptIn"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createNotifyOptIn>>,
+    { data: BodyType<NotifyOptInInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createNotifyOptIn(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateNotifyOptInMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createNotifyOptIn>>
+>;
+export type CreateNotifyOptInMutationBody = BodyType<NotifyOptInInput>;
+export type CreateNotifyOptInMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Public launch notification signup
+ */
+export const useCreateNotifyOptIn = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNotifyOptIn>>,
+    TError,
+    { data: BodyType<NotifyOptInInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createNotifyOptIn>>,
+  TError,
+  { data: BodyType<NotifyOptInInput> },
+  TContext
+> => {
+  return useMutation(getCreateNotifyOptInMutationOptions(options));
+};
+
+/**
+ * @summary Admin export of launch-notification signups
+ */
+export const getListNotifyOptInsUrl = () => {
+  return `/api/notify`;
+};
+
+export const listNotifyOptIns = async (
+  options?: RequestInit,
+): Promise<NotifyOptIn[]> => {
+  return customFetch<NotifyOptIn[]>(getListNotifyOptInsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListNotifyOptInsQueryKey = () => {
+  return [`/api/notify`] as const;
+};
+
+export const getListNotifyOptInsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNotifyOptIns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifyOptIns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListNotifyOptInsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listNotifyOptIns>>
+  > = ({ signal }) => listNotifyOptIns({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifyOptIns>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNotifyOptInsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNotifyOptIns>>
+>;
+export type ListNotifyOptInsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin export of launch-notification signups
+ */
+
+export function useListNotifyOptIns<
+  TData = Awaited<ReturnType<typeof listNotifyOptIns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifyOptIns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNotifyOptInsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

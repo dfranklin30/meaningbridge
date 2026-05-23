@@ -49,7 +49,7 @@ export default function Onboarding() {
       });
       
       queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
-      setLocation("/");
+      setLocation("/app");
     } catch (e) {
       console.error(e);
     }

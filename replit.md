@@ -43,7 +43,20 @@ A warm, trauma-informed grief-support web app: Continuing Bonds and Meaning Reco
 
 ## Product
 
-Routes: `/`, `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/dashboard`, `/loved-one`, `/therapists`, `/crisis`, `/settings`, 404.
+Public (no onboarding gate, no app chrome):
+- `/` — coming-soon landing: headline, "Brought to you by Dr. Robert Neimeyer", QR code linking to `/notify?src=qr`, copy-link, contact line for neimeyer@portlandinstitute.org, link to `/present`.
+- `/notify` — public signup form (writes to `notify_opt_ins`). Reads `?src=<label>` for attribution; defaults to `qr`.
+- `/present` — full-screen QR for keynote projection.
+
+App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/dashboard`, `/loved-one`, `/therapists`, `/crisis`, `/settings`, 404.
+
+## Notify signups
+
+- Table: `notify_opt_ins(id, email UNIQUE, role_interest, source default 'qr', created_at)`.
+- `POST /api/notify` upserts (returns `alreadySubscribed: true` on duplicate — no error UX).
+- `GET /api/notify` returns the full list for CSV export.
+- Recipients intended for notification on each signup: remcrawfordresearch@gmail.com, danielle@techleadershipcommunity.com, neimeyer@memphis.edu, neimeyer@portlandinstitute.org. Actual email send is NOT wired — both Gmail and SendGrid integrations were dismissed by the user. The route currently logs the signup with the recipient list; wire `sendEmail` from whichever integration the user enables.
+- QR is generated client-side with the `qrcode` npm package (privacy + reliability), encoded as `${window.location.origin}/notify?src=qr` so it works on dev and deployed domains without hard-coding.
 
 ## User preferences
 

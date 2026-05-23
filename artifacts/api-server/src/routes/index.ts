@@ -9,6 +9,7 @@ import practicesRouter from "./practices";
 import resourcesRouter from "./resources";
 import dashboardRouter from "./dashboard";
 import safetyRouter from "./safety";
+import notifyRouter from "./notify";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use("/practices", practicesRouter);
 router.use("/resources", resourcesRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/safety", safetyRouter);
+router.use(notifyRouter);
 
 export default router;

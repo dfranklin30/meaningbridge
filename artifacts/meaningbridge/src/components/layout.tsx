@@ -10,7 +10,13 @@ export function Layout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && profile) {
-      if (!profile.onboardingComplete && location !== "/onboarding" && location !== "/crisis") {
+      const publicRoutes = new Set(["/", "/notify", "/present"]);
+      if (
+        !profile.onboardingComplete &&
+        location !== "/onboarding" &&
+        location !== "/crisis" &&
+        !publicRoutes.has(location)
+      ) {
         setLocation("/onboarding");
       }
     }
@@ -33,7 +39,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] bg-background flex flex-col font-sans text-foreground selection:bg-primary/20">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
         <div className="container max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/">
+          <Link href="/app">
             <div className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity">
               <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
               <span className="font-serif font-medium tracking-tight text-lg">MeaningBridge</span>

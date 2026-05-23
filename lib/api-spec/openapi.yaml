@@ -26,6 +26,8 @@ tags:
     description: Dashboard summaries and trends
   - name: safety
     description: Safety and crisis events
+  - name: notify
+    description: Public launch-notification opt-in list
 paths:
   /healthz:
     get:
@@ -593,6 +595,38 @@ paths:
                 items:
                   $ref: "#/components/schemas/CrisisResource"
 
+  /notify:
+    post:
+      operationId: createNotifyOptIn
+      tags: [notify]
+      summary: Public launch notification signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotifyOptInInput"
+      responses:
+        "200":
+          description: Subscribed (or already on the list)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotifyOptInResult"
+    get:
+      operationId: listNotifyOptIns
+      tags: [notify]
+      summary: Admin export of launch-notification signups
+      responses:
+        "200":
+          description: All signups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotifyOptIn"
+
 components:
   schemas:
     HealthStatus:
@@ -911,3 +945,28 @@ components:
         region: { type: string }
         url: { type: ["string", "null"] }
       required: [id, name, contact, description, region]
+
+    NotifyOptIn:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        roleInterest: { type: ["string", "null"] }
+        source: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, email, source, createdAt]
+    NotifyOptInInput:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        roleInterest: { type: ["string", "null"], description: "seeker | therapist" }
+        source: { type: ["string", "null"] }
+      required: [email]
+    NotifyOptInResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        alreadySubscribed: { type: boolean }
+        signup:
+          $ref: "#/components/schemas/NotifyOptIn"
+      required: [ok, alreadySubscribed, signup]

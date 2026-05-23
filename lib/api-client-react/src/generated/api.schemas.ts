@@ -303,6 +303,32 @@ export interface CrisisResource {
   url?: string | null;
 }
 
+export interface NotifyOptIn {
+  id: number;
+  email: string;
+  /** @nullable */
+  roleInterest?: string | null;
+  source: string;
+  createdAt: string;
+}
+
+export interface NotifyOptInInput {
+  email: string;
+  /**
+   * seeker | therapist
+   * @nullable
+   */
+  roleInterest?: string | null;
+  /** @nullable */
+  source?: string | null;
+}
+
+export interface NotifyOptInResult {
+  ok: boolean;
+  alreadySubscribed: boolean;
+  signup: NotifyOptIn;
+}
+
 export type FindTherapistsParams = {
   zip?: string;
 };

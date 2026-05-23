@@ -25,7 +25,7 @@ export default function CheckIn() {
       });
       queryClient.invalidateQueries({ queryKey: getListCheckInsQueryKey() });
       setSubmitted(true);
-      setTimeout(() => setLocation("/"), 3000);
+      setTimeout(() => setLocation("/app"), 3000);
     } catch (e) {
       console.error(e);
     }

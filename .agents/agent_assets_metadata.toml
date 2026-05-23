@@ -24,3 +24,27 @@ id = "3knx219pJirXJsIin3k2b"
 uri = "file://artifacts/meaningbridge/src/assets/scene-companion.png"
 type = "image"
 title = "scene-companion"
+
+[[generated]]
+id = "2nrVwOH--QevWfq0Cz3Pw"
+uri = "file://artifacts/meaningbridge/src/assets/photo-bonds.png"
+type = "image"
+title = "photo-bonds"
+
+[[generated]]
+id = "xIKZ1vsSIr2fZMV-eCU6e"
+uri = "file://artifacts/meaningbridge/src/assets/photo-loss.png"
+type = "image"
+title = "photo-loss"
+
+[[generated]]
+id = "WFOCdyMigzzGwtlnOH-C7"
+uri = "file://artifacts/meaningbridge/src/assets/photo-transformation.png"
+type = "image"
+title = "photo-transformation"
+
+[[generated]]
+id = "BBfBjEYZjfmR7RRaGgh29"
+uri = "file://artifacts/meaningbridge/src/assets/photo-companion.png"
+type = "image"
+title = "photo-companion"

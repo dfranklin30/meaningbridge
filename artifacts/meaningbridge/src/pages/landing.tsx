@@ -6,6 +6,7 @@ import { QRCodeImage } from "@/components/qr-code";
 import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
+import { LivingBackground } from "@/components/living-background";
 
 export default function LandingPage() {
   const [origin, setOrigin] = useState("");
@@ -29,18 +30,11 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] text-foreground font-sans relative overflow-hidden">
-      {/* Soft horizon wash */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(1100px 600px at 80% -10%, hsl(180 50% 90% / 0.55), transparent 60%), radial-gradient(900px 500px at -10% 110%, hsl(215 60% 85% / 0.35), transparent 60%), hsl(36 40% 98%)",
-        }}
-      />
+    <div className="min-h-[100dvh] text-foreground font-sans relative overflow-hidden isolate">
+      {/* Living, slowly-drifting aurora background */}
+      <LivingBackground />
 
-      <header className="px-6 py-6 max-w-6xl mx-auto flex items-center justify-between">
+      <header className="relative z-10 px-6 py-6 max-w-6xl mx-auto flex items-center justify-between">
         <Logo size={32} withWordmark />
         <nav className="flex items-center gap-5 text-sm text-muted-foreground">
           <Link href="/notify" className="hover:text-foreground transition-colors">
@@ -56,7 +50,7 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <main className="px-6 pb-20">
+      <main className="relative z-10 px-6 pb-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 md:gap-16 items-center pt-8 md:pt-16">
           <motion.div
             initial={{ opacity: 0, y: 14 }}

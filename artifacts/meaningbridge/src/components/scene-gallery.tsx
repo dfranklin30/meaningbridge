@@ -1,44 +1,56 @@
 import { motion } from "framer-motion";
-import sceneBonds from "@/assets/scene-bonds.png";
-import sceneLoss from "@/assets/scene-loss.png";
-import sceneTransformation from "@/assets/scene-transformation.png";
-import sceneCompanion from "@/assets/scene-companion.png";
+import photoBonds from "@/assets/photo-bonds.png";
+import photoLoss from "@/assets/photo-loss.png";
+import photoTransformation from "@/assets/photo-transformation.png";
+import photoCompanion from "@/assets/photo-companion.png";
 
 type Scene = {
   src: string;
   title: string;
   body: string;
   alt: string;
+  /** Ken Burns direction — keyframes for transform-origin */
+  origin: string;
+  /** scale keyframes [from, to] */
+  scale: [number, number];
 };
 
 const SCENES: Scene[] = [
   {
-    src: sceneBonds,
+    src: photoBonds,
     title: "Bonds",
     body:
-      "Family, friends, the animals who share our lives — the people and presences that shape who we love and who we are.",
-    alt: "A multi-generational family seated together at sunset with a golden retriever resting nearby.",
+      "The people who love us — family, partners, friends — shape who we are. Those bonds do not end.",
+    alt: "An older woman and a younger adult woman sitting close on a couch in soft window light, the younger woman's head gently resting on the older woman's shoulder, hands intertwined.",
+    origin: "30% 40%",
+    scale: [1.02, 1.08],
   },
   {
-    src: sceneLoss,
+    src: photoLoss,
     title: "Loss",
     body:
-      "An empty chair, a sleeping cat, a candle by the window. Absence is its own kind of presence.",
-    alt: "A quiet room at dawn with an empty chair, a folded knit blanket, a small candle in the window, a sleeping cat on the rug, and a framed photograph nearby.",
+      "A framed photograph, a warm cup, morning light. Absence is its own kind of presence.",
+    alt: "A man seated by a tall window in warm morning light, looking gently toward the window with a small framed photograph and a steaming cup of tea on the side table beside him.",
+    origin: "60% 50%",
+    scale: [1.04, 1.0],
   },
   {
-    src: sceneTransformation,
+    src: photoTransformation,
     title: "Transformation",
     body:
-      "Grief does not end. It changes. From what falls, something tender can rise — at its own pace, in its own time.",
-    alt: "Autumn leaves swirling upward into a flock of birds against a sunrise, with a single green sprout rising from the dark soil.",
+      "Grief does not end. It changes. From what falls, something tender can rise — at its own pace.",
+    alt: "Two adult hands gently cupping a small green seedling growing from rich dark soil, bathed in soft golden morning light.",
+    origin: "50% 55%",
+    scale: [1.02, 1.1],
   },
   {
-    src: sceneCompanion,
+    src: photoCompanion,
     title: "A companion alongside",
     body:
       "MeaningBridge sits beside you like soft light — a gentle presence, never a replacement for the people who love you or the clinicians who care for you.",
-    alt: "A person seated on a wooden bench by a window with a sleeping dog at their feet, a teal wisp of light forming a soft infinity beside them as a quiet companion presence.",
+    alt: "A woman seated in a sunlit window nook holding a warm mug, eyes softly closed, with a golden retriever resting peacefully at her feet.",
+    origin: "40% 45%",
+    scale: [1.05, 1.0],
   },
 ];
 
@@ -52,30 +64,52 @@ export function SceneGallery() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{
-            duration: 0.9,
+            duration: 1.1,
             ease: [0.22, 1, 0.36, 1],
-            delay: idx * 0.08,
+            delay: idx * 0.1,
           }}
           className="group"
         >
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_60px_-30px_hsl(215_50%_30%/0.25)]">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_60px_-30px_hsl(215_50%_30%/0.3)]">
             <div className="aspect-[4/3] overflow-hidden">
-              <img
+              {/* Ken Burns slow zoom + subtle drift */}
+              <motion.img
                 src={scene.src}
                 alt={scene.alt}
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.03]"
+                className="w-full h-full object-cover"
+                style={{ transformOrigin: scene.origin }}
+                initial={{ scale: scene.scale[0] }}
+                animate={{ scale: [scene.scale[0], scene.scale[1], scene.scale[0]] }}
+                transition={{
+                  duration: 18 + idx * 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
             </div>
-            {/* Soft wash at the bottom for legibility if we ever overlay text */}
+            {/* Soft inner vignette to settle the image into the page */}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0"
               style={{
                 background:
-                  "linear-gradient(to bottom, transparent 60%, hsl(36 40% 98% / 0.4) 100%)",
+                  "radial-gradient(ellipse at center, transparent 55%, hsl(215 30% 15% / 0.12) 100%)",
               }}
             />
+            {/* Top-left title chip that softly appears on hover */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+              style={{
+                background:
+                  "linear-gradient(to top, hsl(215 40% 12% / 0.55), transparent)",
+              }}
+            >
+              <span className="text-white/95 font-serif text-lg tracking-tight">
+                {scene.title}
+              </span>
+            </div>
           </div>
           <figcaption className="mt-4 px-1">
             <h3 className="font-serif text-xl text-foreground tracking-tight">

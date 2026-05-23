@@ -36,9 +36,12 @@ export default function PresentPage() {
           </p>
         </div>
 
-        <p className="text-base text-muted-foreground pt-8">
-          Brought to you by Dr. Robert Neimeyer.
-        </p>
+        <div className="pt-8 space-y-1 text-muted-foreground">
+          <p className="text-base">Brought to you by Dr. Robert Neimeyer.</p>
+          <p className="text-sm">
+            Portland Institute for Loss and Transition — portlandinstitute.org
+          </p>
+        </div>
       </div>
 
       <Link

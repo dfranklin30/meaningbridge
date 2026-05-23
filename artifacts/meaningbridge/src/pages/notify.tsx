@@ -151,16 +151,30 @@ export default function NotifyPage() {
             </form>
           )}
 
-          <p className="text-center text-sm text-muted-foreground">
-            For more information, please reach out to{" "}
-            <a
-              href="mailto:neimeyer@portlandinstitute.org"
-              className="text-primary hover:underline"
-            >
-              neimeyer@portlandinstitute.org
-            </a>
-            .
-          </p>
+          <div className="text-center text-sm text-muted-foreground space-y-2">
+            <p>
+              For more information, please reach out to{" "}
+              <a
+                href="mailto:neimeyer@portlandinstitute.org"
+                className="text-primary hover:underline"
+              >
+                neimeyer@portlandinstitute.org
+              </a>
+              .
+            </p>
+            <p>
+              Learn more about Dr. Neimeyer's work at the{" "}
+              <a
+                href="https://portlandinstitute.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                Portland Institute for Loss and Transition
+              </a>
+              .
+            </p>
+          </div>
         </motion.div>
       </main>
     </div>

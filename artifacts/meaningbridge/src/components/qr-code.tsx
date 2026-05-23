@@ -20,7 +20,7 @@ export function QRCodeImage({ value, size = 320, className }: Props) {
         errorCorrectionLevel: "H",
         margin: 2,
         width: size,
-        color: { dark: "#1f1410", light: "#fbf6f1" },
+        color: { dark: "#1a2e4a", light: "#fafaf5" },
       },
       (err) => {
         if (err) setError(err.message);

@@ -1,8 +1,9 @@
 import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetProfile } from "@workspace/api-client-react";
-import { Loader2, Heart, HeartHandshake } from "lucide-react";
+import { Loader2, HeartHandshake } from "lucide-react";
 import { motion } from "framer-motion";
+import { Logo } from "@/components/logo";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -40,9 +41,8 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
         <div className="container max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/app">
-            <div className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity">
-              <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
-              <span className="font-serif font-medium tracking-tight text-lg">MeaningBridge</span>
+            <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
+              <Logo size={28} withWordmark />
             </div>
           </Link>
           

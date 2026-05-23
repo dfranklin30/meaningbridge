@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Heart, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { useCreateNotifyOptIn } from "@workspace/api-client-react";
+import { Logo } from "@/components/logo";
 
 export default function NotifyPage() {
   const [email, setEmail] = useState("");
@@ -45,12 +46,19 @@ export default function NotifyPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col font-sans text-foreground">
+    <div className="min-h-[100dvh] flex flex-col font-sans text-foreground relative overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(900px 500px at 90% -10%, hsl(180 50% 90% / 0.5), transparent 60%), radial-gradient(700px 400px at -10% 110%, hsl(215 60% 85% / 0.3), transparent 60%), hsl(36 40% 98%)",
+        }}
+      />
       <header className="px-6 py-6">
         <Link href="/">
-          <div className="flex items-center gap-2 cursor-pointer opacity-80 hover:opacity-100 transition-opacity">
-            <Heart className="w-5 h-5 text-primary" strokeWidth={1.5} />
-            <span className="font-serif font-medium tracking-tight text-lg">MeaningBridge</span>
+          <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
+            <Logo size={28} withWordmark />
           </div>
         </Link>
       </header>

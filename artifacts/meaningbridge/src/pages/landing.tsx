@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Copy, Check, Maximize2, ArrowRight } from "lucide-react";
 import { QRCodeImage } from "@/components/qr-code";
 import { Logo } from "@/components/logo";
+import { BridgeAnimation } from "@/components/bridge-animation";
 
 export default function LandingPage() {
   const [origin, setOrigin] = useState("");
@@ -158,6 +159,36 @@ export default function LandingPage() {
             </div>
           </motion.div>
         </div>
+
+        {/* Bridge animation — humans connecting with humans and with AI */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-5xl mx-auto mt-24 md:mt-32"
+        >
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
+            <h2 className="font-serif text-3xl md:text-4xl tracking-tight">
+              A bridge between people.
+            </h2>
+            <p className="text-muted-foreground">
+              MeaningBridge is a quiet presence between you, the people you love, and the
+              clinicians who care for you. The human bond stays primary. The AI sits beside,
+              never in front.
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-card/70 backdrop-blur border border-border p-4 md:p-10 shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.15)]">
+            <BridgeAnimation />
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-4 max-w-xl mx-auto">
+            For everyone navigating loss — patients, families, therapists, physicians, and
+            chaplains. Designed to be calm enough for the hardest day and clear enough for the
+            first visit.
+          </p>
+        </motion.section>
 
         {/* What's inside */}
         <section className="max-w-6xl mx-auto mt-24 md:mt-32">

@@ -11,7 +11,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && profile) {
-      const publicRoutes = new Set(["/", "/notify", "/present"]);
+      const publicRoutes = new Set(["/", "/notify", "/present", "/pricing", "/caregiver"]);
       if (
         !profile.onboardingComplete &&
         location !== "/onboarding" &&

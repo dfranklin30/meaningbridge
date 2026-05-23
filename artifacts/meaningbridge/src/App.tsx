@@ -7,6 +7,8 @@ import { Layout } from "@/components/layout";
 import Landing from "@/pages/landing";
 import NotifyPage from "@/pages/notify";
 import PresentPage from "@/pages/present";
+import Pricing from "@/pages/pricing";
+import Caregiver from "@/pages/caregiver";
 
 import Home from "@/pages/home";
 import Onboarding from "@/pages/onboarding";
@@ -64,6 +66,8 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/notify" component={NotifyPage} />
       <Route path="/present" component={PresentPage} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/caregiver" component={Caregiver} />
       <Route component={AppRoutes} />
     </Switch>
   );

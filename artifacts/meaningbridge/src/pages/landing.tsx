@@ -37,6 +37,12 @@ export default function LandingPage() {
       <header className="relative z-10 px-6 py-6 max-w-6xl mx-auto flex items-center justify-between">
         <Logo size={32} withWordmark />
         <nav className="flex items-center gap-5 text-sm text-muted-foreground">
+          <Link href="/pricing" className="hover:text-foreground transition-colors">
+            Plans
+          </Link>
+          <Link href="/caregiver" className="hover:text-foreground transition-colors">
+            For caregivers
+          </Link>
           <Link href="/notify" className="hover:text-foreground transition-colors">
             Notify me
           </Link>

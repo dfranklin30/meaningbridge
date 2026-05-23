@@ -56,6 +56,10 @@ Public (no onboarding gate, no app chrome):
 - `/` — coming-soon landing: headline, "Brought to you by Dr. Robert Neimeyer", QR code linking to `/notify?src=qr`, copy-link, contact line for neimeyer@portlandinstitute.org, link to `/present`.
 - `/notify` — public signup form (writes to `notify_opt_ins`). Reads `?src=<label>` for attribution; defaults to `qr`.
 - `/present` — full-screen QR for keynote projection.
+- `/pricing` — subscription tiers mapped to the GIS tiers (Companion / Enhanced / Specialist). Visual prototype, no Stripe wiring; CTAs route to `/onboarding` or `/notify?src=pricing-*`.
+- `/caregiver` — caregiver (therapist) portal preview with sample data. Roster, tier badges, consent indicator, per-patient briefing, safety counts. Clearly labeled "preview with sample data" — no PHI, no real data wired.
+
+The /pricing and /caregiver routes are in the public-routes set in `layout.tsx` so they bypass the onboarding gate, and link to each other plus `/notify` for waitlists.
 
 App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/dashboard`, `/loved-one`, `/therapists`, `/crisis`, `/settings`, 404.
 

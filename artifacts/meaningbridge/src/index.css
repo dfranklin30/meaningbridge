@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..700,50;0,9..144,300..700,100;1,9..144,300..600,80&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -123,9 +123,9 @@
   --chart-4: 195 30% 55%; /* sky */
   --chart-5: 150 25% 45%; /* sage */
 
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
-  --app-font-mono: Menlo, monospace;
+  --app-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --app-font-serif: 'Fraunces', ui-serif, Georgia, serif;
+  --app-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --radius: 0.3rem; 
   --shadow-2xs: 0px 2px 0px 0px rgba(0,0,0,0.02);
   --shadow-xs: 0px 2px 0px 0px rgba(0,0,0,0.02);
@@ -218,10 +218,21 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20;
+    font-feature-settings: "ss01", "ss02", "cv11";
+    font-optical-sizing: auto;
+    letter-spacing: -0.005em;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight text-foreground font-medium;
+    @apply font-serif tracking-tight text-foreground;
+    font-weight: 450;
+    font-variation-settings: "opsz" 96, "SOFT" 80;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+    font-weight: 400;
   }
 }
 

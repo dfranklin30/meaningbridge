@@ -10,8 +10,8 @@ const NOTIFY_RECIPIENTS = [
   "remcrawfordresearch@gmail.com",
   "danielle@techleadershipcommunity.com",
   "neimeyer@memphis.edu",
-  "neimeyer@portlandinstitute.org",
 ];
+const NOTIFY_CC = ["neimeyer@portlandinstitute.org"];
 
 router.post("/notify", async (req, res) => {
   const body = CreateNotifyOptInBody.parse(req.body);
@@ -63,6 +63,7 @@ router.post("/notify", async (req, res) => {
     `;
     sendMail({
       to: NOTIFY_RECIPIENTS,
+      cc: NOTIFY_CC,
       subject,
       text: lines.join("\n"),
       html,
@@ -71,7 +72,12 @@ router.post("/notify", async (req, res) => {
       .then((r) => {
         if (r.sent) {
           req.log.info(
-            { signupId: signup.id, messageId: r.messageId, recipients: NOTIFY_RECIPIENTS.length },
+            {
+              signupId: signup.id,
+              messageId: r.messageId,
+              recipients: NOTIFY_RECIPIENTS.length,
+              cc: NOTIFY_CC.length,
+            },
             "notify signup email sent",
           );
         } else {
@@ -86,7 +92,7 @@ router.post("/notify", async (req, res) => {
       });
   } else {
     req.log.info(
-      { signupId: signup.id, source, recipients: NOTIFY_RECIPIENTS },
+      { signupId: signup.id, source, recipients: NOTIFY_RECIPIENTS, cc: NOTIFY_CC },
       "notify signup recorded (mailer not configured)",
     );
   }

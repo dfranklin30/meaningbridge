@@ -68,7 +68,7 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 - Table: `notify_opt_ins(id, email UNIQUE, role_interest, source default 'qr', created_at)`.
 - `POST /api/notify` upserts (returns `alreadySubscribed: true` on duplicate — no error UX).
 - `GET /api/notify` returns the full list for CSV export.
-- Recipients notified on each new (non-duplicate) signup: remcrawfordresearch@gmail.com, danielle@techleadershipcommunity.com, neimeyer@memphis.edu, neimeyer@portlandinstitute.org.
+- Recipients notified on each new (non-duplicate) signup. To: remcrawfordresearch@gmail.com, danielle@techleadershipcommunity.com, neimeyer@memphis.edu. Cc: neimeyer@portlandinstitute.org (on Cc so that mailbox's filters can auto-copy/forward incoming signups).
 - Email is sent via `nodemailer` + Gmail SMTP using `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets (the Replit Gmail OAuth connector was dismissed in favor of an app password). Helper: `artifacts/api-server/src/lib/mailer.ts`. Send is fire-and-forget — the API response never waits on SMTP. Reply-to is set to the signup's own email so recipients can reply directly to the new lead.
 - QR is generated client-side with the `qrcode` npm package (privacy + reliability), encoded as `${window.location.origin}/notify?src=qr` so it works on dev and deployed domains without hard-coding.
 

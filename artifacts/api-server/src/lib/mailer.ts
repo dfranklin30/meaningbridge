@@ -21,6 +21,7 @@ export function isMailerConfigured(): boolean {
 
 export interface SendMailInput {
   to: string[];
+  cc?: string[];
   subject: string;
   text: string;
   html?: string;
@@ -38,6 +39,7 @@ export async function sendMail(input: SendMailInput): Promise<{ sent: boolean; m
     const info = await transporter.sendMail({
       from: `"MeaningBridge" <${from}>`,
       to: input.to.join(", "),
+      cc: input.cc && input.cc.length > 0 ? input.cc.join(", ") : undefined,
       subject: input.subject,
       text: input.text,
       html: input.html,

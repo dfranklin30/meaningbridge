@@ -650,6 +650,7 @@ export const GetSafetyResourcesResponse = zod.array(
  */
 export const CreateNotifyOptInBody = zod.object({
   email: zod.string().email(),
+  firstName: zod.string().nullish(),
   roleInterest: zod.string().nullish().describe("seeker | therapist"),
   source: zod.string().nullish(),
 });
@@ -660,6 +661,7 @@ export const CreateNotifyOptInResponse = zod.object({
   signup: zod.object({
     id: zod.number(),
     email: zod.string(),
+    firstName: zod.string().nullish(),
     roleInterest: zod.string().nullish(),
     source: zod.string(),
     createdAt: zod.coerce.date(),
@@ -672,6 +674,7 @@ export const CreateNotifyOptInResponse = zod.object({
 export const ListNotifyOptInsResponseItem = zod.object({
   id: zod.number(),
   email: zod.string(),
+  firstName: zod.string().nullish(),
   roleInterest: zod.string().nullish(),
   source: zod.string(),
   createdAt: zod.coerce.date(),

@@ -65,11 +65,13 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 
 ## Notify signups
 
-- Table: `notify_opt_ins(id, email UNIQUE, role_interest, source default 'qr', created_at)`.
-- `POST /api/notify` upserts (returns `alreadySubscribed: true` on duplicate — no error UX).
+- Table: `notify_opt_ins(id, email UNIQUE, first_name, role_interest, source default 'qr', created_at)`.
+- `POST /api/notify` upserts (returns `alreadySubscribed: true` on duplicate — no error UX). Accepts optional `firstName` (trimmed to first whitespace-delimited token).
 - `GET /api/notify` returns the full list for CSV export.
-- Recipients notified on each new (non-duplicate) signup. To: remcrawfordresearch@gmail.com, danielle@techleadershipcommunity.com, neimeyer@memphis.edu. Cc: neimeyer@portlandinstitute.org (on Cc so that mailbox's filters can auto-copy/forward incoming signups).
-- Email is sent via `nodemailer` + Gmail SMTP using `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets (the Replit Gmail OAuth connector was dismissed in favor of an app password). Helper: `artifacts/api-server/src/lib/mailer.ts`. Send is fire-and-forget — the API response never waits on SMTP. Reply-to is set to the signup's own email so recipients can reply directly to the new lead.
+- Two fire-and-forget emails go out on each new (non-duplicate) signup:
+  1. **Internal notification** — To: remcrawfordresearch@gmail.com, danielle@techleadershipcommunity.com, neimeyer@memphis.edu. Cc: neimeyer@portlandinstitute.org (on Cc so that mailbox's filters can auto-copy/forward incoming signups). Reply-to = signup email so recipients can reply directly. Includes the first name in the table.
+  2. **Confirmation to the signup** — To: signup email. Reply-to = neimeyer@portlandinstitute.org (a real human, not the SMTP sender mailbox). Subject "You are on the list for MeaningBridge". Greeted by first name if provided ("Hello Danielle,"), otherwise "Hello,". Warm copy about the experience being shaped around them and the person they are remembering, signed by "The MeaningBridge team".
+- Email is sent via `nodemailer` + Gmail SMTP using `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets (the Replit Gmail OAuth connector was dismissed in favor of an app password). Helper: `artifacts/api-server/src/lib/mailer.ts`. The API response never waits on SMTP.
 - QR is generated client-side with the `qrcode` npm package (privacy + reliability), encoded as `${window.location.origin}/notify?src=qr` so it works on dev and deployed domains without hard-coding.
 - Notification emails embed the MeaningBridge lockup logo inline via `cid:meaningbridge-logo` (nodemailer attachment with `cid`). The PNG is loaded once at startup from `artifacts/api-server/assets/logo.png`.
 

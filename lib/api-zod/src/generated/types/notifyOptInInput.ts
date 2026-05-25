@@ -8,6 +8,8 @@
 
 export interface NotifyOptInInput {
   email: string;
+  /** @nullable */
+  firstName?: string | null;
   /**
    * seeker | therapist
    * @nullable

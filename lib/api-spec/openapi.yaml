@@ -1017,6 +1017,7 @@ components:
       properties:
         id: { type: integer }
         email: { type: string }
+        firstName: { type: ["string", "null"] }
         roleInterest: { type: ["string", "null"] }
         source: { type: string }
         createdAt: { type: string, format: date-time }
@@ -1025,6 +1026,7 @@ components:
       type: object
       properties:
         email: { type: string, format: email }
+        firstName: { type: ["string", "null"] }
         roleInterest: { type: ["string", "null"], description: "seeker | therapist" }
         source: { type: ["string", "null"] }
       required: [email]

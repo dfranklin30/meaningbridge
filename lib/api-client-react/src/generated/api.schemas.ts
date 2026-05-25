@@ -385,6 +385,8 @@ export interface NotifyOptIn {
   id: number;
   email: string;
   /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
   roleInterest?: string | null;
   source: string;
   createdAt: string;
@@ -392,6 +394,8 @@ export interface NotifyOptIn {
 
 export interface NotifyOptInInput {
   email: string;
+  /** @nullable */
+  firstName?: string | null;
   /**
    * seeker | therapist
    * @nullable

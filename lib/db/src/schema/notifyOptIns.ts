@@ -7,6 +7,7 @@ export const notifyOptInsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     email: text("email").notNull(),
+    firstName: text("first_name"),
     roleInterest: text("role_interest"),
     source: text("source").notNull().default("qr"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

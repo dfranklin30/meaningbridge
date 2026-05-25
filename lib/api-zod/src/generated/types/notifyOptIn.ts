@@ -10,6 +10,8 @@ export interface NotifyOptIn {
   id: number;
   email: string;
   /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
   roleInterest?: string | null;
   source: string;
   createdAt: Date;

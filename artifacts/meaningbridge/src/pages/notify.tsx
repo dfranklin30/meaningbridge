@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 
 export default function NotifyPage() {
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [roleInterest, setRoleInterest] = useState<"" | "seeker" | "therapist">("");
   const [submitted, setSubmitted] = useState(false);
   const [alreadyOnList, setAlreadyOnList] = useState(false);
@@ -33,6 +34,7 @@ export default function NotifyPage() {
       const result = await mutateAsync({
         data: {
           email: trimmed,
+          firstName: firstName.trim() || null,
           roleInterest: roleInterest || null,
           source,
         },
@@ -95,11 +97,28 @@ export default function NotifyPage() {
                 {alreadyOnList ? "You are already on the list." : "Thank you."}
               </p>
               <p className="text-muted-foreground text-sm">
-                We will write to you the moment MeaningBridge is ready.
+                {alreadyOnList
+                  ? "We will write to you the moment MeaningBridge is ready."
+                  : "A confirmation is on its way to your inbox. We will write again the day MeaningBridge opens its doors."}
               </p>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-border bg-card p-6 md:p-8">
+              <div className="space-y-2">
+                <label htmlFor="firstName" className="text-sm font-medium text-muted-foreground">
+                  First name <span className="text-muted-foreground/70">(optional)</span>
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  autoComplete="given-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="What should we call you?"
+                  className="w-full bg-background border border-border rounded-md px-4 py-3"
+                />
+              </div>
+
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium text-muted-foreground">
                   Email

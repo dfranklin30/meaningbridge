@@ -42,7 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="container max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/app">
             <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
-              <Logo size={28} withWordmark />
+              <Logo variant="lockup" size={36} />
             </div>
           </Link>
           

@@ -58,7 +58,7 @@ export default function NotifyPage() {
       <header className="px-6 py-6">
         <Link href="/">
           <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
-            <Logo size={28} withWordmark />
+            <Logo variant="lockup" size={40} />
           </div>
         </Link>
       </header>

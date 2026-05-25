@@ -19,6 +19,14 @@ export function isMailerConfigured(): boolean {
   return Boolean(process.env["GMAIL_USER"] && process.env["GMAIL_APP_PASSWORD"]);
 }
 
+export interface MailAttachment {
+  filename: string;
+  path?: string;
+  content?: Buffer | string;
+  cid?: string;
+  contentType?: string;
+}
+
 export interface SendMailInput {
   to: string[];
   cc?: string[];
@@ -26,6 +34,7 @@ export interface SendMailInput {
   text: string;
   html?: string;
   replyTo?: string;
+  attachments?: MailAttachment[];
 }
 
 export async function sendMail(input: SendMailInput): Promise<{ sent: boolean; messageId?: string; error?: string }> {
@@ -44,6 +53,7 @@ export async function sendMail(input: SendMailInput): Promise<{ sent: boolean; m
       text: input.text,
       html: input.html,
       replyTo: input.replyTo,
+      attachments: input.attachments,
     });
     return { sent: true, messageId: info.messageId };
   } catch (err) {

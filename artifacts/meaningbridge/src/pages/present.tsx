@@ -24,10 +24,10 @@ export default function PresentPage() {
       />
 
       <div className="text-center space-y-10 max-w-3xl">
-        <Logo size={72} className="mx-auto" />
+        <Logo variant="lockup" size={140} className="mx-auto" />
 
         <h1 className="font-serif text-5xl md:text-6xl tracking-tight">
-          MeaningBridge <span className="text-primary">is coming.</span>
+          <span className="text-primary">is coming.</span>
         </h1>
         <p className="text-2xl md:text-3xl text-muted-foreground font-serif">
           Scan to get notified when MeaningBridge launches.

@@ -71,6 +71,15 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 - Recipients notified on each new (non-duplicate) signup. To: remcrawfordresearch@gmail.com, danielle@techleadershipcommunity.com, neimeyer@memphis.edu. Cc: neimeyer@portlandinstitute.org (on Cc so that mailbox's filters can auto-copy/forward incoming signups).
 - Email is sent via `nodemailer` + Gmail SMTP using `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets (the Replit Gmail OAuth connector was dismissed in favor of an app password). Helper: `artifacts/api-server/src/lib/mailer.ts`. Send is fire-and-forget — the API response never waits on SMTP. Reply-to is set to the signup's own email so recipients can reply directly to the new lead.
 - QR is generated client-side with the `qrcode` npm package (privacy + reliability), encoded as `${window.location.origin}/notify?src=qr` so it works on dev and deployed domains without hard-coding.
+- Notification emails embed the MeaningBridge lockup logo inline via `cid:meaningbridge-logo` (nodemailer attachment with `cid`). The PNG is loaded once at startup from `artifacts/api-server/assets/logo.png`.
+
+## Brand assets
+
+- Source PNG with whitespace trimmed: `artifacts/meaningbridge/src/assets/brand/meaningbridge-mark.png` (infinity-bridge mark, 787x340) and `artifacts/meaningbridge/src/assets/brand/meaningbridge-lockup.png` (mark + wordmark, 957x535). Both are RGBA with transparent background.
+- `<Logo variant="lockup" size={N} />` renders the full lockup at height `N`. `<Logo />` (default) renders just the infinity mark; pass `withWordmark` to append the serif text wordmark instead of the image lockup.
+- Favicon: `artifacts/meaningbridge/public/favicon.png` + `favicon.ico` (multi-size 16/32/48/64), generated from the mark. The legacy `favicon.svg` is no longer linked.
+- Open Graph / Twitter card: `artifacts/meaningbridge/public/opengraph.jpg` (1200x630) — cream gradient with centered lockup and serif tagline. Referenced by absolute `/opengraph.jpg` in `index.html`.
+- Email notification logo: `artifacts/api-server/assets/logo.png` (a copy of the mark) — loaded at startup and embedded inline with `cid:meaningbridge-logo`.
 
 ## User preferences
 

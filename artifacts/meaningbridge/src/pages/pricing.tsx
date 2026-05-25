@@ -90,7 +90,7 @@ export default function Pricing() {
         <div className="container max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
             <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
-              <Logo size={28} withWordmark />
+              <Logo variant="lockup" size={40} />
             </div>
           </Link>
           <nav className="flex items-center gap-6 text-sm text-muted-foreground">

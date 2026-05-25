@@ -1,8 +1,14 @@
 import { useGetSafetyResources } from "@workspace/api-client-react";
-import { Phone, Globe, ShieldAlert, HeartHandshake } from "lucide-react";
+import { Phone, Globe, ShieldAlert, HeartHandshake, MessageSquare, ShieldCheck } from "lucide-react";
+
+const VETERANS_NAME = "Veterans Crisis Line";
 
 export default function Crisis() {
   const { data: resources } = useGetSafetyResources();
+
+  // Surface the Veterans Crisis Line in its own dedicated section,
+  // and remove it from the general list to avoid duplication.
+  const generalResources = resources?.filter((r) => r.name !== VETERANS_NAME);
 
   return (
     <div className="max-w-3xl mx-auto space-y-12">
@@ -16,10 +22,72 @@ export default function Crisis() {
         </p>
       </div>
 
+      <section className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="font-serif text-2xl">For veterans and service members</h2>
+            <p className="text-sm text-muted-foreground">
+              A dedicated line, staffed by people who understand military life.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-6 md:p-8 space-y-6">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            The Veterans Crisis Line connects veterans, service members, National Guard and
+            Reserve members, and their families and friends with caring, qualified responders.
+            You do not need to be enrolled in VA benefits or healthcare to reach out. Free,
+            confidential, available 24 hours a day, 7 days a week.
+          </p>
+
+          <div className="grid sm:grid-cols-3 gap-3">
+            <a
+              href="tel:988"
+              className="flex items-center justify-center gap-2 bg-foreground text-background px-4 py-3 rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <Phone className="w-4 h-4" />
+              Dial 988, press 1
+            </a>
+            <a
+              href="sms:838255"
+              className="flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-4 py-3 rounded-full text-sm font-medium hover:bg-secondary/80 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Text 838255
+            </a>
+            <a
+              href="https://www.veteranscrisisline.net/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-2 bg-secondary text-secondary-foreground px-4 py-3 rounded-full text-sm font-medium hover:bg-secondary/80 transition-colors"
+            >
+              <Globe className="w-4 h-4" />
+              Chat online
+            </a>
+          </div>
+
+          <p className="text-xs text-muted-foreground/80 leading-relaxed border-t border-border pt-4">
+            We are working toward deeper resources for veterans and the people who care for
+            them, in partnership with organizations like the American Red Cross. If you would
+            like to be part of that work, you can reach us at{" "}
+            <a
+              href="mailto:neimeyer@portlandinstitute.org"
+              className="text-primary hover:underline"
+            >
+              neimeyer@portlandinstitute.org
+            </a>
+            .
+          </p>
+        </div>
+      </section>
+
       <div className="space-y-6">
         <h2 className="text-2xl font-serif">Immediate Support</h2>
         <div className="grid gap-4">
-          {resources?.map(resource => (
+          {generalResources?.map(resource => (
             <div key={resource.id} className="bg-card border border-border p-6 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <h3 className="font-serif text-xl">{resource.name}</h3>

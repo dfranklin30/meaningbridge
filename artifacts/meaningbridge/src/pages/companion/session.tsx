@@ -4,6 +4,7 @@ import { useGetChatSession, getGetChatSessionQueryKey } from "@workspace/api-cli
 import { useQueryClient } from "@tanstack/react-query";
 import { Send, ArrowLeft, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { VoiceInput } from "../../components/voice-input";
 
 export default function CompanionSession() {
   const { sessionId } = useParams();
@@ -149,6 +150,13 @@ export default function CompanionSession() {
 
       <div className="pt-4 mt-auto">
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2 bg-background border border-border rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 transition-shadow">
+          <VoiceInput
+            className="mb-0.5"
+            disabled={isStreaming}
+            onTranscript={(text) =>
+              setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+            }
+          />
           <textarea
             className="flex-1 max-h-32 min-h-[44px] bg-transparent border-none resize-none focus:ring-0 px-3 py-2.5 text-sm"
             placeholder="Write here..."

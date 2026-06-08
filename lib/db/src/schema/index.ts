@@ -3,6 +3,7 @@ export * from "./conversations";
 export * from "./messages";
 export * from "./profile";
 export * from "./deceased";
+export * from "./deceasedPhotos";
 export * from "./chat";
 export * from "./journal";
 export * from "./checkins";

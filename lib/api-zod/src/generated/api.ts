@@ -719,3 +719,93 @@ export const ListNotifyOptInsResponseItem = zod.object({
   createdAt: zod.coerce.date(),
 });
 export const ListNotifyOptInsResponse = zod.array(ListNotifyOptInsResponseItem);
+
+/**
+ * Returns a presigned GCS URL for direct upload. The client sends JSON
+metadata here, then uploads the file directly to the returned URL.
+
+ * @summary Request a presigned URL for file upload
+ */
+
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string().min(1).describe("Original file name."),
+  size: zod.number().min(1).describe("File size in bytes."),
+  contentType: zod
+    .string()
+    .min(1)
+    .describe("MIME type of the file (e.g. `image\/jpeg`)."),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string().url().describe("Presigned GCS URL for PUT upload."),
+  objectPath: zod
+    .string()
+    .describe(
+      "Normalized object path (e.g. `\/objects\/uploads\/uuid`). Store this in your database.",
+    ),
+  metadata: zod
+    .object({
+      name: zod.string().min(1).describe("Original file name."),
+      size: zod.number().min(1).describe("File size in bytes."),
+      contentType: zod
+        .string()
+        .min(1)
+        .describe("MIME type of the file (e.g. `image\/jpeg`)."),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Serve a public asset from PUBLIC_OBJECT_SEARCH_PATHS
+ */
+export const GetPublicObjectParams = zod.object({
+  filePath: zod.coerce
+    .string()
+    .describe("Relative file path within the public search paths."),
+});
+
+/**
+ * @summary Serve a private object entity owned by the signed-in user
+ */
+export const GetStorageObjectParams = zod.object({
+  objectPath: zod.coerce
+    .string()
+    .describe(
+      "Object path within the private object dir (e.g. `uploads\/some-uuid`).",
+    ),
+});
+
+/**
+ * @summary List photos attached to a deceased profile
+ */
+export const ListDeceasedPhotosParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListDeceasedPhotosResponseItem = zod.object({
+  id: zod.number(),
+  deceasedId: zod.number(),
+  objectPath: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListDeceasedPhotosResponse = zod.array(
+  ListDeceasedPhotosResponseItem,
+);
+
+/**
+ * @summary Attach an uploaded photo to a deceased profile
+ */
+export const AddDeceasedPhotoParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddDeceasedPhotoBody = zod.object({
+  objectPath: zod.string().min(1),
+});
+
+/**
+ * @summary Remove a photo from a deceased profile
+ */
+export const DeleteDeceasedPhotoParams = zod.object({
+  photoId: zod.coerce.number(),
+});

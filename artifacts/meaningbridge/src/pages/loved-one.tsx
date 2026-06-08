@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Save, Check } from "lucide-react";
+import { PhotoGallery } from "../components/photo-gallery";
 
 type FormState = {
   name: string;
@@ -252,6 +253,12 @@ export default function LovedOne() {
           </div>
         </section>
       </div>
+
+      {deceased && (
+        <div className="bg-card border border-border rounded-xl p-6 md:p-8">
+          <PhotoGallery deceasedId={deceased.id} />
+        </div>
+      )}
     </div>
   );
 }

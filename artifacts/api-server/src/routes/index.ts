@@ -11,6 +11,8 @@ import resourcesRouter from "./resources";
 import dashboardRouter from "./dashboard";
 import safetyRouter from "./safety";
 import notifyRouter from "./notify";
+import storageRouter from "./storage";
+import voiceRouter from "./voice";
 
 const router: IRouter = Router();
 
@@ -26,5 +28,7 @@ router.use("/resources", resourcesRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/safety", safetyRouter);
 router.use(notifyRouter);
+router.use(storageRouter);
+router.use("/voice", voiceRouter);
 
 export default router;

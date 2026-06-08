@@ -3,6 +3,7 @@ import { useParams, useLocation, Link } from "wouter";
 import { useGetJournalEntry, useCreateJournalEntry, useUpdateJournalEntry, useDeleteJournalEntry, useListJournalPrompts, getListJournalEntriesQueryKey, getGetJournalEntryQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Save, Trash2, Check } from "lucide-react";
+import { VoiceInput } from "../../components/voice-input";
 
 export default function JournalEditor() {
   const { id } = useParams();
@@ -149,6 +150,17 @@ export default function JournalEditor() {
           placeholder="Begin writing..."
           className="flex-1 w-full bg-transparent border-none outline-none focus:ring-0 p-0 resize-none leading-relaxed text-base md:text-lg placeholder:text-muted-foreground/30 min-h-[300px]"
         />
+
+        <div className="flex items-start gap-3 pt-2 border-t border-border/40">
+          <VoiceInput
+            onTranscript={(text) =>
+              setBody((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
+            }
+          />
+          <p className="text-xs text-muted-foreground mt-2.5">
+            Speak a memory and it will appear here for you to review before saving.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -4,14 +4,21 @@ import {
   db,
   profileTable,
   deceasedTable,
+  deceasedPhotosTable,
 } from "@workspace/db";
 import {
   UpdateProfileBody,
   CreateDeceasedProfileBody,
   GetDeceasedProfileParams,
   UpdateDeceasedProfileBody,
+  ListDeceasedPhotosParams,
+  AddDeceasedPhotoBody,
+  DeleteDeceasedPhotoParams,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { ObjectStorageService, ObjectAccessDeniedError } from "../lib/objectStorage";
+
+const objectStorageService = new ObjectStorageService();
 
 const router: IRouter = Router();
 
@@ -101,6 +108,83 @@ router.delete("/deceased/:id", requireAuth, async (req, res) => {
   await db
     .delete(deceasedTable)
     .where(and(eq(deceasedTable.id, id), eq(deceasedTable.userId, req.userId!)));
+  res.status(204).end();
+});
+
+async function ownsDeceased(userId: number, deceasedId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ id: deceasedTable.id })
+    .from(deceasedTable)
+    .where(and(eq(deceasedTable.id, deceasedId), eq(deceasedTable.userId, userId)));
+  return Boolean(row);
+}
+
+router.get("/deceased/:id/photos", requireAuth, async (req, res) => {
+  const { id } = ListDeceasedPhotosParams.parse(req.params);
+  if (!(await ownsDeceased(req.userId!, id))) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const rows = await db
+    .select()
+    .from(deceasedPhotosTable)
+    .where(
+      and(eq(deceasedPhotosTable.deceasedId, id), eq(deceasedPhotosTable.userId, req.userId!)),
+    )
+    .orderBy(desc(deceasedPhotosTable.createdAt));
+  res.json(rows);
+});
+
+router.post("/deceased/:id/photos", requireAuth, async (req, res) => {
+  const { id } = ListDeceasedPhotosParams.parse(req.params);
+  const body = AddDeceasedPhotoBody.parse(req.body);
+  if (!(await ownsDeceased(req.userId!, id))) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  // Claim ownership of the uploaded object so only this user can read it.
+  // Rejects objects already owned by another user (no cross-user takeover).
+  let normalizedPath: string;
+  try {
+    normalizedPath = await objectStorageService.claimObjectEntity(
+      body.objectPath,
+      String(req.userId!),
+    );
+  } catch (error) {
+    if (error instanceof ObjectAccessDeniedError) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    req.log.error({ err: error }, "Error claiming uploaded object");
+    res.status(400).json({ error: "Could not attach photo" });
+    return;
+  }
+
+  const [row] = await db
+    .insert(deceasedPhotosTable)
+    .values({ deceasedId: id, objectPath: normalizedPath, userId: req.userId! })
+    .returning();
+  res.status(201).json(row);
+});
+
+router.delete("/deceased/photos/:photoId", requireAuth, async (req, res) => {
+  const { photoId } = DeleteDeceasedPhotoParams.parse(req.params);
+  const [row] = await db
+    .delete(deceasedPhotosTable)
+    .where(
+      and(eq(deceasedPhotosTable.id, photoId), eq(deceasedPhotosTable.userId, req.userId!)),
+    )
+    .returning();
+
+  // Remove the underlying blob so a previously known URL can no longer serve it.
+  if (row) {
+    try {
+      await objectStorageService.deleteObjectEntity(row.objectPath);
+    } catch (error) {
+      req.log.error({ err: error }, "Error deleting object blob");
+    }
+  }
   res.status(204).end();
 });
 

@@ -47,7 +47,7 @@ export default function LandingPage() {
             Notify me
           </Link>
           <Link
-            href="/app"
+            href="/sign-up"
             className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors"
           >
             Enter the experience
@@ -86,7 +86,7 @@ export default function LandingPage() {
                 Notify me at launch
               </Link>
               <Link
-                href="/app"
+                href="/sign-up"
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm text-foreground hover:border-primary/50 hover:text-primary transition-colors"
               >
                 Enter the experience
@@ -264,7 +264,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-12">
             <Link
-              href="/app"
+              href="/sign-up"
               className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
             >
               Enter the experience

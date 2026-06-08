@@ -8,6 +8,45 @@
 import * as zod from "zod";
 
 /**
+ * @summary Current authenticated account (identity + chosen role)
+ */
+export const GetMeResponse = zod.object({
+  id: zod.number(),
+  email: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  role: zod
+    .union([
+      zod.literal("seeker"),
+      zod.literal("professional"),
+      zod.literal(null),
+    ])
+    .nullable()
+    .describe("Account role (null = not yet chosen)"),
+});
+
+/**
+ * @summary Set the account role and/or display name (used after sign-up)
+ */
+export const UpdateMeBody = zod.object({
+  role: zod.enum(["seeker", "professional"]).optional(),
+  firstName: zod.string().nullish(),
+});
+
+export const UpdateMeResponse = zod.object({
+  id: zod.number(),
+  email: zod.string().nullish(),
+  firstName: zod.string().nullish(),
+  role: zod
+    .union([
+      zod.literal("seeker"),
+      zod.literal("professional"),
+      zod.literal(null),
+    ])
+    .nullable()
+    .describe("Account role (null = not yet chosen)"),
+});
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({

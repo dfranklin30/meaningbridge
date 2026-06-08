@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import usersRouter from "./users";
 import anthropicRouter from "./anthropic";
 import profileRouter from "./profile";
 import chatRouter from "./chat";
@@ -14,6 +15,7 @@ import notifyRouter from "./notify";
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(usersRouter);
 router.use("/anthropic", anthropicRouter);
 router.use(profileRouter);
 router.use("/chat", chatRouter);

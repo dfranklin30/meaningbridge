@@ -1,6 +1,7 @@
 import { pgTable, serial, integer, text, jsonb, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 /**
  * Validated clinical screener responses.
@@ -12,6 +13,9 @@ import { z } from "zod/v4";
  */
 export const screenerResultsTable = pgTable("screener_results", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   instrument: text("instrument").notNull(), // "GIS" | "GAQ" | "ISLES"
   itemResponses: jsonb("item_responses").notNull().$type<Record<string, number>>(),
   score: integer("score").notNull(),
@@ -23,6 +27,7 @@ export const screenerResultsTable = pgTable("screener_results", {
 
 export const insertScreenerResultSchema = createInsertSchema(screenerResultsTable).omit({
   id: true,
+  userId: true,
   completedAt: true,
 });
 export type ScreenerResult = typeof screenerResultsTable.$inferSelect;

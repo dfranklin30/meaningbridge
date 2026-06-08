@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc } from "drizzle-orm";
 import { db, conversations, messages } from "@workspace/db";
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import {
@@ -7,23 +7,36 @@ import {
   GetAnthropicConversationParams,
   SendAnthropicMessageBody,
 } from "@workspace/api-zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
-router.get("/conversations", async (_req, res) => {
-  const rows = await db.select().from(conversations).orderBy(desc(conversations.createdAt));
+router.use(requireAuth);
+
+router.get("/conversations", async (req, res) => {
+  const rows = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.userId, req.userId!))
+    .orderBy(desc(conversations.createdAt));
   res.json(rows);
 });
 
 router.post("/conversations", async (req, res) => {
   const body = CreateAnthropicConversationBody.parse(req.body);
-  const [row] = await db.insert(conversations).values({ title: body.title }).returning();
+  const [row] = await db
+    .insert(conversations)
+    .values({ title: body.title, userId: req.userId! })
+    .returning();
   res.status(201).json(row);
 });
 
 router.get("/conversations/:id", async (req, res) => {
   const { id } = GetAnthropicConversationParams.parse(req.params);
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, req.userId!)));
   if (!conv) { res.status(404).json({ error: "Not found" }); return; }
   const msgs = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(asc(messages.createdAt));
   res.json({ ...conv, messages: msgs });
@@ -31,12 +44,19 @@ router.get("/conversations/:id", async (req, res) => {
 
 router.delete("/conversations/:id", async (req, res) => {
   const { id } = GetAnthropicConversationParams.parse(req.params);
-  await db.delete(conversations).where(eq(conversations.id, id));
+  await db
+    .delete(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, req.userId!)));
   res.status(204).end();
 });
 
 router.get("/conversations/:id/messages", async (req, res) => {
   const { id } = GetAnthropicConversationParams.parse(req.params);
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, req.userId!)));
+  if (!conv) { res.status(404).json({ error: "Not found" }); return; }
   const msgs = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(asc(messages.createdAt));
   res.json(msgs);
 });
@@ -44,7 +64,10 @@ router.get("/conversations/:id/messages", async (req, res) => {
 router.post("/conversations/:id/messages", async (req, res) => {
   const { id } = GetAnthropicConversationParams.parse(req.params);
   const body = SendAnthropicMessageBody.parse(req.body);
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, req.userId!)));
   if (!conv) { res.status(404).json({ error: "Not found" }); return; }
 
   await db.insert(messages).values({ conversationId: id, role: "user", content: body.content });

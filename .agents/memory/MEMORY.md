@@ -1,0 +1,1 @@
+- [Express root-mounted router auth leak](express-root-router-auth-leak.md) — routers at bare `/` must use per-route requireAuth, not router.use, or they 401 sibling public routes.

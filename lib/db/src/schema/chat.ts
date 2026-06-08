@@ -1,9 +1,13 @@
 import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const chatSessionsTable = pgTable("chat_sessions", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   mode: text("mode").notNull(),
   title: text("title").notNull(),
   deceasedId: integer("deceased_id"),
@@ -23,6 +27,7 @@ export const chatMessagesTable = pgTable("chat_messages", {
 
 export const insertChatSessionSchema = createInsertSchema(chatSessionsTable).omit({
   id: true,
+  userId: true,
   createdAt: true,
 });
 export const insertChatMessageSchema = createInsertSchema(chatMessagesTable).omit({

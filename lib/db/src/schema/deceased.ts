@@ -1,9 +1,13 @@
-import { pgTable, serial, text, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, date, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const deceasedTable = pgTable("deceased_profiles", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   relationship: text("relationship").notNull(),
   lossDate: date("loss_date", { mode: "string" }),
@@ -23,6 +27,7 @@ export const deceasedTable = pgTable("deceased_profiles", {
 
 export const insertDeceasedSchema = createInsertSchema(deceasedTable).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 });

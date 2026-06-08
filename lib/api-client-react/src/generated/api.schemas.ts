@@ -99,6 +99,44 @@ export interface ProfileInput {
 }
 
 /**
+ * Account role (null = not yet chosen)
+ * @nullable
+ */
+export type MeRole = (typeof MeRole)[keyof typeof MeRole] | null;
+
+export const MeRole = {
+  seeker: "seeker",
+  professional: "professional",
+} as const;
+
+export interface Me {
+  id: number;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  firstName?: string | null;
+  /**
+   * Account role (null = not yet chosen)
+   * @nullable
+   */
+  role: MeRole;
+}
+
+export type UpdateMeInputRole =
+  (typeof UpdateMeInputRole)[keyof typeof UpdateMeInputRole];
+
+export const UpdateMeInputRole = {
+  seeker: "seeker",
+  professional: "professional",
+} as const;
+
+export interface UpdateMeInput {
+  role?: UpdateMeInputRole;
+  /** @nullable */
+  firstName?: string | null;
+}
+
+/**
  * Five integers 0-4 keyed by GIS item id (1-5).
  */
 export interface GisSubmission {

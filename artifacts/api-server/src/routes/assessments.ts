@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import {
   db,
   checkinsTable,
@@ -9,19 +9,30 @@ import {
 } from "@workspace/db";
 import { CreateCheckInBody, SubmitGisScreenerBody } from "@workspace/api-zod";
 import { tierFromGisScore, gisSafetySignal, GIS_CLINICAL_CUTPOINT } from "../lib/clinical";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
-router.get("/checkins", async (_req, res) => {
-  const rows = await db.select().from(checkinsTable).orderBy(desc(checkinsTable.createdAt));
+router.use(requireAuth);
+
+router.get("/checkins", async (req, res) => {
+  const rows = await db
+    .select()
+    .from(checkinsTable)
+    .where(eq(checkinsTable.userId, req.userId!))
+    .orderBy(desc(checkinsTable.createdAt));
   res.json(rows);
 });
 
 router.post("/checkins", async (req, res) => {
   const body = CreateCheckInBody.parse(req.body);
-  const [row] = await db.insert(checkinsTable).values(body).returning();
+  const [row] = await db
+    .insert(checkinsTable)
+    .values({ ...body, userId: req.userId! })
+    .returning();
   if (body.safetyConcern) {
     await db.insert(safetyEventsTable).values({
+      userId: req.userId!,
       source: "checkin",
       severity: "warning",
       note: body.note ?? "Safety concern indicated on check-in",
@@ -35,11 +46,16 @@ router.post("/checkins", async (req, res) => {
  * Scores the 5 items (0-4 each), assigns a public-health tier, and
  * triggers the safety layer when item 3 (self-destructive coping) >= 2.
  */
-router.get("/gis", async (_req, res) => {
+router.get("/gis", async (req, res) => {
   const rows = await db
     .select()
     .from(screenerResultsTable)
-    .where(eq(screenerResultsTable.instrument, "GIS"))
+    .where(
+      and(
+        eq(screenerResultsTable.userId, req.userId!),
+        eq(screenerResultsTable.instrument, "GIS"),
+      ),
+    )
     .orderBy(desc(screenerResultsTable.completedAt));
   res.json(
     rows.map((r) => {
@@ -84,6 +100,7 @@ router.post("/gis", async (req, res) => {
   const [row] = await db
     .insert(screenerResultsTable)
     .values({
+      userId: req.userId!,
       instrument: "GIS",
       itemResponses,
       score,
@@ -92,8 +109,12 @@ router.post("/gis", async (req, res) => {
     })
     .returning();
 
-  // Persist tier on the (single-user) profile so the companion can route on it.
-  const [existing] = await db.select().from(profileTable).orderBy(profileTable.id).limit(1);
+  // Persist tier on the user's profile so the companion can route on it.
+  const [existing] = await db
+    .select()
+    .from(profileTable)
+    .where(eq(profileTable.userId, req.userId!))
+    .limit(1);
   if (existing) {
     await db
       .update(profileTable)
@@ -107,12 +128,14 @@ router.post("/gis", async (req, res) => {
   for (const trig of safety.triggers) {
     if (trig === "item3") {
       await db.insert(safetyEventsTable).values({
+        userId: req.userId!,
         source: "gis_item3",
         severity: body.item3 >= 3 ? "critical" : "warning",
         note: `GIS item 3 score ${body.item3} indicates unhealthy coping. Total ${score}.`,
       });
     } else {
       await db.insert(safetyEventsTable).values({
+        userId: req.userId!,
         source: "gis_item5",
         severity: "warning",
         note: `GIS item 5 score ${body.item5} indicates social withdrawal. Total ${score}.`,

@@ -1,13 +1,17 @@
 import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetProfile } from "@workspace/api-client-react";
-import { Loader2, HeartHandshake } from "lucide-react";
+import { useClerk } from "@clerk/react";
+import { Loader2, HeartHandshake, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/logo";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const { data: profile, isLoading } = useGetProfile();
+  const { signOut } = useClerk();
 
   useEffect(() => {
     if (!isLoading && profile) {
@@ -62,6 +66,15 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link href="/settings" className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center text-secondary-foreground hover:bg-secondary transition-colors cursor-pointer text-xs font-medium">
               {profile?.name ? profile.name.charAt(0).toUpperCase() : "U"}
             </Link>
+            <button
+              type="button"
+              onClick={() => signOut({ redirectUrl: basePath || "/" })}
+              aria-label="Sign out"
+              title="Sign out"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>

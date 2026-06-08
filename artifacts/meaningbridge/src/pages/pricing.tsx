@@ -36,7 +36,7 @@ const PLANS: Plan[] = [
       "Crisis resources always one tap away",
     ],
     cta: "Begin",
-    ctaHref: "/onboarding",
+    ctaHref: "/sign-up",
     accent: false,
   },
   {
@@ -56,7 +56,7 @@ const PLANS: Plan[] = [
       "Personalised practice plan",
     ],
     cta: "Begin",
-    ctaHref: "/onboarding",
+    ctaHref: "/sign-up",
     accent: true,
   },
   {
@@ -98,7 +98,7 @@ export default function Pricing() {
               For caregivers
             </Link>
             <Link
-              href="/onboarding"
+              href="/sign-up"
               className="px-4 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
             >
               Begin

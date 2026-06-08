@@ -1,9 +1,13 @@
-import { pgTable, serial, text, boolean, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const profileTable = pgTable("profile", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   name: text("name"),
   firstName: text("first_name"),
   supportSystem: text("support_system"),
@@ -23,10 +27,13 @@ export const profileTable = pgTable("profile", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
-});
+}, (t) => ({
+  userIdUnique: uniqueIndex("profile_user_id_unique").on(t.userId),
+}));
 
 export const insertProfileSchema = createInsertSchema(profileTable).omit({
   id: true,
+  userId: true,
   createdAt: true,
   updatedAt: true,
 });

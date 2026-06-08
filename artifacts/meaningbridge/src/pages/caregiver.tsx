@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { Show, useClerk } from "@clerk/react";
 import {
   ArrowRight,
   ShieldAlert,
@@ -10,8 +11,43 @@ import {
   CalendarClock,
   PenLine,
   Activity,
+  LogOut,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function CaregiverAccountNav() {
+  const { signOut } = useClerk();
+  return (
+    <>
+      <Show when="signed-out">
+        <Link href="/pricing" className="hover:text-foreground transition-colors">
+          Plans
+        </Link>
+        <Link
+          href="/notify?src=caregiver-preview"
+          className="px-4 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
+        >
+          Join the caregiver waitlist
+        </Link>
+      </Show>
+      <Show when="signed-in">
+        <Link href="/pricing" className="hover:text-foreground transition-colors">
+          Plans
+        </Link>
+        <button
+          type="button"
+          onClick={() => signOut({ redirectUrl: basePath || "/" })}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Sign out
+        </button>
+      </Show>
+    </>
+  );
+}
 
 /**
  * Caregiver portal preview — all data on this page is sample data,
@@ -188,15 +224,7 @@ export default function Caregiver() {
             </div>
           </Link>
           <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/pricing" className="hover:text-foreground transition-colors">
-              Plans
-            </Link>
-            <Link
-              href="/notify?src=caregiver-preview"
-              className="px-4 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
-            >
-              Join the caregiver waitlist
-            </Link>
+            <CaregiverAccountNav />
           </nav>
         </div>
       </header>

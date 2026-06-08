@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc } from "drizzle-orm";
 import {
   db,
   chatSessionsTable,
@@ -16,23 +16,36 @@ import {
 } from "@workspace/api-zod";
 import { detectCrisis } from "../lib/crisis";
 import { meaningSystemPrompt, continuingBondsSystemPrompt } from "../lib/prompts";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
-router.get("/sessions", async (_req, res) => {
-  const rows = await db.select().from(chatSessionsTable).orderBy(desc(chatSessionsTable.createdAt));
+router.use(requireAuth);
+
+router.get("/sessions", async (req, res) => {
+  const rows = await db
+    .select()
+    .from(chatSessionsTable)
+    .where(eq(chatSessionsTable.userId, req.userId!))
+    .orderBy(desc(chatSessionsTable.createdAt));
   res.json(rows);
 });
 
 router.post("/sessions", async (req, res) => {
   const body = CreateChatSessionBody.parse(req.body);
-  const [row] = await db.insert(chatSessionsTable).values(body).returning();
+  const [row] = await db
+    .insert(chatSessionsTable)
+    .values({ ...body, userId: req.userId! })
+    .returning();
   res.status(201).json(row);
 });
 
 router.get("/sessions/:id", async (req, res) => {
   const { id } = GetChatSessionParams.parse(req.params);
-  const [session] = await db.select().from(chatSessionsTable).where(eq(chatSessionsTable.id, id));
+  const [session] = await db
+    .select()
+    .from(chatSessionsTable)
+    .where(and(eq(chatSessionsTable.id, id), eq(chatSessionsTable.userId, req.userId!)));
   if (!session) { res.status(404).json({ error: "Not found" }); return; }
   const msgs = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.sessionId, id)).orderBy(asc(chatMessagesTable.createdAt));
   res.json({ ...session, messages: msgs });
@@ -40,14 +53,19 @@ router.get("/sessions/:id", async (req, res) => {
 
 router.delete("/sessions/:id", async (req, res) => {
   const { id } = GetChatSessionParams.parse(req.params);
-  await db.delete(chatSessionsTable).where(eq(chatSessionsTable.id, id));
+  await db
+    .delete(chatSessionsTable)
+    .where(and(eq(chatSessionsTable.id, id), eq(chatSessionsTable.userId, req.userId!)));
   res.status(204).end();
 });
 
 router.post("/sessions/:id/messages", async (req, res) => {
   const { id } = GetChatSessionParams.parse(req.params);
   const body = SendChatMessageBody.parse(req.body);
-  const [session] = await db.select().from(chatSessionsTable).where(eq(chatSessionsTable.id, id));
+  const [session] = await db
+    .select()
+    .from(chatSessionsTable)
+    .where(and(eq(chatSessionsTable.id, id), eq(chatSessionsTable.userId, req.userId!)));
   if (!session) { res.status(404).json({ error: "Not found" }); return; }
 
   const crisis = detectCrisis(body.content);
@@ -59,19 +77,27 @@ router.post("/sessions/:id/messages", async (req, res) => {
   });
   if (crisis) {
     await db.insert(safetyEventsTable).values({
+      userId: req.userId!,
       source: "chat",
       severity: "critical",
       note: `Crisis language detected in chat session ${id}`,
     });
   }
 
-  const [profile] = await db.select().from(profileTable).orderBy(profileTable.id).limit(1);
+  const [profile] = await db
+    .select()
+    .from(profileTable)
+    .where(eq(profileTable.userId, req.userId!))
+    .limit(1);
 
   let systemPrompt: string;
   if (session.mode === "continuing-bonds") {
     let deceased = null;
     if (session.deceasedId) {
-      const [d] = await db.select().from(deceasedTable).where(eq(deceasedTable.id, session.deceasedId));
+      const [d] = await db
+        .select()
+        .from(deceasedTable)
+        .where(and(eq(deceasedTable.id, session.deceasedId), eq(deceasedTable.userId, req.userId!)));
       deceased = d ?? null;
     }
     systemPrompt = continuingBondsSystemPrompt({ profile: profile ?? null, deceased });

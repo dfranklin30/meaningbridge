@@ -28,7 +28,38 @@ tags:
     description: Safety and crisis events
   - name: notify
     description: Public launch-notification opt-in list
+  - name: account
+    description: Current authenticated account (identity and role)
 paths:
+  /me:
+    get:
+      operationId: getMe
+      tags: [account]
+      summary: Current authenticated account (identity + chosen role)
+      responses:
+        "200":
+          description: Current account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+    patch:
+      operationId: updateMe
+      tags: [account]
+      summary: Set the account role and/or display name (used after sign-up)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeInput"
+      responses:
+        "200":
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
   /healthz:
     get:
       operationId: healthCheck
@@ -752,6 +783,25 @@ components:
         consentJournal: { type: boolean }
         consentContinuingBonds: { type: boolean }
         onboardingComplete: { type: boolean }
+
+    Me:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
+        role:
+          type: ["string", "null"]
+          enum: ["seeker", "professional", null]
+          description: "Account role (null = not yet chosen)"
+      required: [id, role]
+    UpdateMeInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: ["seeker", "professional"]
+        firstName: { type: ["string", "null"] }
 
     GisSubmission:
       type: object

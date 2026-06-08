@@ -25,9 +25,9 @@ export const TIER_NARRATIVE: Record<Tier, string> = {
   universal:
     "Most of what you are carrying sounds like the ordinary, unbearable weight of grief. There is nothing wrong with you. This space will keep you company — gentle conversation, room to remember, small daily practices when you want them.",
   targeted:
-    "Some of what you are carrying feels heavier than grief usually asks of us. This space will stay close, with gentler prompts and steadier check-ins. When it would help, we will quietly point you toward people, groups, and supports who can walk alongside us.",
+    "Some of what you are carrying feels heavier than grief usually asks of us. This space will stay close, with gentler prompts and steadier check-ins. When it would help, we will quietly point you toward people, groups, and supports who can be there with you.",
   clinical:
-    "Some of what you are carrying deserves a trained human alongside you — not because anything is broken, but because the weight of it is real. This space will keep you company, and it will keep returning to one quiet suggestion: a grief therapist can help here in ways we cannot. You are not alone.",
+    "Some of what you are carrying deserves the support of a trained human — not because anything is broken, but because the weight of it is real. This space will keep you company, and it will keep returning to one quiet suggestion: a grief therapist can help here in ways we cannot. You are not alone.",
 };
 
 export interface GisItem {

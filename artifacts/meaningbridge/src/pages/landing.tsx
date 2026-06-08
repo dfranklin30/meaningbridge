@@ -41,7 +41,7 @@ export default function LandingPage() {
             Plans
           </Link>
           <Link href="/caregiver" className="hover:text-foreground transition-colors">
-            For caregivers
+            For professionals
           </Link>
           <Link href="/notify" className="hover:text-foreground transition-colors">
             Notify me

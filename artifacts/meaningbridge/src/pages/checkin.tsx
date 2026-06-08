@@ -3,20 +3,54 @@ import { useLocation } from "wouter";
 import { useCreateCheckIn, getListCheckInsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
+function ScaleSlider({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-4">
+        <label className="text-sm font-medium">{label}</label>
+        <span className="text-base font-serif text-primary tabular-nums" aria-hidden="true">
+          {value}
+        </span>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max="10"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value))}
+        className="w-full accent-primary"
+        aria-label={`${label}, ${value} out of 10`}
+      />
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>0</span>
+        <span>10</span>
+      </div>
+    </div>
+  );
+}
+
 export default function CheckIn() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  
+
   const [distress, setDistress] = useState(5);
   const [meaning, setMeaning] = useState(5);
   const [connection, setConnection] = useState(5);
   const [functioning, setFunctioning] = useState(5);
   const [safetyConcern, setSafetyConcern] = useState(false);
   const [note, setNote] = useState("");
-  
+
   const [submitted, setSubmitted] = useState(false);
 
-  const { mutateAsync: createCheckIn } = useCreateCheckIn();
+  const { mutateAsync: createCheckIn, isPending } = useCreateCheckIn();
 
   const handleSubmit = async () => {
     try {
@@ -48,40 +82,30 @@ export default function CheckIn() {
       </div>
 
       <div className="bg-card border border-border p-6 rounded-xl space-y-8">
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Level of distress or pain</label>
-          <input type="range" min="0" max="10" value={distress} onChange={(e) => setDistress(parseInt(e.target.value))} className="w-full accent-primary" />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Sense of meaning or coherence</label>
-          <input type="range" min="0" max="10" value={meaning} onChange={(e) => setMeaning(parseInt(e.target.value))} className="w-full accent-primary" />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Feeling of connection to your loved one</label>
-          <input type="range" min="0" max="10" value={connection} onChange={(e) => setConnection(parseInt(e.target.value))} className="w-full accent-primary" />
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-sm font-medium">Ability to function today</label>
-          <input type="range" min="0" max="10" value={functioning} onChange={(e) => setFunctioning(parseInt(e.target.value))} className="w-full accent-primary" />
-        </div>
+        <ScaleSlider label="Level of distress or pain" value={distress} onChange={setDistress} />
+        <ScaleSlider label="Sense of meaning or coherence" value={meaning} onChange={setMeaning} />
+        <ScaleSlider
+          label="Feeling of connection to your loved one"
+          value={connection}
+          onChange={setConnection}
+        />
+        <ScaleSlider label="Ability to function today" value={functioning} onChange={setFunctioning} />
 
         <div className="space-y-4 pt-4 border-t border-border">
-          <textarea 
+          <textarea
             className="w-full bg-background border border-border rounded-md px-4 py-3 min-h-[100px]"
             placeholder="Any notes about today? (Optional)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
         </div>
-        
-        <button 
-          className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium"
+
+        <button
+          className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium transition-opacity hover:opacity-90 disabled:opacity-60"
           onClick={handleSubmit}
+          disabled={isPending}
         >
-          Save Check-in
+          {isPending ? "Saving" : "Save Check-in"}
         </button>
       </div>
     </div>

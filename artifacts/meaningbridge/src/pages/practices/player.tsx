@@ -4,17 +4,57 @@ import { useGetPractice, getGetPracticeQueryKey } from "@workspace/api-client-re
 import { ArrowLeft, ChevronRight, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const BREATH_PHASES = [
+  { label: "Breathe in", scale: 1 },
+  { label: "Hold", scale: 1 },
+  { label: "Breathe out", scale: 0.6 },
+  { label: "Hold", scale: 0.6 },
+] as const;
+
+const PHASE_SECONDS = 4;
+const CYCLE_SECONDS = BREATH_PHASES.length * PHASE_SECONDS;
+
+function BreathCounter() {
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => (t + 1) % CYCLE_SECONDS), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const phaseIndex = Math.floor(tick / PHASE_SECONDS);
+  const phase = BREATH_PHASES[phaseIndex];
+  const count = (tick % PHASE_SECONDS) + 1;
+
+  return (
+    <div className="flex flex-col items-center gap-4" aria-hidden="true">
+      <div className="relative w-40 h-40 flex items-center justify-center">
+        <motion.div
+          className="absolute inset-0 rounded-full bg-primary/10 border border-primary/20"
+          initial={{ scale: 0.6 }}
+          animate={{ scale: phase.scale }}
+          transition={{ duration: PHASE_SECONDS, ease: [0.42, 0, 0.58, 1] }}
+        />
+        <span className="relative font-serif text-4xl text-primary tabular-nums">{count}</span>
+      </div>
+      <p className="text-sm text-muted-foreground tracking-wide">{phase.label}</p>
+    </div>
+  );
+}
+
 export default function PracticePlayer() {
   const { id } = useParams();
   const practiceId = parseInt(id || "0");
   const { data: practice } = useGetPractice(practiceId, { query: { enabled: !!practiceId, queryKey: getGetPracticeQueryKey(practiceId) } });
 
   const [currentStep, setCurrentStep] = useState(0);
+  const [showCounter, setShowCounter] = useState(true);
 
   if (!practice) return null;
 
   const steps = practice.steps;
   const isLast = currentStep === steps.length - 1;
+  const isBreathwork = practice.category === "breathwork";
 
   return (
     <div className="max-w-2xl mx-auto min-h-[calc(100vh-10rem)] flex flex-col">
@@ -30,9 +70,20 @@ export default function PracticePlayer() {
             <span>{practice.durationMinutes} min</span>
           </div>
         </div>
+        {isBreathwork && (
+          <button
+            type="button"
+            onClick={() => setShowCounter((v) => !v)}
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+            aria-pressed={showCounter}
+          >
+            {showCounter ? "Hide counter" : "Show counter"}
+          </button>
+        )}
       </div>
 
-      <div className="flex-1 flex flex-col justify-center py-12 relative">
+      <div className="flex-1 flex flex-col items-center justify-center py-12 gap-10 relative">
+        {isBreathwork && showCounter && <BreathCounter />}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}

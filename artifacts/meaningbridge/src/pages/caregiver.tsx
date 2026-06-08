@@ -29,7 +29,7 @@ function CaregiverAccountNav() {
           href="/notify?src=caregiver-preview"
           className="px-4 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
         >
-          Join the caregiver waitlist
+          Join the professional waitlist
         </Link>
       </Show>
       <Show when="signed-in">
@@ -237,10 +237,10 @@ export default function Caregiver() {
           className="space-y-4 max-w-3xl"
         >
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            Caregiver portal — preview with sample data
+            Professional portal — preview with sample data
           </p>
           <h1 className="text-3xl md:text-4xl font-serif leading-tight">
-            See how the people you walk with are doing.
+            See how the people in your care are doing.
           </h1>
           <p className="text-base text-muted-foreground leading-relaxed">
             With each person&apos;s logged consent, MeaningBridge gives you a quiet, honest read
@@ -250,7 +250,7 @@ export default function Caregiver() {
         </motion.section>
 
         <section className="grid sm:grid-cols-3 gap-4">
-          <StatCard label="People you walk with" value={String(PATIENTS.length)} hint="active in the past 14 days" />
+          <StatCard label="People in your care" value={String(PATIENTS.length)} hint="active in the past 14 days" />
           <StatCard
             label="Safety signals"
             value={String(totalFlags)}
@@ -435,7 +435,7 @@ export default function Caregiver() {
         >
           <div className="md:col-span-1 space-y-3">
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              Why caregivers join
+              Why professionals join
             </p>
             <h3 className="text-xl font-serif leading-snug">
               MeaningBridge holds the space between sessions — so you can hold the space inside
@@ -463,7 +463,7 @@ export default function Caregiver() {
             href="/notify?src=caregiver-preview"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
           >
-            Join the caregiver waitlist
+            Join the professional waitlist
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </section>

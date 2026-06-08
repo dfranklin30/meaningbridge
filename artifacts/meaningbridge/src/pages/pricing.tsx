@@ -25,7 +25,7 @@ const PLANS: Plan[] = [
     name: "Companion",
     price: "Free",
     cadence: "for the first 90 days",
-    forWhom: "For everyone walking with grief.",
+    forWhom: "For everyone living with grief.",
     pitch:
       "Most people do not need treatment. They need a quiet, attentive presence — and time.",
     features: [
@@ -65,7 +65,7 @@ const PLANS: Plan[] = [
     name: "Specialist",
     price: "$89",
     cadence: "per month",
-    forWhom: "For grief that deserves a trained human alongside you.",
+    forWhom: "For grief that deserves the support of a trained human.",
     pitch:
       "A licensed grief therapist matched to you, with the companion holding the space between sessions.",
     features: [
@@ -95,7 +95,7 @@ export default function Pricing() {
           </Link>
           <nav className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="/caregiver" className="hover:text-foreground transition-colors">
-              For caregivers
+              For professionals
             </Link>
             <Link
               href="/sign-up"
@@ -198,7 +198,7 @@ export default function Pricing() {
           <p className="text-base text-muted-foreground leading-relaxed">
             About six in ten people who lose someone they love need understanding, not treatment.
             About three in ten benefit from a little more company. About one in ten are carrying
-            something a trained human should walk through with them. Your plan should follow your
+            something a trained human should help them through. Your plan should follow your
             need — and change as your need changes. You can move up or down at any time, with no
             friction.
           </p>
@@ -221,7 +221,7 @@ export default function Pricing() {
             MeaningBridge extends your care between sessions.
           </h2>
           <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            With the person&apos;s logged consent, see how those you walk with are doing, read brief
+            With the person&apos;s logged consent, see how the people in your care are doing, read brief
             session summaries before you meet, and step in when a safety signal asks for you.
             You stay in the lead.
           </p>
@@ -229,7 +229,7 @@ export default function Pricing() {
             href="/caregiver"
             className="inline-flex items-center gap-2 text-sm text-foreground border-b border-foreground/30 hover:border-foreground pb-0.5 transition-colors"
           >
-            Preview the caregiver portal
+            Preview the professional portal
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </motion.section>

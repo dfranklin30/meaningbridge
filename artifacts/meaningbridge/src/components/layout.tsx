@@ -2,7 +2,7 @@ import { ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useGetProfile } from "@workspace/api-client-react";
 import { useClerk } from "@clerk/react";
-import { Loader2, HeartHandshake, LogOut } from "lucide-react";
+import { Loader2, HeartHandshake, LogOut, Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/logo";
 
@@ -40,6 +40,15 @@ export function Layout({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
+  const isActive = (path: string) =>
+    path === "/app" ? location === "/app" : location.startsWith(path);
+  const navLinkCls = (path: string) =>
+    `transition-colors ${isActive(path) ? "text-foreground" : "hover:text-foreground"}`;
+  const mobileLinkCls = (path: string) =>
+    `flex flex-col items-center gap-1 transition-opacity ${
+      isActive(path) ? "opacity-100 text-foreground" : "opacity-70 hover:opacity-100"
+    }`;
+
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col font-sans text-foreground selection:bg-primary/20">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
@@ -51,11 +60,12 @@ export function Layout({ children }: { children: ReactNode }) {
           </Link>
           
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/companion" className="hover:text-foreground transition-colors">Companion</Link>
-            <Link href="/journal" className="hover:text-foreground transition-colors">Journal</Link>
-            <Link href="/practices" className="hover:text-foreground transition-colors">Practices</Link>
-            <Link href="/dashboard" className="hover:text-foreground transition-colors">Insights</Link>
-            <Link href="/loved-one" className="hover:text-foreground transition-colors">Loved One</Link>
+            <Link href="/app" className={navLinkCls("/app")}>Home</Link>
+            <Link href="/companion" className={navLinkCls("/companion")}>Companion</Link>
+            <Link href="/journal" className={navLinkCls("/journal")}>Journal</Link>
+            <Link href="/practices" className={navLinkCls("/practices")}>Practices</Link>
+            <Link href="/dashboard" className={navLinkCls("/dashboard")}>Insights</Link>
+            <Link href="/loved-one" className={navLinkCls("/loved-one")}>Loved One</Link>
           </nav>
           
           <div className="flex items-center gap-4">
@@ -81,10 +91,14 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Mobile Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur border-t border-border flex items-center justify-around p-3 text-xs text-muted-foreground pb-safe">
-        <Link href="/companion" className="flex flex-col items-center gap-1 opacity-70 hover:opacity-100"><span className="font-serif">Chat</span></Link>
-        <Link href="/journal" className="flex flex-col items-center gap-1 opacity-70 hover:opacity-100"><span className="font-serif">Journal</span></Link>
-        <Link href="/practices" className="flex flex-col items-center gap-1 opacity-70 hover:opacity-100"><span className="font-serif">Practices</span></Link>
-        <Link href="/dashboard" className="flex flex-col items-center gap-1 opacity-70 hover:opacity-100"><span className="font-serif">Insights</span></Link>
+        <Link href="/app" className={mobileLinkCls("/app")}>
+          <Home className="w-4 h-4" />
+          <span className="font-serif">Home</span>
+        </Link>
+        <Link href="/companion" className={mobileLinkCls("/companion")}><span className="font-serif">Chat</span></Link>
+        <Link href="/journal" className={mobileLinkCls("/journal")}><span className="font-serif">Journal</span></Link>
+        <Link href="/practices" className={mobileLinkCls("/practices")}><span className="font-serif">Practices</span></Link>
+        <Link href="/dashboard" className={mobileLinkCls("/dashboard")}><span className="font-serif">Insights</span></Link>
       </div>
 
       <main className="flex-1 container max-w-4xl mx-auto px-4 py-8 md:py-12 pb-24 md:pb-12">

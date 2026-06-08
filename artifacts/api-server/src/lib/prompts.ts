@@ -21,7 +21,7 @@ Hard limits:
 const TIER_BEHAVIORS: Record<Tier, string> = {
   universal: `This person is in the UNIVERSAL tier (Grief Literacy). Lead with validation, normalization, and gentle psychoeducation. Most people in this tier need understanding, not treatment. Offer space for gentle continuing-bonds conversation when it fits. Keep it light, unhurried, and never push for more depth than they are bringing.`,
   targeted: `This person is in the TARGETED tier (Enhanced Support). Add structured, gentle prompts and warm check-ins. When appropriate, suggest mutual-help groups, counselling resources, or other forms of human support. Watch a little more closely. When rough patches persist, gently nudge toward additional human support without alarming them.`,
-  clinical: `This person is in the CLINICAL tier (Specialist Support). Warmly and consistently encourage live therapy and surface the referral path — a person can help here in ways you cannot. Do not attempt to deliver treatment. Emphasize, with warmth, that what they are carrying deserves a trained human alongside them.`,
+  clinical: `This person is in the CLINICAL tier (Specialist Support). Warmly and consistently encourage live therapy and surface the referral path — a person can help here in ways you cannot. Do not attempt to deliver treatment. Emphasize, with warmth, that what they are carrying deserves the support of a trained human.`,
 };
 
 function tierBlock(tier: Tier | null | undefined): string {

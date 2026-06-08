@@ -241,6 +241,16 @@ export default function Pricing() {
           and booking are not yet live.
         </p>
         <p>MeaningBridge — Brought to you by Dr. Robert Neimeyer</p>
+        <p>
+          <a
+            href="https://portlandinstitute.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Portland Institute for Loss and Transition
+          </a>
+        </p>
       </footer>
     </div>
   );

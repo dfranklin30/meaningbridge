@@ -469,8 +469,19 @@ export default function Caregiver() {
         </section>
       </main>
 
-      <footer className="border-t border-border py-10 text-center text-xs text-muted-foreground">
-        Preview — sample data shown for demonstration. No real patient information.
+      <footer className="border-t border-border py-10 text-center text-xs text-muted-foreground space-y-1">
+        <p>Preview — sample data shown for demonstration. No real patient information.</p>
+        <p>MeaningBridge — Brought to you by Dr. Robert Neimeyer</p>
+        <p>
+          <a
+            href="https://portlandinstitute.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Portland Institute for Loss and Transition
+          </a>
+        </p>
       </footer>
     </div>
   );

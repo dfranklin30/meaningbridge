@@ -14,6 +14,13 @@ const BREATH_PHASES = [
 const PHASE_SECONDS = 4;
 const CYCLE_SECONDS = BREATH_PHASES.length * PHASE_SECONDS;
 
+const COUNTER_PREF_KEY = "meaningbridge:breath-counter-visible";
+
+function readCounterPref() {
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(COUNTER_PREF_KEY) !== "false";
+}
+
 function BreathCounter() {
   const [tick, setTick] = useState(0);
 
@@ -48,7 +55,12 @@ export default function PracticePlayer() {
   const { data: practice } = useGetPractice(practiceId, { query: { enabled: !!practiceId, queryKey: getGetPracticeQueryKey(practiceId) } });
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [showCounter, setShowCounter] = useState(true);
+  const [showCounter, setShowCounter] = useState(readCounterPref);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(COUNTER_PREF_KEY, String(showCounter));
+  }, [showCounter]);
 
   if (!practice) return null;
 

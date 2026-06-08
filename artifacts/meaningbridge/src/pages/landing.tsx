@@ -34,24 +34,29 @@ export default function LandingPage() {
       {/* Living, slowly-drifting aurora background */}
       <LivingBackground />
 
-      <header className="relative z-10 px-6 py-6 max-w-6xl mx-auto flex items-center justify-between">
+      <header className="relative z-10 px-6 py-6 max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <Logo variant="lockup" size={48} />
-        <nav className="flex items-center gap-5 text-sm text-muted-foreground">
-          <Link href="/pricing" className="hover:text-foreground transition-colors">
-            Plans
-          </Link>
-          <Link href="/caregiver" className="hover:text-foreground transition-colors">
-            For professionals
-          </Link>
-          <Link href="/notify" className="hover:text-foreground transition-colors">
-            Notify me
-          </Link>
+        <nav className="flex items-center gap-1 sm:gap-2 text-sm font-medium">
+          {[
+            { href: "/pricing", label: "Plans" },
+            { href: "/caregiver", label: "For professionals" },
+            { href: "/notify", label: "Notify me" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group relative inline-flex items-center px-3 py-2 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+            >
+              {item.label}
+              <span className="pointer-events-none absolute left-3 right-3 -bottom-0.5 h-px origin-left scale-x-0 bg-primary/60 transition-transform duration-300 group-hover:scale-x-100" />
+            </Link>
+          ))}
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-1.5 text-foreground hover:text-primary transition-colors"
+            className="group ml-1 sm:ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
           >
             Enter the experience
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
           </Link>
         </nav>
       </header>

@@ -531,6 +531,18 @@ export const ListPracticesResponseItem = zod.object({
   durationMinutes: zod.number(),
   summary: zod.string(),
   steps: zod.array(zod.string()),
+  breathPattern: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        seconds: zod.number(),
+        scale: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
+    ),
 });
 export const ListPracticesResponse = zod.array(ListPracticesResponseItem);
 
@@ -548,6 +560,18 @@ export const GetPracticeResponse = zod.object({
   durationMinutes: zod.number(),
   summary: zod.string(),
   steps: zod.array(zod.string()),
+  breathPattern: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        seconds: zod.number(),
+        scale: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
+    ),
 });
 
 /**
@@ -625,6 +649,18 @@ export const GetDashboardSummaryResponse = zod.object({
       durationMinutes: zod.number(),
       summary: zod.string(),
       steps: zod.array(zod.string()),
+      breathPattern: zod
+        .array(
+          zod.object({
+            label: zod.string(),
+            seconds: zod.number(),
+            scale: zod.number(),
+          }),
+        )
+        .nullish()
+        .describe(
+          "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
+        ),
     }),
   ),
   suggestedPrompts: zod.array(

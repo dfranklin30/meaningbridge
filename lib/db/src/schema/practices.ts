@@ -1,4 +1,10 @@
-import { pgTable, serial, text, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, jsonb } from "drizzle-orm/pg-core";
+
+export type BreathPhase = {
+  label: string;
+  seconds: number;
+  scale: number;
+};
 
 export const practicesTable = pgTable("practices", {
   id: serial("id").primaryKey(),
@@ -8,6 +14,7 @@ export const practicesTable = pgTable("practices", {
   durationMinutes: integer("duration_minutes").notNull(),
   summary: text("summary").notNull(),
   steps: text("steps").array().notNull(),
+  breathPattern: jsonb("breath_pattern").$type<BreathPhase[]>(),
 });
 
 export type Practice = typeof practicesTable.$inferSelect;

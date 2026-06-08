@@ -41,6 +41,7 @@ export * from "./notifyOptIn";
 export * from "./notifyOptInInput";
 export * from "./notifyOptInResult";
 export * from "./practice";
+export * from "./practiceBreathPatternItem";
 export * from "./profile";
 export * from "./profileInput";
 export * from "./profileTier";

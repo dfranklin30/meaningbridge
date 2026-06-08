@@ -1188,6 +1188,16 @@ components:
         steps:
           type: array
           items: { type: string }
+        breathPattern:
+          type: ["array", "null"]
+          description: "Ordered breath phases for the on-screen pacer. Null or empty means no counter."
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              seconds: { type: integer }
+              scale: { type: number }
+            required: [label, seconds, scale]
       required: [id, slug, title, category, durationMinutes, summary, steps]
 
     Therapist:

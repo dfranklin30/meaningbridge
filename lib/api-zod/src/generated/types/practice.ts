@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { PracticeBreathPatternItem } from "./practiceBreathPatternItem";
 
 export interface Practice {
   id: number;
@@ -15,4 +16,9 @@ export interface Practice {
   durationMinutes: number;
   summary: string;
   steps: string[];
+  /**
+   * Ordered breath phases for the on-screen pacer. Null or empty means no counter.
+   * @nullable
+   */
+  breathPattern?: PracticeBreathPatternItem[] | null;
 }

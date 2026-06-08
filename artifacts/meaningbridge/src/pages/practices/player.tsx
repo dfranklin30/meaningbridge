@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { useGetPractice, getGetPracticeQueryKey } from "@workspace/api-client-react";
+import type { PracticeBreathPatternItem } from "@workspace/api-client-react";
 import { ArrowLeft, ChevronRight, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-const BREATH_PHASES = [
-  { label: "Breathe in", scale: 1 },
-  { label: "Hold", scale: 1 },
-  { label: "Breathe out", scale: 0.6 },
-  { label: "Hold", scale: 0.6 },
-] as const;
-
-const PHASE_SECONDS = 4;
-const CYCLE_SECONDS = BREATH_PHASES.length * PHASE_SECONDS;
 
 const COUNTER_PREF_KEY = "meaningbridge:breath-counter-visible";
 
@@ -21,17 +12,28 @@ function readCounterPref() {
   return window.localStorage.getItem(COUNTER_PREF_KEY) !== "false";
 }
 
-function BreathCounter() {
+function BreathCounter({ phases }: { phases: PracticeBreathPatternItem[] }) {
+  const cycleSeconds = phases.reduce((sum, p) => sum + p.seconds, 0);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => (t + 1) % CYCLE_SECONDS), 1000);
+    setTick(0);
+    if (cycleSeconds <= 0) return;
+    const id = setInterval(() => setTick((t) => (t + 1) % cycleSeconds), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [cycleSeconds]);
 
-  const phaseIndex = Math.floor(tick / PHASE_SECONDS);
-  const phase = BREATH_PHASES[phaseIndex];
-  const count = (tick % PHASE_SECONDS) + 1;
+  let remaining = tick;
+  let phase = phases[0];
+  let count = 1;
+  for (const p of phases) {
+    if (remaining < p.seconds) {
+      phase = p;
+      count = remaining + 1;
+      break;
+    }
+    remaining -= p.seconds;
+  }
 
   return (
     <div className="flex flex-col items-center gap-4" aria-hidden="true">
@@ -40,7 +42,7 @@ function BreathCounter() {
           className="absolute inset-0 rounded-full bg-primary/10 border border-primary/20"
           initial={{ scale: 0.6 }}
           animate={{ scale: phase.scale }}
-          transition={{ duration: PHASE_SECONDS, ease: [0.42, 0, 0.58, 1] }}
+          transition={{ duration: phase.seconds, ease: [0.42, 0, 0.58, 1] }}
         />
         <span className="relative font-serif text-4xl text-primary tabular-nums">{count}</span>
       </div>
@@ -66,7 +68,8 @@ export default function PracticePlayer() {
 
   const steps = practice.steps;
   const isLast = currentStep === steps.length - 1;
-  const isBreathwork = practice.category === "breathwork";
+  const breathPattern = practice.breathPattern ?? [];
+  const hasCounter = breathPattern.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto min-h-[calc(100vh-10rem)] flex flex-col">
@@ -82,7 +85,7 @@ export default function PracticePlayer() {
             <span>{practice.durationMinutes} min</span>
           </div>
         </div>
-        {isBreathwork && (
+        {hasCounter && (
           <button
             type="button"
             onClick={() => setShowCounter((v) => !v)}
@@ -95,7 +98,7 @@ export default function PracticePlayer() {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center py-12 gap-10 relative">
-        {isBreathwork && showCounter && <BreathCounter />}
+        {hasCounter && showCounter && <BreathCounter phases={breathPattern} />}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}

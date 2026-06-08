@@ -384,6 +384,12 @@ export interface CheckInInput {
   note?: string | null;
 }
 
+export type PracticeBreathPatternItem = {
+  label: string;
+  seconds: number;
+  scale: number;
+};
+
 export interface Practice {
   id: number;
   slug: string;
@@ -393,6 +399,11 @@ export interface Practice {
   durationMinutes: number;
   summary: string;
   steps: string[];
+  /**
+   * Ordered breath phases for the on-screen pacer. Null or empty means no counter.
+   * @nullable
+   */
+  breathPattern?: PracticeBreathPatternItem[] | null;
 }
 
 export interface Therapist {

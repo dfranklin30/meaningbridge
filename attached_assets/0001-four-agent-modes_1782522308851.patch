@@ -1,0 +1,169 @@
+From f48cbe6c7025ca84523024fad462078b18bc703d Mon Sep 17 00:00:00 2001
+From: dfranklin30 <daniellefranklin808@gmail.com>
+Date: Sat, 27 Jun 2026 00:31:39 +0000
+Subject: [PATCH] Add Journaling Coach and Self-Guided Practices agent modes
+
+Make all four companion modes use distinct system prompts. Adds
+journalingSystemPrompt + practicesSystemPrompt and a systemPromptForMode
+dispatcher; chat route routes each session.mode to its prompt; companion
+page exposes the two new mode cards.
+---
+ artifacts/api-server/src/lib/prompts.ts       | 38 ++++++++++++++++++
+ artifacts/api-server/src/routes/chat.ts       | 28 ++++++-------
+ .../src/pages/companion/index.tsx             | 40 ++++++++++++++++++-
+ 3 files changed, 91 insertions(+), 15 deletions(-)
+
+diff --git a/artifacts/api-server/src/lib/prompts.ts b/artifacts/api-server/src/lib/prompts.ts
+index 23709bf..74442b0 100644
+--- a/artifacts/api-server/src/lib/prompts.ts
++++ b/artifacts/api-server/src/lib/prompts.ts
+@@ -64,3 +64,41 @@ Relationship to the user: ${deceased.relationship}${deceased.lossDate ? `\nDate
+ 
+ You work within the Continuing Bonds model of grief (Klass, Silverman, Nickman). The relationship with someone who has died does not end; it transforms. Help the user notice, name, and tend that ongoing bond — through memory, dialogue, ritual, and small daily acts of remembrance. Follow their pace; never push a re-experiencing they did not ask for.${profile}${HARD_LIMITS}${SAFETY_FOOTER}`;
+ }
++
++export function journalingSystemPrompt(ctx: PromptContext = {}): string {
++  return `${SHARED_VOICE}${greetingBlock(ctx.profile?.firstName)}${tierBlock(ctx.profile?.tier as Tier | null | undefined)}
++
++You are acting as a gentle Journaling Coach for grief, grounded in Neimeyer's meaning-reconstruction work. Your job is to help the person write — not to write for them, and not to analyze them. Offer one inviting prompt at a time and then make space. Draw prompts from these categories, choosing what fits where the person is: a letter to the person who died; unfinished business (things left unsaid); preserving a memory; meaning after loss; anger, guilt, or regret; who they are becoming; the continuing bond; gratitude and legacy.
++
++When they share what they wrote, receive it before responding — reflect a phrase back, notice what carries weight, and ask whether they would like to go further or sit with it. Keep your own words spare so theirs have room. Never grade, interpret, or rush. If strong emotion surfaces, slow down and remind them they can pause anytime.${HARD_LIMITS}${SAFETY_FOOTER}`;
++}
++
++export function practicesSystemPrompt(ctx: PromptContext = {}): string {
++  return `${SHARED_VOICE}${greetingBlock(ctx.profile?.firstName)}${tierBlock(ctx.profile?.tier as Tier | null | undefined)}
++
++You are guiding Self-Guided Practices for grief — small, optional, embodied exercises the person can do in a few minutes. Offer to lead one at a time and let them choose: a short grounding or breathing practice; a simple memorial ritual; an art or image prompt; a values reflection ("what would I carry forward?"); or a brief meaning-reconstruction reflection. Always describe the practice plainly first and ask consent before beginning.
++
++Pace it for them: short steps, calm language, generous pauses, and frequent permission to stop, skip, or open their eyes. These are invitations, never assignments. For breathing or grounding, keep instructions gentle and unforced — never imply they are doing it wrong. After a practice, ask simply how it landed, and follow their lead on whether to continue.${HARD_LIMITS}${SAFETY_FOOTER}`;
++}
++
++/**
++ * Dispatch to the right system prompt for a chat session's mode.
++ * Modes: "meaning" | "continuing-bonds" | "journaling" | "practices".
++ * Unknown modes fall back to the meaning-focused prompt.
++ */
++export function systemPromptForMode(
++  mode: string,
++  ctx: PromptContext = {},
++): string {
++  switch (mode) {
++    case "continuing-bonds":
++      return continuingBondsSystemPrompt(ctx);
++    case "journaling":
++      return journalingSystemPrompt(ctx);
++    case "practices":
++      return practicesSystemPrompt(ctx);
++    case "meaning":
++    default:
++      return meaningSystemPrompt(ctx);
++  }
++}
+diff --git a/artifacts/api-server/src/routes/chat.ts b/artifacts/api-server/src/routes/chat.ts
+index a8f5899..8cfed59 100644
+--- a/artifacts/api-server/src/routes/chat.ts
++++ b/artifacts/api-server/src/routes/chat.ts
+@@ -15,7 +15,7 @@ import {
+   SendChatMessageBody,
+ } from "@workspace/api-zod";
+ import { detectCrisis } from "../lib/crisis";
+-import { meaningSystemPrompt, continuingBondsSystemPrompt } from "../lib/prompts";
++import { systemPromptForMode } from "../lib/prompts";
+ import { requireAuth } from "../middlewares/requireAuth";
+ 
+ const router: IRouter = Router();
+@@ -90,20 +90,20 @@ router.post("/sessions/:id/messages", async (req, res) => {
+     .where(eq(profileTable.userId, req.userId!))
+     .limit(1);
+ 
+-  let systemPrompt: string;
+-  if (session.mode === "continuing-bonds") {
+-    let deceased = null;
+-    if (session.deceasedId) {
+-      const [d] = await db
+-        .select()
+-        .from(deceasedTable)
+-        .where(and(eq(deceasedTable.id, session.deceasedId), eq(deceasedTable.userId, req.userId!)));
+-      deceased = d ?? null;
+-    }
+-    systemPrompt = continuingBondsSystemPrompt({ profile: profile ?? null, deceased });
+-  } else {
+-    systemPrompt = meaningSystemPrompt({ profile: profile ?? null });
++  // Continuing-bonds work needs the deceased profile for context; the other
++  // modes do not, so we only load it when relevant.
++  let deceased = null;
++  if (session.mode === "continuing-bonds" && session.deceasedId) {
++    const [d] = await db
++      .select()
++      .from(deceasedTable)
++      .where(and(eq(deceasedTable.id, session.deceasedId), eq(deceasedTable.userId, req.userId!)));
++    deceased = d ?? null;
+   }
++  const systemPrompt = systemPromptForMode(session.mode, {
++    profile: profile ?? null,
++    deceased,
++  });
+ 
+   const history = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.sessionId, id)).orderBy(asc(chatMessagesTable.createdAt));
+ 
+diff --git a/artifacts/meaningbridge/src/pages/companion/index.tsx b/artifacts/meaningbridge/src/pages/companion/index.tsx
+index 0419bc6..4c51f3e 100644
+--- a/artifacts/meaningbridge/src/pages/companion/index.tsx
++++ b/artifacts/meaningbridge/src/pages/companion/index.tsx
+@@ -2,7 +2,7 @@ import { useState } from "react";
+ import { Link, useLocation } from "wouter";
+ import { useListChatSessions, useCreateChatSession, getListChatSessionsQueryKey, useListDeceasedProfiles } from "@workspace/api-client-react";
+ import { useQueryClient } from "@tanstack/react-query";
+-import { MessageSquare, Anchor, Plus } from "lucide-react";
++import { MessageSquare, Anchor, Plus, BookOpen, Wind } from "lucide-react";
+ import { format } from "date-fns";
+ 
+ export default function CompanionList() {
+@@ -80,6 +80,44 @@ export default function CompanionList() {
+             </div>
+           </div>
+         </div>
++
++        <div
++          onClick={() => !isCreating && startSession('journaling')}
++          className="group relative bg-card border border-border p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer overflow-hidden"
++        >
++          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
++          <div className="relative space-y-4">
++            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
++              <BookOpen className="w-5 h-5" />
++            </div>
++            <h2 className="text-xl font-serif">Journaling Coach</h2>
++            <p className="text-sm text-muted-foreground leading-relaxed">
++              Gentle, one-at-a-time writing prompts — a letter to your person, a memory to keep, what remains meaningful.
++            </p>
++            <div className="pt-2 flex items-center text-sm font-medium text-primary">
++              <Plus className="w-4 h-4 mr-1" /> Start session
++            </div>
++          </div>
++        </div>
++
++        <div
++          onClick={() => !isCreating && startSession('practices')}
++          className="group relative bg-card border border-border p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer overflow-hidden"
++        >
++          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
++          <div className="relative space-y-4">
++            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
++              <Wind className="w-5 h-5" />
++            </div>
++            <h2 className="text-xl font-serif">Self-Guided Practices</h2>
++            <p className="text-sm text-muted-foreground leading-relaxed">
++              Short, optional practices — grounding and breath, a small ritual, or a values reflection to carry forward.
++            </p>
++            <div className="pt-2 flex items-center text-sm font-medium text-primary">
++              <Plus className="w-4 h-4 mr-1" /> Start session
++            </div>
++          </div>
++        </div>
+       </div>
+ 
+       {sessions && sessions.length > 0 && (
+-- 
+2.34.1
+

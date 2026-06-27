@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useListChatSessions, useCreateChatSession, getListChatSessionsQueryKey, useListDeceasedProfiles } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Anchor, Plus, BookOpen, Wind } from "lucide-react";
+import { MessageSquare, Anchor, Plus } from "lucide-react";
 import { format } from "date-fns";
 
 export default function CompanionList() {
@@ -74,44 +74,6 @@ export default function CompanionList() {
             <h2 className="text-xl font-serif">Meaning Reconstruction</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               A reflective guide to help you rebuild your narrative, identity, and worldview after loss.
-            </p>
-            <div className="pt-2 flex items-center text-sm font-medium text-primary">
-              <Plus className="w-4 h-4 mr-1" /> Start session
-            </div>
-          </div>
-        </div>
-
-        <div
-          onClick={() => !isCreating && startSession('journaling')}
-          className="group relative bg-card border border-border p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative space-y-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-serif">Journaling Coach</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Gentle, one-at-a-time writing prompts — a letter to your person, a memory to keep, what remains meaningful.
-            </p>
-            <div className="pt-2 flex items-center text-sm font-medium text-primary">
-              <Plus className="w-4 h-4 mr-1" /> Start session
-            </div>
-          </div>
-        </div>
-
-        <div
-          onClick={() => !isCreating && startSession('practices')}
-          className="group relative bg-card border border-border p-6 rounded-xl hover:border-primary/30 transition-all cursor-pointer overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative space-y-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <Wind className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-serif">Self-Guided Practices</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Short, optional practices — grounding and breath, a small ritual, or a values reflection to carry forward.
             </p>
             <div className="pt-2 flex items-center text-sm font-medium text-primary">
               <Plus className="w-4 h-4 mr-1" /> Start session

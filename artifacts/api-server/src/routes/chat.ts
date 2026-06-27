@@ -15,7 +15,7 @@ import {
   SendChatMessageBody,
 } from "@workspace/api-zod";
 import { detectCrisis } from "../lib/crisis";
-import { systemPromptForMode } from "../lib/prompts";
+import { meaningSystemPrompt, continuingBondsSystemPrompt } from "../lib/prompts";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -90,20 +90,20 @@ router.post("/sessions/:id/messages", async (req, res) => {
     .where(eq(profileTable.userId, req.userId!))
     .limit(1);
 
-  // Continuing-bonds work needs the deceased profile for context; the other
-  // modes do not, so we only load it when relevant.
-  let deceased = null;
-  if (session.mode === "continuing-bonds" && session.deceasedId) {
-    const [d] = await db
-      .select()
-      .from(deceasedTable)
-      .where(and(eq(deceasedTable.id, session.deceasedId), eq(deceasedTable.userId, req.userId!)));
-    deceased = d ?? null;
+  let systemPrompt: string;
+  if (session.mode === "continuing-bonds") {
+    let deceased = null;
+    if (session.deceasedId) {
+      const [d] = await db
+        .select()
+        .from(deceasedTable)
+        .where(and(eq(deceasedTable.id, session.deceasedId), eq(deceasedTable.userId, req.userId!)));
+      deceased = d ?? null;
+    }
+    systemPrompt = continuingBondsSystemPrompt({ profile: profile ?? null, deceased });
+  } else {
+    systemPrompt = meaningSystemPrompt({ profile: profile ?? null });
   }
-  const systemPrompt = systemPromptForMode(session.mode, {
-    profile: profile ?? null,
-    deceased,
-  });
 
   const history = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.sessionId, id)).orderBy(asc(chatMessagesTable.createdAt));
 

@@ -1,0 +1,1107 @@
+From e12b3d1c0c5903db7e9ada588585c22474bff463 Mon Sep 17 00:00:00 2001
+From: dfranklin30 <daniellefranklin808@gmail.com>
+Date: Sat, 27 Jun 2026 01:45:02 +0000
+Subject: [PATCH] Phase 1: clinician<>client connection + consent foundation
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the real care-relationship layer beneath the For Professionals portal:
+- DB: care_relationships (granular, opt-in, revocable consent) + append-only
+  audit_log (HIPAA groundwork)
+- API: role-gated /care routes — invite, connect-with-consent, roster,
+  connections, consent update, revoke — with server-enforced consent and
+  audit logging
+- UI: clinician 'Invite a client' page (/care/invite) and client
+  'Connect with your clinician' + consent page (/care/connect)
+- Wire routes; add 'Invite a client' action to the caregiver portal
+---
+ .../src/middlewares/requireProfessional.ts    |  24 ++
+ artifacts/api-server/src/routes/care.ts       | 350 ++++++++++++++++++
+ artifacts/api-server/src/routes/index.ts      |   2 +
+ artifacts/meaningbridge/src/App.tsx           |   4 +
+ .../meaningbridge/src/pages/care/connect.tsx  | 222 +++++++++++
+ .../meaningbridge/src/pages/care/invite.tsx   | 281 ++++++++++++++
+ .../meaningbridge/src/pages/caregiver.tsx     |   6 +
+ lib/db/src/schema/care.ts                     |  90 +++++
+ lib/db/src/schema/index.ts                    |   1 +
+ 9 files changed, 980 insertions(+)
+ create mode 100644 artifacts/api-server/src/middlewares/requireProfessional.ts
+ create mode 100644 artifacts/api-server/src/routes/care.ts
+ create mode 100644 artifacts/meaningbridge/src/pages/care/connect.tsx
+ create mode 100644 artifacts/meaningbridge/src/pages/care/invite.tsx
+ create mode 100644 lib/db/src/schema/care.ts
+
+diff --git a/artifacts/api-server/src/middlewares/requireProfessional.ts b/artifacts/api-server/src/middlewares/requireProfessional.ts
+new file mode 100644
+index 0000000..7f8459c
+--- /dev/null
++++ b/artifacts/api-server/src/middlewares/requireProfessional.ts
+@@ -0,0 +1,24 @@
++import type { Request, Response, NextFunction } from "express";
++
++/**
++ * Role gate for clinician-only endpoints.
++ *
++ * MUST run AFTER requireAuth, which resolves and attaches `req.appUser`.
++ * Rejects anyone who is not a professional so that no clinician-scoped data
++ * is ever served to a seeker account.
++ */
++export function requireProfessional(
++  req: Request,
++  res: Response,
++  next: NextFunction,
++): void {
++  if (!req.appUser) {
++    res.status(401).json({ error: "Unauthorized" });
++    return;
++  }
++  if (req.appUser.role !== "professional") {
++    res.status(403).json({ error: "Professionals only" });
++    return;
++  }
++  next();
++}
+diff --git a/artifacts/api-server/src/routes/care.ts b/artifacts/api-server/src/routes/care.ts
+new file mode 100644
+index 0000000..cca8127
+--- /dev/null
++++ b/artifacts/api-server/src/routes/care.ts
+@@ -0,0 +1,350 @@
++import { Router, type IRouter, type Request } from "express";
++import { randomBytes } from "node:crypto";
++import { eq, and, or, desc, isNull } from "drizzle-orm";
++import {
++  db,
++  careRelationshipsTable,
++  auditLogTable,
++  usersTable,
++  type CareRelationship,
++} from "@workspace/db";
++import { requireAuth } from "../middlewares/requireAuth";
++import { requireProfessional } from "../middlewares/requireProfessional";
++
++const router: IRouter = Router();
++
++/**
++ * Phase 1 — clinician<>client connection and consent foundation.
++ *
++ * Every endpoint is scoped to the authenticated account. Clinician endpoints
++ * additionally require the "professional" role. Consent is opt-in and only the
++ * client may change it. Sensitive reads/writes are recorded in the audit log.
++ */
++
++// ---- helpers ---------------------------------------------------------------
++
++function clientIp(req: Request): string | null {
++  const fwd = req.headers["x-forwarded-for"];
++  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0]!.trim();
++  return req.ip ?? null;
++}
++
++async function audit(
++  req: Request,
++  action: string,
++  opts: { subjectUserId?: number | null; relationshipId?: number | null; detail?: string } = {},
++): Promise<void> {
++  try {
++    await db.insert(auditLogTable).values({
++      actorUserId: req.userId ?? null,
++      action,
++      subjectUserId: opts.subjectUserId ?? null,
++      relationshipId: opts.relationshipId ?? null,
++      detail: opts.detail ?? null,
++      ip: clientIp(req),
++    });
++  } catch (err) {
++    // Audit must never break the request, but we want to know if it fails.
++    req.log.error({ err }, "audit log write failed");
++  }
++}
++
++function newInviteCode(): string {
++  // URL-safe, ~11 chars, ample entropy. Uppercased for readability when typed.
++  return randomBytes(8).toString("base64url").replace(/[-_]/g, "").slice(0, 10).toUpperCase();
++}
++
++function asBool(v: unknown): boolean {
++  return v === true;
++}
++
++/** Shape a relationship for the CLIENT's view (their clinicians). */
++function clientView(rel: CareRelationship, clinicianName: string | null, clinicianEmail: string | null) {
++  return {
++    id: rel.id,
++    status: rel.status,
++    clinicianName,
++    clinicianEmail,
++    consentSummaries: rel.consentSummaries,
++    consentSafety: rel.consentSafety,
++    consentEngagement: rel.consentEngagement,
++    createdAt: rel.createdAt,
++    acceptedAt: rel.acceptedAt,
++  };
++}
++
++// ---- clinician endpoints ---------------------------------------------------
++
++/** Create an invitation. Returns the code/link the clinician shares with a client. */
++router.post("/invites", requireAuth, requireProfessional, async (req, res) => {
++  const email = typeof req.body?.email === "string" ? req.body.email.trim() || null : null;
++  const note = typeof req.body?.note === "string" ? req.body.note.trim().slice(0, 500) || null : null;
++
++  // Generate a unique code (retry on the rare collision).
++  let row: CareRelationship | undefined;
++  for (let attempt = 0; attempt < 5 && !row; attempt++) {
++    try {
++      [row] = await db
++        .insert(careRelationshipsTable)
++        .values({
++          clinicianUserId: req.userId!,
++          inviteCode: newInviteCode(),
++          inviteEmail: email,
++          inviteNote: note,
++          status: "pending",
++        })
++        .returning();
++    } catch {
++      // Likely a unique-constraint collision on invite_code; loop and retry.
++    }
++  }
++  if (!row) {
++    res.status(500).json({ error: "Could not create invite" });
++    return;
++  }
++
++  await audit(req, "care.invite.create", { relationshipId: row.id, detail: email ?? undefined });
++  res.status(201).json({
++    id: row.id,
++    inviteCode: row.inviteCode,
++    inviteEmail: row.inviteEmail,
++    status: row.status,
++    createdAt: row.createdAt,
++  });
++});
++
++/** List the clinician's outstanding (not-yet-redeemed) invites. */
++router.get("/invites", requireAuth, requireProfessional, async (req, res) => {
++  const rows = await db
++    .select()
++    .from(careRelationshipsTable)
++    .where(
++      and(
++        eq(careRelationshipsTable.clinicianUserId, req.userId!),
++        eq(careRelationshipsTable.status, "pending"),
++        isNull(careRelationshipsTable.clientUserId),
++      ),
++    )
++    .orderBy(desc(careRelationshipsTable.createdAt));
++  res.json(
++    rows.map((r) => ({
++      id: r.id,
++      inviteCode: r.inviteCode,
++      inviteEmail: r.inviteEmail,
++      inviteNote: r.inviteNote,
++      status: r.status,
++      createdAt: r.createdAt,
++    })),
++  );
++});
++
++/**
++ * The clinician's roster: clients who have connected. Returns only minimal
++ * identity plus the per-category consent flags (data minimization). Engagement,
++ * safety counts, and AI briefings arrive in later phases and are gated on the
++ * matching consent flag.
++ */
++router.get("/roster", requireAuth, requireProfessional, async (req, res) => {
++  const rows = await db
++    .select({
++      rel: careRelationshipsTable,
++      clientFirstName: usersTable.firstName,
++      clientEmail: usersTable.email,
++    })
++    .from(careRelationshipsTable)
++    .leftJoin(usersTable, eq(usersTable.id, careRelationshipsTable.clientUserId))
++    .where(
++      and(
++        eq(careRelationshipsTable.clinicianUserId, req.userId!),
++        eq(careRelationshipsTable.status, "active"),
++      ),
++    )
++    .orderBy(desc(careRelationshipsTable.acceptedAt));
++
++  await audit(req, "care.roster.view", { detail: `${rows.length} clients` });
++
++  res.json(
++    rows.map(({ rel, clientFirstName, clientEmail }) => ({
++      id: rel.id,
++      clientUserId: rel.clientUserId,
++      clientFirstName: clientFirstName ?? null,
++      clientEmail: clientEmail ?? null,
++      status: rel.status,
++      consentSummaries: rel.consentSummaries,
++      consentSafety: rel.consentSafety,
++      consentEngagement: rel.consentEngagement,
++      acceptedAt: rel.acceptedAt,
++    })),
++  );
++});
++
++// ---- client (seeker) endpoints --------------------------------------------
++
++/**
++ * Redeem an invite code and connect to a clinician, setting initial consent.
++ * Any authenticated account may connect (a client need not be a "seeker" role).
++ */
++router.post("/connect", requireAuth, async (req, res) => {
++  const code = typeof req.body?.code === "string" ? req.body.code.trim().toUpperCase() : "";
++  if (!code) {
++    res.status(400).json({ error: "An invite code is required" });
++    return;
++  }
++
++  const [invite] = await db
++    .select()
++    .from(careRelationshipsTable)
++    .where(eq(careRelationshipsTable.inviteCode, code))
++    .limit(1);
++
++  if (!invite || invite.status !== "pending" || invite.clientUserId !== null) {
++    res.status(404).json({ error: "That invite code is not valid or has already been used" });
++    return;
++  }
++  if (invite.clinicianUserId === req.userId!) {
++    res.status(400).json({ error: "You cannot connect an invite to your own account" });
++    return;
++  }
++
++  const [updated] = await db
++    .update(careRelationshipsTable)
++    .set({
++      clientUserId: req.userId!,
++      status: "active",
++      acceptedAt: new Date(),
++      consentSummaries: asBool(req.body?.consentSummaries),
++      consentSafety: asBool(req.body?.consentSafety),
++      consentEngagement: asBool(req.body?.consentEngagement),
++    })
++    .where(eq(careRelationshipsTable.id, invite.id))
++    .returning();
++
++  await audit(req, "care.connect", {
++    relationshipId: updated.id,
++    subjectUserId: req.userId!,
++    detail: `clinician ${updated.clinicianUserId}`,
++  });
++
++  const [clinician] = await db
++    .select({ firstName: usersTable.firstName, email: usersTable.email })
++    .from(usersTable)
++    .where(eq(usersTable.id, updated.clinicianUserId));
++
++  res.status(201).json(clientView(updated, clinician?.firstName ?? null, clinician?.email ?? null));
++});
++
++/** A client's view of the clinicians they are connected to. */
++router.get("/connections", requireAuth, async (req, res) => {
++  const rows = await db
++    .select({
++      rel: careRelationshipsTable,
++      clinicianFirstName: usersTable.firstName,
++      clinicianEmail: usersTable.email,
++    })
++    .from(careRelationshipsTable)
++    .leftJoin(usersTable, eq(usersTable.id, careRelationshipsTable.clinicianUserId))
++    .where(
++      and(
++        eq(careRelationshipsTable.clientUserId, req.userId!),
++        or(
++          eq(careRelationshipsTable.status, "active"),
++          eq(careRelationshipsTable.status, "revoked"),
++        ),
++      ),
++    )
++    .orderBy(desc(careRelationshipsTable.acceptedAt));
++
++  res.json(rows.map(({ rel, clinicianFirstName, clinicianEmail }) =>
++    clientView(rel, clinicianFirstName ?? null, clinicianEmail ?? null),
++  ));
++});
++
++/** Update consent for one of the client's own connections. Client-only. */
++router.patch("/connections/:id/consent", requireAuth, async (req, res) => {
++  const id = Number.parseInt(req.params.id ?? "", 10);
++  if (!Number.isInteger(id)) {
++    res.status(400).json({ error: "Invalid id" });
++    return;
++  }
++
++  const [rel] = await db
++    .select()
++    .from(careRelationshipsTable)
++    .where(
++      and(
++        eq(careRelationshipsTable.id, id),
++        eq(careRelationshipsTable.clientUserId, req.userId!),
++      ),
++    );
++  if (!rel) {
++    res.status(404).json({ error: "Not found" });
++    return;
++  }
++
++  const next = {
++    consentSummaries:
++      typeof req.body?.consentSummaries === "boolean" ? req.body.consentSummaries : rel.consentSummaries,
++    consentSafety:
++      typeof req.body?.consentSafety === "boolean" ? req.body.consentSafety : rel.consentSafety,
++    consentEngagement:
++      typeof req.body?.consentEngagement === "boolean" ? req.body.consentEngagement : rel.consentEngagement,
++  };
++
++  const [updated] = await db
++    .update(careRelationshipsTable)
++    .set(next)
++    .where(eq(careRelationshipsTable.id, id))
++    .returning();
++
++  await audit(req, "care.consent.update", {
++    relationshipId: id,
++    subjectUserId: req.userId!,
++    detail: `summaries=${next.consentSummaries} safety=${next.consentSafety} engagement=${next.consentEngagement}`,
++  });
++
++  res.json(clientView(updated, null, null));
++});
++
++/**
++ * Revoke / disconnect a relationship. Either party (the clinician who created
++ * it, or the client who connected) may revoke. Takes effect immediately.
++ */
++router.post("/connections/:id/revoke", requireAuth, async (req, res) => {
++  const id = Number.parseInt(req.params.id ?? "", 10);
++  if (!Number.isInteger(id)) {
++    res.status(400).json({ error: "Invalid id" });
++    return;
++  }
++
++  const [rel] = await db
++    .select()
++    .from(careRelationshipsTable)
++    .where(
++      and(
++        eq(careRelationshipsTable.id, id),
++        or(
++          eq(careRelationshipsTable.clientUserId, req.userId!),
++          eq(careRelationshipsTable.clinicianUserId, req.userId!),
++        ),
++      ),
++    );
++  if (!rel) {
++    res.status(404).json({ error: "Not found" });
++    return;
++  }
++
++  const [updated] = await db
++    .update(careRelationshipsTable)
++    .set({ status: "revoked", revokedAt: new Date() })
++    .where(eq(careRelationshipsTable.id, id))
++    .returning();
++
++  await audit(req, "care.revoke", {
++    relationshipId: id,
++    subjectUserId: rel.clientUserId ?? undefined,
++  });
++
++  res.json({ id: updated.id, status: updated.status });
++});
++
++export default router;
+diff --git a/artifacts/api-server/src/routes/index.ts b/artifacts/api-server/src/routes/index.ts
+index d87d015..ab00e5f 100644
+--- a/artifacts/api-server/src/routes/index.ts
++++ b/artifacts/api-server/src/routes/index.ts
+@@ -13,6 +13,7 @@ import safetyRouter from "./safety";
+ import notifyRouter from "./notify";
+ import storageRouter from "./storage";
+ import voiceRouter from "./voice";
++import careRouter from "./care";
+ 
+ const router: IRouter = Router();
+ 
+@@ -30,5 +31,6 @@ router.use("/safety", safetyRouter);
+ router.use(notifyRouter);
+ router.use(storageRouter);
+ router.use("/voice", voiceRouter);
++router.use("/care", careRouter);
+ 
+ export default router;
+diff --git a/artifacts/meaningbridge/src/App.tsx b/artifacts/meaningbridge/src/App.tsx
+index 18e803f..7846a10 100644
+--- a/artifacts/meaningbridge/src/App.tsx
++++ b/artifacts/meaningbridge/src/App.tsx
+@@ -45,6 +45,8 @@ import LovedOne from "@/pages/loved-one";
+ import Therapists from "@/pages/therapists";
+ import Crisis from "@/pages/crisis";
+ import Settings from "@/pages/settings";
++import CareInvite from "@/pages/care/invite";
++import ConnectClinician from "@/pages/care/connect";
+ import NotFound from "@/pages/not-found";
+ 
+ // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
+@@ -231,6 +233,7 @@ function AppRoutes() {
+         <Route path="/practices/:id" component={PracticePlayer} />
+         <Route path="/loved-one" component={LovedOne} />
+         <Route path="/therapists" component={Therapists} />
++        <Route path="/care/connect" component={ConnectClinician} />
+         <Route path="/crisis" component={Crisis} />
+         <Route path="/settings" component={Settings} />
+         <Route component={NotFound} />
+@@ -322,6 +325,7 @@ function AppRouterSwitch() {
+       <Route path="/present" component={PresentPage} />
+       <Route path="/pricing" component={Pricing} />
+       <Route path="/caregiver" component={Caregiver} />
++      <Route path="/care/invite" component={CareInvite} />
+       <Route path="/select-role" component={SelectRoleGate} />
+       <Route component={AppGate} />
+     </Switch>
+diff --git a/artifacts/meaningbridge/src/pages/care/connect.tsx b/artifacts/meaningbridge/src/pages/care/connect.tsx
+new file mode 100644
+index 0000000..db9aef0
+--- /dev/null
++++ b/artifacts/meaningbridge/src/pages/care/connect.tsx
+@@ -0,0 +1,222 @@
++import { useEffect, useState, useCallback } from "react";
++import { HeartHandshake, ShieldCheck, Loader2, Check } from "lucide-react";
++
++const API = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
++
++interface Connection {
++  id: number;
++  status: string;
++  clinicianName: string | null;
++  clinicianEmail: string | null;
++  consentSummaries: boolean;
++  consentSafety: boolean;
++  consentEngagement: boolean;
++  acceptedAt: string | null;
++}
++
++type Consent = {
++  consentEngagement: boolean;
++  consentSafety: boolean;
++  consentSummaries: boolean;
++};
++
++async function api<T>(path: string, init?: RequestInit): Promise<T> {
++  const res = await fetch(`${API}${path}`, {
++    credentials: "include",
++    headers: { "Content-Type": "application/json" },
++    ...init,
++  });
++  if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || `Request failed (${res.status})`);
++  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
++}
++
++const CONSENT_COPY: { key: keyof Consent; label: string; help: string }[] = [
++  {
++    key: "consentEngagement",
++    label: "Engagement",
++    help: "Whether and how often you're using MeaningBridge — not what you write.",
++  },
++  {
++    key: "consentSafety",
++    label: "Safety signals",
++    help: "If the companion ever flags a safety concern, your clinician is notified so they can reach out.",
++  },
++  {
++    key: "consentSummaries",
++    label: "Session summaries",
++    help: "A short, AI-written summary of what you've been working through — drawn from your own words — to help your clinician prepare. Your raw journal entries are never shared.",
++  },
++];
++
++export default function ConnectClinician() {
++  const initialCode = new URLSearchParams(window.location.search).get("code") ?? "";
++  const [code, setCode] = useState(initialCode.toUpperCase());
++  const [consent, setConsent] = useState<Consent>({
++    consentEngagement: true,
++    consentSafety: true,
++    consentSummaries: false,
++  });
++  const [connecting, setConnecting] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [connections, setConnections] = useState<Connection[]>([]);
++  const [savingId, setSavingId] = useState<number | null>(null);
++
++  const refresh = useCallback(async () => {
++    try {
++      setConnections(await api<Connection[]>("/care/connections"));
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not load connections");
++    }
++  }, []);
++
++  useEffect(() => {
++    refresh();
++  }, [refresh]);
++
++  const connect = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setConnecting(true);
++    setError(null);
++    try {
++      await api<Connection>("/care/connect", {
++        method: "POST",
++        body: JSON.stringify({ code: code.trim(), ...consent }),
++      });
++      setCode("");
++      await refresh();
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not connect");
++    } finally {
++      setConnecting(false);
++    }
++  };
++
++  const updateConsent = async (id: number, next: Consent) => {
++    setSavingId(id);
++    try {
++      await api(`/care/connections/${id}/consent`, {
++        method: "PATCH",
++        body: JSON.stringify(next),
++      });
++      await refresh();
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not update");
++    } finally {
++      setSavingId(null);
++    }
++  };
++
++  const disconnect = async (id: number) => {
++    try {
++      await api(`/care/connections/${id}/revoke`, { method: "POST" });
++      await refresh();
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not disconnect");
++    }
++  };
++
++  const active = connections.filter((c) => c.status === "active");
++
++  return (
++    <div className="max-w-2xl mx-auto space-y-10">
++      <div className="space-y-3">
++        <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-primary">
++          <HeartHandshake className="w-5 h-5" />
++        </div>
++        <h1 className="text-3xl font-serif text-foreground">Connect with your clinician</h1>
++        <p className="text-muted-foreground leading-relaxed">
++          If a grief professional has invited you, enter their code below and choose what you'd like
++          to share. You stay in control — you can change or withdraw any of this at any time, and
++          your private writing is never shared unless you explicitly choose summaries.
++        </p>
++      </div>
++
++      {error && (
++        <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
++          {error}
++        </div>
++      )}
++
++      <form onSubmit={connect} className="space-y-6 rounded-xl border border-border bg-card p-6">
++        <div className="space-y-1.5">
++          <label className="text-xs text-muted-foreground">Invitation code</label>
++          <input
++            value={code}
++            onChange={(e) => setCode(e.target.value.toUpperCase())}
++            placeholder="e.g. 7K2QF9XR"
++            className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm font-mono tracking-wider focus:ring-1 focus:ring-primary/50 outline-none"
++          />
++        </div>
++
++        <div className="space-y-3">
++          <p className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
++            <ShieldCheck className="w-3.5 h-3.5" /> What you'll share
++          </p>
++          {CONSENT_COPY.map(({ key, label, help }) => (
++            <label key={key} className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/30 transition-colors">
++              <input
++                type="checkbox"
++                checked={consent[key]}
++                onChange={(e) => setConsent((c) => ({ ...c, [key]: e.target.checked }))}
++                className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
++              />
++              <span className="space-y-0.5">
++                <span className="block text-sm font-medium">{label}</span>
++                <span className="block text-xs text-muted-foreground leading-relaxed">{help}</span>
++              </span>
++            </label>
++          ))}
++        </div>
++
++        <button
++          type="submit"
++          disabled={connecting || !code.trim()}
++          className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
++        >
++          {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
++          Connect
++        </button>
++      </form>
++
++      {active.length > 0 && (
++        <div className="space-y-3">
++          <h2 className="text-sm font-medium text-muted-foreground">Your clinicians</h2>
++          {active.map((c) => (
++            <div key={c.id} className="rounded-xl border border-border bg-card p-5 space-y-4">
++              <div className="flex items-center justify-between gap-3">
++                <p className="text-sm font-medium">{c.clinicianName || c.clinicianEmail || "Your clinician"}</p>
++                <button
++                  onClick={() => disconnect(c.id)}
++                  className="text-xs px-3 py-1.5 rounded-md border border-border hover:border-destructive hover:text-destructive transition-colors"
++                >
++                  Disconnect
++                </button>
++              </div>
++              <div className="space-y-2">
++                {CONSENT_COPY.map(({ key, label }) => (
++                  <label key={key} className="flex items-center justify-between text-sm">
++                    <span className="text-foreground/90">{label}</span>
++                    <input
++                      type="checkbox"
++                      checked={c[key]}
++                      disabled={savingId === c.id}
++                      onChange={(e) =>
++                        updateConsent(c.id, {
++                          consentEngagement: c.consentEngagement,
++                          consentSafety: c.consentSafety,
++                          consentSummaries: c.consentSummaries,
++                          [key]: e.target.checked,
++                        })
++                      }
++                      className="h-4 w-4 accent-[var(--primary)]"
++                    />
++                  </label>
++                ))}
++              </div>
++            </div>
++          ))}
++        </div>
++      )}
++    </div>
++  );
++}
+diff --git a/artifacts/meaningbridge/src/pages/care/invite.tsx b/artifacts/meaningbridge/src/pages/care/invite.tsx
+new file mode 100644
+index 0000000..0ee88ea
+--- /dev/null
++++ b/artifacts/meaningbridge/src/pages/care/invite.tsx
+@@ -0,0 +1,281 @@
++import { useEffect, useState, useCallback } from "react";
++import { Link } from "wouter";
++import { useGetMe } from "@workspace/api-client-react";
++import {
++  ArrowLeft,
++  Copy,
++  Check,
++  UserPlus,
++  ShieldCheck,
++  Users,
++  Loader2,
++} from "lucide-react";
++import { Logo } from "@/components/logo";
++
++const API = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
++const ORIGIN = window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "");
++
++interface Invite {
++  id: number;
++  inviteCode: string;
++  inviteEmail: string | null;
++  inviteNote: string | null;
++  status: string;
++  createdAt: string;
++}
++interface RosterEntry {
++  id: number;
++  clientFirstName: string | null;
++  clientEmail: string | null;
++  consentSummaries: boolean;
++  consentSafety: boolean;
++  consentEngagement: boolean;
++  acceptedAt: string | null;
++}
++
++async function api<T>(path: string, init?: RequestInit): Promise<T> {
++  const res = await fetch(`${API}${path}`, {
++    credentials: "include",
++    headers: { "Content-Type": "application/json" },
++    ...init,
++  });
++  if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || `Request failed (${res.status})`);
++  return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
++}
++
++export default function CareInvite() {
++  const { data: me, isLoading: meLoading } = useGetMe();
++  const [invites, setInvites] = useState<Invite[]>([]);
++  const [roster, setRoster] = useState<RosterEntry[]>([]);
++  const [email, setEmail] = useState("");
++  const [note, setNote] = useState("");
++  const [creating, setCreating] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [copied, setCopied] = useState<string | null>(null);
++
++  const refresh = useCallback(async () => {
++    try {
++      const [inv, ros] = await Promise.all([
++        api<Invite[]>("/care/invites"),
++        api<RosterEntry[]>("/care/roster"),
++      ]);
++      setInvites(inv);
++      setRoster(ros);
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not load");
++    }
++  }, []);
++
++  useEffect(() => {
++    if (me?.role === "professional") refresh();
++  }, [me?.role, refresh]);
++
++  const createInvite = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setCreating(true);
++    setError(null);
++    try {
++      await api<Invite>("/care/invites", {
++        method: "POST",
++        body: JSON.stringify({ email: email || undefined, note: note || undefined }),
++      });
++      setEmail("");
++      setNote("");
++      await refresh();
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not create invite");
++    } finally {
++      setCreating(false);
++    }
++  };
++
++  const revoke = async (id: number) => {
++    try {
++      await api(`/care/connections/${id}/revoke`, { method: "POST" });
++      await refresh();
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Could not update");
++    }
++  };
++
++  const copy = async (text: string, key: string) => {
++    try {
++      await navigator.clipboard.writeText(text);
++      setCopied(key);
++      setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500);
++    } catch {
++      /* clipboard unavailable */
++    }
++  };
++
++  if (meLoading) {
++    return (
++      <div className="min-h-[60vh] flex items-center justify-center">
++        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
++      </div>
++    );
++  }
++
++  if (me?.role !== "professional") {
++    return (
++      <div className="max-w-xl mx-auto py-24 text-center space-y-4">
++        <h1 className="text-2xl font-serif">For professionals</h1>
++        <p className="text-muted-foreground">
++          This area is for clinicians. If you work with grieving clients and would like access,
++          you can join the professional waitlist.
++        </p>
++        <Link href="/notify?src=care-invite" className="text-primary underline underline-offset-4">
++          Join the professional waitlist
++        </Link>
++      </div>
++    );
++  }
++
++  return (
++    <div className="min-h-screen bg-background text-foreground">
++      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
++        <div className="container max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
++          <Link href="/caregiver">
++            <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity flex items-center gap-2">
++              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
++              <Logo variant="lockup" size={36} />
++            </div>
++          </Link>
++          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
++            People in your care
++          </span>
++        </div>
++      </header>
++
++      <main className="container max-w-5xl mx-auto px-4 py-12 space-y-12">
++        <section className="space-y-3 max-w-2xl">
++          <h1 className="text-3xl font-serif">Invite a client</h1>
++          <p className="text-muted-foreground leading-relaxed">
++            Send an invitation to someone in your care. They choose what to share with you —
++            engagement, safety signals, or session summaries — and can change or withdraw that
++            consent at any time. Nothing reaches you without it.
++          </p>
++        </section>
++
++        {error && (
++          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
++            {error}
++          </div>
++        )}
++
++        <section className="grid lg:grid-cols-5 gap-8">
++          <form onSubmit={createInvite} className="lg:col-span-2 space-y-4 rounded-xl border border-border bg-card p-6">
++            <div className="flex items-center gap-2 text-sm font-medium">
++              <UserPlus className="w-4 h-4 text-primary" /> New invitation
++            </div>
++            <div className="space-y-1.5">
++              <label className="text-xs text-muted-foreground">Client email (optional)</label>
++              <input
++                type="email"
++                value={email}
++                onChange={(e) => setEmail(e.target.value)}
++                placeholder="name@example.com"
++                className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm focus:ring-1 focus:ring-primary/50 outline-none"
++              />
++            </div>
++            <div className="space-y-1.5">
++              <label className="text-xs text-muted-foreground">A short note (optional)</label>
++              <textarea
++                value={note}
++                onChange={(e) => setNote(e.target.value)}
++                rows={3}
++                placeholder="A personal line they'll see when connecting."
++                className="w-full px-3 py-2 bg-background border border-border rounded-md text-sm resize-none focus:ring-1 focus:ring-primary/50 outline-none"
++              />
++            </div>
++            <button
++              type="submit"
++              disabled={creating}
++              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
++            >
++              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
++              Create invitation
++            </button>
++          </form>
++
++          <div className="lg:col-span-3 space-y-3">
++            <h2 className="text-sm font-medium text-muted-foreground">Pending invitations</h2>
++            {invites.length === 0 ? (
++              <p className="text-sm text-muted-foreground py-6">No pending invitations.</p>
++            ) : (
++              <div className="space-y-3">
++                {invites.map((inv) => {
++                  const link = `${ORIGIN}/care/connect?code=${inv.inviteCode}`;
++                  return (
++                    <div key={inv.id} className="rounded-lg border border-border bg-card p-4 space-y-3">
++                      <div className="flex items-center justify-between gap-3">
++                        <div className="min-w-0">
++                          <p className="text-sm font-medium">{inv.inviteEmail || "Anyone with the code"}</p>
++                          <p className="text-xs text-muted-foreground">Code <span className="font-mono">{inv.inviteCode}</span></p>
++                        </div>
++                        <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded bg-muted text-muted-foreground">
++                          {inv.status}
++                        </span>
++                      </div>
++                      <div className="flex gap-2">
++                        <button
++                          onClick={() => copy(inv.inviteCode, `code-${inv.id}`)}
++                          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
++                        >
++                          {copied === `code-${inv.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
++                          Copy code
++                        </button>
++                        <button
++                          onClick={() => copy(link, `link-${inv.id}`)}
++                          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border border-border hover:border-foreground transition-colors"
++                        >
++                          {copied === `link-${inv.id}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
++                          Copy connect link
++                        </button>
++                      </div>
++                    </div>
++                  );
++                })}
++              </div>
++            )}
++          </div>
++        </section>
++
++        <section className="space-y-3">
++          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
++            <Users className="w-4 h-4" /> Connected clients
++          </h2>
++          {roster.length === 0 ? (
++            <p className="text-sm text-muted-foreground py-6">
++              No one has connected yet. Share an invite code or link above.
++            </p>
++          ) : (
++            <div className="grid gap-3">
++              {roster.map((c) => (
++                <div key={c.id} className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
++                  <div className="min-w-0">
++                    <p className="text-sm font-medium truncate">{c.clientFirstName || c.clientEmail || "Client"}</p>
++                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
++                      <ShieldCheck className="w-3.5 h-3.5 text-primary/70" />
++                      Sharing: {[
++                        c.consentEngagement && "engagement",
++                        c.consentSafety && "safety",
++                        c.consentSummaries && "summaries",
++                      ].filter(Boolean).join(", ") || "nothing yet"}
++                    </p>
++                  </div>
++                  <button
++                    onClick={() => revoke(c.id)}
++                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:border-destructive hover:text-destructive transition-colors shrink-0"
++                  >
++                    Disconnect
++                  </button>
++                </div>
++              ))}
++            </div>
++          )}
++        </section>
++      </main>
++    </div>
++  );
++}
+diff --git a/artifacts/meaningbridge/src/pages/caregiver.tsx b/artifacts/meaningbridge/src/pages/caregiver.tsx
+index b20bdbf..d439122 100644
+--- a/artifacts/meaningbridge/src/pages/caregiver.tsx
++++ b/artifacts/meaningbridge/src/pages/caregiver.tsx
+@@ -33,6 +33,12 @@ function CaregiverAccountNav() {
+         </Link>
+       </Show>
+       <Show when="signed-in">
++        <Link
++          href="/care/invite"
++          className="px-4 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
++        >
++          Invite a client
++        </Link>
+         <Link href="/pricing" className="hover:text-foreground transition-colors">
+           Plans
+         </Link>
+diff --git a/lib/db/src/schema/care.ts b/lib/db/src/schema/care.ts
+new file mode 100644
+index 0000000..c250df3
+--- /dev/null
++++ b/lib/db/src/schema/care.ts
+@@ -0,0 +1,90 @@
++import {
++  pgTable,
++  serial,
++  integer,
++  text,
++  boolean,
++  timestamp,
++  uniqueIndex,
++  index,
++} from "drizzle-orm/pg-core";
++import { createInsertSchema } from "drizzle-zod";
++import { z } from "zod/v4";
++import { usersTable } from "./users";
++
++/**
++ * Link between a professional (clinician) and a seeker (client).
++ *
++ * This table is the single source of truth for "who may see what about whom."
++ * Consent is granular, opt-in (every flag defaults to false), server-enforced,
++ * and revocable at any time by the client. Nothing about a client ever reaches
++ * a clinician without an ACTIVE relationship AND the matching consent flag.
++ */
++export const careRelationshipsTable = pgTable(
++  "care_relationships",
++  {
++    id: serial("id").primaryKey(),
++    clinicianUserId: integer("clinician_user_id")
++      .notNull()
++      .references(() => usersTable.id, { onDelete: "cascade" }),
++    // Null until a client redeems the invite code and connects.
++    clientUserId: integer("client_user_id").references(() => usersTable.id, {
++      onDelete: "cascade",
++    }),
++    inviteCode: text("invite_code").notNull(),
++    inviteEmail: text("invite_email"),
++    inviteNote: text("invite_note"),
++    // "pending" | "active" | "revoked" | "declined"
++    status: text("status").notNull().default("pending"),
++    // Granular, client-controlled consent. Opt-in only.
++    consentSummaries: boolean("consent_summaries").notNull().default(false),
++    consentSafety: boolean("consent_safety").notNull().default(false),
++    consentEngagement: boolean("consent_engagement").notNull().default(false),
++    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
++    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
++    revokedAt: timestamp("revoked_at", { withTimezone: true }),
++  },
++  (t) => ({
++    inviteCodeUnique: uniqueIndex("care_relationships_invite_code_unique").on(t.inviteCode),
++    clinicianIdx: index("care_relationships_clinician_idx").on(t.clinicianUserId),
++    clientIdx: index("care_relationships_client_idx").on(t.clientUserId),
++  }),
++);
++
++export const insertCareRelationshipSchema = createInsertSchema(careRelationshipsTable).omit({
++  id: true,
++  createdAt: true,
++  acceptedAt: true,
++  revokedAt: true,
++});
++export type CareRelationship = typeof careRelationshipsTable.$inferSelect;
++export type InsertCareRelationship = z.infer<typeof insertCareRelationshipSchema>;
++
++/**
++ * Append-only audit trail (HIPAA groundwork). Every access to or change of a
++ * client's care data by a clinician is recorded here. Rows are never updated
++ * or deleted in normal operation.
++ */
++export const auditLogTable = pgTable(
++  "audit_log",
++  {
++    id: serial("id").primaryKey(),
++    actorUserId: integer("actor_user_id").references(() => usersTable.id, {
++      onDelete: "set null",
++    }),
++    action: text("action").notNull(),
++    subjectUserId: integer("subject_user_id").references(() => usersTable.id, {
++      onDelete: "set null",
++    }),
++    relationshipId: integer("relationship_id"),
++    detail: text("detail"),
++    ip: text("ip"),
++    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
++  },
++  (t) => ({
++    actorIdx: index("audit_log_actor_idx").on(t.actorUserId),
++    subjectIdx: index("audit_log_subject_idx").on(t.subjectUserId),
++  }),
++);
++
++export type AuditLogEntry = typeof auditLogTable.$inferSelect;
+diff --git a/lib/db/src/schema/index.ts b/lib/db/src/schema/index.ts
+index fa4b5d4..88516eb 100644
+--- a/lib/db/src/schema/index.ts
++++ b/lib/db/src/schema/index.ts
+@@ -14,3 +14,4 @@ export * from "./crisisResources";
+ export * from "./journalPrompts";
+ export * from "./notifyOptIns";
+ export * from "./screenerResults";
++export * from "./care";
+-- 
+2.34.1

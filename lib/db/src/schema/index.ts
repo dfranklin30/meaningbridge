@@ -14,3 +14,4 @@ export * from "./crisisResources";
 export * from "./journalPrompts";
 export * from "./notifyOptIns";
 export * from "./screenerResults";
+export * from "./care";

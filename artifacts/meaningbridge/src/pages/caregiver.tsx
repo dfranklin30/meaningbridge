@@ -33,6 +33,12 @@ function CaregiverAccountNav() {
         </Link>
       </Show>
       <Show when="signed-in">
+        <Link
+          href="/care/invite"
+          className="px-4 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          Invite a client
+        </Link>
         <Link href="/pricing" className="hover:text-foreground transition-colors">
           Plans
         </Link>

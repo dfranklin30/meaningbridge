@@ -1,0 +1,118 @@
+# MeaningBridge — Bringing "For Professionals" to Life
+
+*A build plan for a real clinician experience with a built-in AI agent that automates the in-between, checks in with clients, and connects patients to their clinicians — built HIPAA-ready, with both in-app and standards-based (FHIR) interoperability.*
+
+---
+
+## 1. Where it stands today (the honest baseline)
+
+The `/caregiver` page is a **beautifully designed preview running entirely on hardcoded mock data** — six fictional patients (`PATIENTS` array in `caregiver.tsx`). It shows the destination perfectly: a roster, care tiers (Grief Literacy / Enhanced / Specialist from the validated GIS screener), consent states, 14-day safety signals, engagement bars, and an AI-written "Briefing for your next session." The "Request consult" and "Send a note" buttons do nothing.
+
+Underneath, the real backend has:
+
+- A `users.role` of `seeker` or `professional`, with professionals routed to `/caregiver`.
+- Rich per-seeker data that already exists and is real: companion chat, journal entries, check-ins, GIS screener results and tier, and safety events.
+
+But there is **no concept of a clinician actually having patients.** There is no table linking a professional to the seekers in their care, no consent model for sharing a seeker's data with a specific clinician, no invitation/connection flow, and no clinician-facing data API. That linking layer — plus the AI agent that runs on top of it — is the work.
+
+The good news: the hard parts of the *seeker* side (the data the clinician wants to see) already exist. We are building the **bridge between two existing sides**, which is exactly the product's name.
+
+---
+
+## 2. The clinician's experience, from their perspective
+
+Designing from the clinician outward, the experience has three phases.
+
+**Getting set up.** A grief counselor signs up, selects "I am a professional," and verifies their license/credentials (manual review at first; later, automated credential checks). They land in a real portal that starts empty, with one clear action: *invite a client.*
+
+**Connecting clients.** The clinician sends an invitation (email or a one-time code/link). Their client — already a MeaningBridge seeker, or newly invited — accepts and is shown a plain-language **consent screen**: exactly what the clinician will and won't see (engagement only? safety flags? AI session summaries? raw journal entries — never, by default). Consent is granular, logged, and revocable at any time by the client. Nothing reaches the clinician without it. This is the floor the whole product stands on.
+
+**Daily use.** Between sessions, the clinician opens a roster sorted by what needs attention. For each consented client they see: engagement trend, the *shape* of recent activity (a session, a journal theme, a check-in), any safety signals, and — the centerpiece — an **AI-generated session briefing**: a few honest sentences on what shifted since they last met, written from the client's own words, never invented. They can message the client in-app, request a consult, or export a summary into their own notes. The promise: *MeaningBridge holds the space between sessions so the clinician can hold the space inside them.* Light on the week, no new EHR to learn.
+
+---
+
+## 3. The built-in AI agent (the heart of the request)
+
+The agent serves the clinician across three jobs. It assists clinical judgment; it never replaces it, never diagnoses, and never acts autonomously on a client without consent and (for anything clinical) clinician oversight.
+
+**A. Automation — turn raw activity into clinician-ready signal.**
+- **Session briefings:** summarize a consented client's chats, journals, and check-ins since the last session into a short, faithful, meaning-oriented briefing (event story / back story / forward story; continuing-bond movement; unfinished business; what's asking for a human).
+- **Documentation support:** draft progress-note scaffolding *from the clinician's own input* after a session, in the clinician's framework — they edit and own it.
+- **Roster triage:** rank the roster by who changed most (tier shifts, dropping engagement, new safety signals) so attention goes where it's needed.
+- **Theme tracking:** longitudinal view of how meaning, connection, and functioning move over time (the check-in data already collects distress/meaning/connection/functioning 0–10).
+
+**B. Proactive client check-ins — the agent reaches out (with consent).**
+- Scheduled, gentle check-ins to clients between sessions ("How has this week been sitting with you?"), paced to the client's tier and preferences, never spammy, always skippable.
+- Clinician-configurable cadence and tone; the clinician can approve/queue check-ins or let trusted ones auto-send.
+- Every check-in runs through the **same crisis-detection and escalation guardrails** as the companion. A concerning response surfaces to the clinician promptly (and to crisis resources for the client immediately).
+- Re-engagement nudges when a client goes quiet, and milestone-aware outreach (anniversaries of the loss, birthdays) handled with particular care.
+
+**C. Clinician-facing intelligence & alerts.**
+- Safety alerts: when a client's session triggers a safety event, the consented clinician is notified through their chosen channel.
+- "Worth a look" surfacing: validated screeners flag what asks for a human, not what merely looks dramatic.
+- A clinician can *ask* the agent about a consented client ("what's the through-line in Maya's journaling this month?") and get a grounded, sourced answer drawn only from consented data.
+
+Technically this reuses what's already built: the `systemPromptForMode` agent infrastructure, the crisis layer, the GIS tiering, and the streaming chat route — extended with clinician-scoped prompts and a scheduled-task runner for proactive check-ins.
+
+---
+
+## 4. Interoperability — both layers you asked for
+
+**In-app patient↔clinician link (built first).** A first-class connection between a seeker and their clinician inside MeaningBridge: invitation, consent, shared (consented) summaries, in-app messaging, and revocation. Self-contained and the foundation everything else needs. *This is Phase 1, below.*
+
+**Healthcare standards (FHIR/HL7) — designed for now, exposed later.** To be real interoperability rather than a silo, the data model is shaped from day one to map cleanly onto FHIR resources: the clinician↔client relationship → `CareTeam` / `RelatedPerson`; consent → `Consent`; check-ins and screeners → `Observation` / `QuestionnaireResponse` (the GIS becomes a `Questionnaire`); session briefings → `DocumentReference` / `Composition`; safety events → `Flag`; the care plan → `CarePlan`. We add a read-only FHIR export endpoint and, later, SMART-on-FHIR so a clinician's existing EHR can pull consented data. Building FHIR-shaped from the start avoids a painful migration and makes EHR integration an additive step, not a rewrite.
+
+---
+
+## 5. Data model additions
+
+Phase 1 introduces the linking and accountability core:
+
+- **`care_relationships`** — links a `clinicianUserId` to a `clientUserId`, with an invite code, a `status` (`pending` / `active` / `revoked` / `declined`), granular consent flags (`consentSummaries`, `consentSafety`, `consentEngagement`), and timestamps. The single source of truth for "who may see what about whom."
+- **`audit_log`** — append-only record of every access to client data (who viewed/changed what, when). Required groundwork for HIPAA and for client trust.
+
+Later phases add: `care_messages` (in-app clinician↔client notes), `briefings` (generated, versioned, with the source window they were built from), `check_in_schedules` (proactive outreach config), and `consent_records` history (immutable consent changes).
+
+---
+
+## 6. HIPAA-ready from the start
+
+Per your decision, we build for HIPAA now rather than retrofit. The foundation:
+
+- **BAAs:** sign Business Associate Agreements with every processor that can touch PHI — the model provider (Anthropic), the database/host (Replit/Neon or a HIPAA-eligible host), email/SMS, and object storage. *No real client data flows to the clinician portal until BAAs are in place. This needs legal sign-off — I can prepare the checklist, but I'm not a lawyer.*
+- **Access control (RBAC):** clinician endpoints are gated by role *and* by an active, consented `care_relationship`. A clinician can only ever reach data for clients who have actively consented to that specific data category.
+- **Audit logging:** every clinician read/write of client data is recorded (the `audit_log` table) — who, what, when.
+- **Data minimization:** the clinician sees summaries and signals by default, not raw journals; the briefing is derived, and the underlying entries stay with the client unless explicitly shared.
+- **Encryption & secrets:** TLS in transit, encryption at rest, secrets only in Replit's secret manager (never in git — I can scan the repo to confirm).
+- **Consent as enforced logic, not a label:** consent flags are checked on the server for every data category on every request, and revocation takes effect immediately.
+
+This is a posture, not a one-time task — it threads through every phase.
+
+---
+
+## 7. Safety & ethics specific to clinician access
+
+- The human bond stays primary; the AI sits beside it. The portal is framed as continuity-of-care support, not surveillance — and clients can see what their clinician sees.
+- Crisis handling is unchanged for the client (immediate 988/crisis resources) and *adds* a consented-clinician notification; the agent never quietly handles risk on a clinician's behalf.
+- Briefings are clearly marked AI-generated and built only from the client's own words; clinicians are reminded to verify against the person in front of them.
+- Clients control the relationship: they can pause sharing, narrow consent, or disconnect entirely, anytime.
+
+---
+
+## 8. Phased build sequence
+
+1. **Phase 1 — Connection & consent foundation (this delivery).** `care_relationships` + `audit_log` tables; role gate (`requireProfessional`); a `/care` API for invites, redemption-with-consent, roster, connections, consent updates, and revocation; clinician "invite a client" UI and client "connect + consent" UI. The skeleton everything hangs on.
+2. **Phase 2 — Real roster + engagement.** Replace the mock `PATIENTS` with live, consent-filtered roster data (engagement, recent activity, tier, safety counts) computed from existing tables.
+3. **Phase 3 — AI session briefings.** Generate faithful, meaning-oriented briefings from consented activity; versioned and source-linked.
+4. **Phase 4 — Proactive AI check-ins.** Scheduled, guardrailed client outreach with clinician-configurable cadence; safety escalation to clinicians.
+5. **Phase 5 — In-app messaging & consult requests.** Make "Send a note" / "Request consult" real.
+6. **Phase 6 — FHIR export + SMART-on-FHIR.** Standards-based read access for external EHRs.
+7. **Ongoing — HIPAA hardening & credential verification.** BAAs, pen-test, clinician license verification, formal consent history.
+
+---
+
+## 9. What Phase 1 delivers in this patch
+
+A working, HIPAA-minded foundation: the database tables, the role-gated `/care` API (invite → consent → connect → roster → revoke) with audit logging and server-enforced consent, and the first real clinician and client screens for connecting to each other. After this lands, the `/caregiver` portal stops being a mockup and starts standing on a real, consented relationship between a clinician and the people in their care — ready for Phase 2 to fill the roster with live data.
+
+*Apply/migrate notes ship alongside the patch (a one-time `db push` adds the new tables).*

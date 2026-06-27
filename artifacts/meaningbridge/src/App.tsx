@@ -45,6 +45,8 @@ import LovedOne from "@/pages/loved-one";
 import Therapists from "@/pages/therapists";
 import Crisis from "@/pages/crisis";
 import Settings from "@/pages/settings";
+import CareInvite from "@/pages/care/invite";
+import ConnectClinician from "@/pages/care/connect";
 import NotFound from "@/pages/not-found";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
@@ -231,6 +233,7 @@ function AppRoutes() {
         <Route path="/practices/:id" component={PracticePlayer} />
         <Route path="/loved-one" component={LovedOne} />
         <Route path="/therapists" component={Therapists} />
+        <Route path="/care/connect" component={ConnectClinician} />
         <Route path="/crisis" component={Crisis} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
@@ -322,6 +325,7 @@ function AppRouterSwitch() {
       <Route path="/present" component={PresentPage} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/caregiver" component={Caregiver} />
+      <Route path="/care/invite" component={CareInvite} />
       <Route path="/select-role" component={SelectRoleGate} />
       <Route component={AppGate} />
     </Switch>

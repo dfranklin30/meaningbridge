@@ -1,0 +1,42 @@
+Phase 1 — Professional side: clinician↔client connection + consent
+This is the real foundation beneath the (currently mock) "For Professionals" portal. After this, a clinician can invite clients, clients connect and choose what to share, and the relationship is stored, consent-enforced, and audited.
+What it adds
+Database (2 new tables)
+
+care_relationships — links a clinician to a client, with an invite code, status (pending/active/revoked), and granular, opt-in, revocable consent (engagement / safety / summaries).
+audit_log — append-only record of every access to client data (HIPAA groundwork).
+
+API (/api/care/..., role-gated)
+
+POST /care/invites, GET /care/invites, GET /care/roster (clinician only)
+POST /care/connect, GET /care/connections, PATCH /care/connections/:id/consent, POST /care/connections/:id/revoke (client)
+Consent is enforced server-side; sensitive actions are written to the audit log.
+
+UI
+
+/care/invite — clinician page: create invites, copy code/link, see connected clients, disconnect.
+/care/connect — client page: enter a code, choose consent, manage or withdraw sharing.
+An "Invite a client" button now appears in the caregiver portal header.
+How to apply (git → Replit)
+Upload 0002-professional-phase1-connection-consent.patch to the repo on GitHub (Add file → Upload files), commit to main.
+In Replit: Pull.
+In Replit's Shell, from the project root:
+
+git apply 0002-professional-phase1-connection-consent.patch && rm 0002-professional-phase1-connection-consent.patch
+
+Run the database migration (required — this adds the two new tables):
+
+pnpm --filter @workspace/db push
+
+(If prompted about creating tables, accept. Or pnpm --filter @workspace/db run push-force to skip prompts.)
+
+Restart the app, then commit + push in Replit's Git panel.
+How to test
+Sign in as a professional account → caregiver portal → "Invite a client" → create an invite → copy the code.
+In a second (seeker) account, go to /care/connect, paste the code, pick consent options, Connect.
+Back in the professional account, the client appears under "Connected clients" with their consent shown. Toggle/withdraw consent from the client side and confirm it updates.
+Important note (HIPAA)
+This is the consent + audit foundation. Before real client data flows to clinicians in production, the BAAs and hardening in professional-side-plan.md (section 6) still need to be in place. This patch is safe to run in your dev/preview environment now.
+Verified
+All nine files pass a syntax/transpile check, and the patch applies cleanly to current main.
+

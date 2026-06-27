@@ -13,6 +13,7 @@ import safetyRouter from "./safety";
 import notifyRouter from "./notify";
 import storageRouter from "./storage";
 import voiceRouter from "./voice";
+import careRouter from "./care";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use("/safety", safetyRouter);
 router.use(notifyRouter);
 router.use(storageRouter);
 router.use("/voice", voiceRouter);
+router.use("/care", careRouter);
 
 export default router;

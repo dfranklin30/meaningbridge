@@ -502,6 +502,76 @@ export interface NotifyOptInResult {
   signup: NotifyOptIn;
 }
 
+export interface SandboxFeedback {
+  id: number;
+  /** @nullable */
+  role?: string | null;
+  /** @nullable */
+  navigationRating?: number | null;
+  /** @nullable */
+  aestheticsRating?: number | null;
+  /** @nullable */
+  helpfulnessRating?: number | null;
+  /** @nullable */
+  overallRating?: number | null;
+  /** @nullable */
+  narrative?: string | null;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  roleLabel?: string | null;
+  consentToShare: boolean;
+  source: string;
+  createdAt: string;
+}
+
+export interface SandboxFeedbackInput {
+  /**
+   * seeker | professional
+   * @nullable
+   */
+  role?: string | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   * @nullable
+   */
+  navigationRating?: number | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   * @nullable
+   */
+  aestheticsRating?: number | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   * @nullable
+   */
+  helpfulnessRating?: number | null;
+  /**
+   * @minimum 1
+   * @maximum 5
+   * @nullable
+   */
+  overallRating?: number | null;
+  /** @nullable */
+  narrative?: string | null;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  roleLabel?: string | null;
+  /** @nullable */
+  consentToShare?: boolean | null;
+  /** @nullable */
+  source?: string | null;
+}
+
+export interface SandboxFeedbackResult {
+  ok: boolean;
+  feedback: SandboxFeedback;
+}
+
 export type FindTherapistsParams = {
   zip?: string;
 };

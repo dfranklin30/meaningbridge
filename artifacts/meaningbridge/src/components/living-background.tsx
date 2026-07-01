@@ -24,7 +24,7 @@ export function LivingBackground() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 0%, hsl(180 50% 96%) 0%, hsl(36 40% 98%) 60%, hsl(36 40% 98%) 100%)",
+            "radial-gradient(ellipse at 50% -12%, hsl(38 74% 90% / 0.5) 0%, transparent 55%), radial-gradient(ellipse at 50% 0%, hsl(180 50% 96%) 0%, hsl(36 40% 98%) 60%, hsl(36 40% 98%) 100%)",
         }}
       />
 

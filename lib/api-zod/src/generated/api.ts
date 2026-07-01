@@ -757,6 +757,85 @@ export const ListNotifyOptInsResponseItem = zod.object({
 export const ListNotifyOptInsResponse = zod.array(ListNotifyOptInsResponseItem);
 
 /**
+ * @summary Submit sandbox experience feedback
+ */
+export const createSandboxFeedbackBodyNavigationRatingMax = 5;
+
+export const createSandboxFeedbackBodyAestheticsRatingMax = 5;
+
+export const createSandboxFeedbackBodyHelpfulnessRatingMax = 5;
+
+export const createSandboxFeedbackBodyOverallRatingMax = 5;
+
+export const CreateSandboxFeedbackBody = zod.object({
+  role: zod.string().nullish().describe("seeker | professional"),
+  navigationRating: zod
+    .number()
+    .min(1)
+    .max(createSandboxFeedbackBodyNavigationRatingMax)
+    .nullish(),
+  aestheticsRating: zod
+    .number()
+    .min(1)
+    .max(createSandboxFeedbackBodyAestheticsRatingMax)
+    .nullish(),
+  helpfulnessRating: zod
+    .number()
+    .min(1)
+    .max(createSandboxFeedbackBodyHelpfulnessRatingMax)
+    .nullish(),
+  overallRating: zod
+    .number()
+    .min(1)
+    .max(createSandboxFeedbackBodyOverallRatingMax)
+    .nullish(),
+  narrative: zod.string().nullish(),
+  name: zod.string().nullish(),
+  roleLabel: zod.string().nullish(),
+  consentToShare: zod.boolean().nullish(),
+  source: zod.string().nullish(),
+});
+
+export const CreateSandboxFeedbackResponse = zod.object({
+  ok: zod.boolean(),
+  feedback: zod.object({
+    id: zod.number(),
+    role: zod.string().nullish(),
+    navigationRating: zod.number().nullish(),
+    aestheticsRating: zod.number().nullish(),
+    helpfulnessRating: zod.number().nullish(),
+    overallRating: zod.number().nullish(),
+    narrative: zod.string().nullish(),
+    name: zod.string().nullish(),
+    roleLabel: zod.string().nullish(),
+    consentToShare: zod.boolean(),
+    source: zod.string(),
+    createdAt: zod.coerce.date(),
+  }),
+});
+
+/**
+ * @summary Admin export of sandbox feedback
+ */
+export const ListSandboxFeedbackResponseItem = zod.object({
+  id: zod.number(),
+  role: zod.string().nullish(),
+  navigationRating: zod.number().nullish(),
+  aestheticsRating: zod.number().nullish(),
+  helpfulnessRating: zod.number().nullish(),
+  overallRating: zod.number().nullish(),
+  narrative: zod.string().nullish(),
+  name: zod.string().nullish(),
+  roleLabel: zod.string().nullish(),
+  consentToShare: zod.boolean(),
+  source: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListSandboxFeedbackResponse = zod.array(
+  ListSandboxFeedbackResponseItem,
+);
+
+/**
  * Returns a presigned GCS URL for direct upload. The client sends JSON
 metadata here, then uploads the file directly to the returned URL.
 

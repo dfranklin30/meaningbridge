@@ -694,6 +694,38 @@ paths:
                 items:
                   $ref: "#/components/schemas/NotifyOptIn"
 
+  /feedback:
+    post:
+      operationId: createSandboxFeedback
+      tags: [feedback]
+      summary: Submit sandbox experience feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SandboxFeedbackInput"
+      responses:
+        "200":
+          description: Feedback recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SandboxFeedbackResult"
+    get:
+      operationId: listSandboxFeedback
+      tags: [feedback]
+      summary: Admin export of sandbox feedback
+      responses:
+        "200":
+          description: All feedback
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SandboxFeedback"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -1318,3 +1350,40 @@ components:
         signup:
           $ref: "#/components/schemas/NotifyOptIn"
       required: [ok, alreadySubscribed, signup]
+
+    SandboxFeedback:
+      type: object
+      properties:
+        id: { type: integer }
+        role: { type: ["string", "null"] }
+        navigationRating: { type: ["integer", "null"] }
+        aestheticsRating: { type: ["integer", "null"] }
+        helpfulnessRating: { type: ["integer", "null"] }
+        overallRating: { type: ["integer", "null"] }
+        narrative: { type: ["string", "null"] }
+        name: { type: ["string", "null"] }
+        roleLabel: { type: ["string", "null"] }
+        consentToShare: { type: boolean }
+        source: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, consentToShare, source, createdAt]
+    SandboxFeedbackInput:
+      type: object
+      properties:
+        role: { type: ["string", "null"], description: "seeker | professional" }
+        navigationRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        aestheticsRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        helpfulnessRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        overallRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        narrative: { type: ["string", "null"] }
+        name: { type: ["string", "null"] }
+        roleLabel: { type: ["string", "null"] }
+        consentToShare: { type: ["boolean", "null"] }
+        source: { type: ["string", "null"] }
+    SandboxFeedbackResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        feedback:
+          $ref: "#/components/schemas/SandboxFeedback"
+      required: [ok, feedback]

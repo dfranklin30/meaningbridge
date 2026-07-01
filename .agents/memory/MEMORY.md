@@ -1,1 +1,1 @@
-- [Invite redemption atomicity](invite-redemption-atomicity.md) — single-use code claims must guard in the UPDATE WHERE, not select-then-update-by-id (TOCTOU).
+- [Magical theme direction + sandbox roadmap](magical-theme-direction.md) — "Disney magical" resolved as gentle warmth/light/hope (dawn-gold), NOT literal Disney; 5-phase plan for the big request.

@@ -52,6 +52,9 @@ import type {
   ProfileInput,
   SafetyEvent,
   SafetyEventInput,
+  SandboxFeedback,
+  SandboxFeedbackInput,
+  SandboxFeedbackResult,
   Therapist,
   UpdateMeInput,
   UploadUrlRequest,
@@ -3251,6 +3254,167 @@ export function useListNotifyOptIns<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListNotifyOptInsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit sandbox experience feedback
+ */
+export const getCreateSandboxFeedbackUrl = () => {
+  return `/api/feedback`;
+};
+
+export const createSandboxFeedback = async (
+  sandboxFeedbackInput: SandboxFeedbackInput,
+  options?: RequestInit,
+): Promise<SandboxFeedbackResult> => {
+  return customFetch<SandboxFeedbackResult>(getCreateSandboxFeedbackUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sandboxFeedbackInput),
+  });
+};
+
+export const getCreateSandboxFeedbackMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSandboxFeedback>>,
+    TError,
+    { data: BodyType<SandboxFeedbackInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSandboxFeedback>>,
+  TError,
+  { data: BodyType<SandboxFeedbackInput> },
+  TContext
+> => {
+  const mutationKey = ["createSandboxFeedback"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSandboxFeedback>>,
+    { data: BodyType<SandboxFeedbackInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSandboxFeedback(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSandboxFeedbackMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSandboxFeedback>>
+>;
+export type CreateSandboxFeedbackMutationBody = BodyType<SandboxFeedbackInput>;
+export type CreateSandboxFeedbackMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit sandbox experience feedback
+ */
+export const useCreateSandboxFeedback = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSandboxFeedback>>,
+    TError,
+    { data: BodyType<SandboxFeedbackInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSandboxFeedback>>,
+  TError,
+  { data: BodyType<SandboxFeedbackInput> },
+  TContext
+> => {
+  return useMutation(getCreateSandboxFeedbackMutationOptions(options));
+};
+
+/**
+ * @summary Admin export of sandbox feedback
+ */
+export const getListSandboxFeedbackUrl = () => {
+  return `/api/feedback`;
+};
+
+export const listSandboxFeedback = async (
+  options?: RequestInit,
+): Promise<SandboxFeedback[]> => {
+  return customFetch<SandboxFeedback[]>(getListSandboxFeedbackUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSandboxFeedbackQueryKey = () => {
+  return [`/api/feedback`] as const;
+};
+
+export const getListSandboxFeedbackQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSandboxFeedback>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSandboxFeedback>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSandboxFeedbackQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listSandboxFeedback>>
+  > = ({ signal }) => listSandboxFeedback({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSandboxFeedback>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSandboxFeedbackQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSandboxFeedback>>
+>;
+export type ListSandboxFeedbackQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin export of sandbox feedback
+ */
+
+export function useListSandboxFeedback<
+  TData = Awaited<ReturnType<typeof listSandboxFeedback>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSandboxFeedback>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSandboxFeedbackQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

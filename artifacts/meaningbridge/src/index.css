@@ -38,6 +38,8 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-accent-border: var(--accent-border);
 
+  --color-dawn: hsl(var(--dawn));
+
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-destructive-border: var(--destructive-border);
@@ -102,6 +104,8 @@
 
   --accent: 180 30% 92%; /* very pale teal wash */
   --accent-foreground: 215 38% 18%;
+
+  --dawn: 38 74% 64%; /* warm dawn gold — light and hope, used sparingly */
 
   --destructive: 0 55% 50%;
   --destructive-foreground: 36 40% 98%;
@@ -180,6 +184,8 @@
   
   --accent: 20 10% 25%;
   --accent-foreground: 35 20% 90%;
+
+  --dawn: 38 55% 58%;
   
   --destructive: 0 40% 50%;
   --destructive-foreground: 35 20% 90%;
@@ -241,6 +247,14 @@
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
+  }
+  /* Soft dawn-light glow — a gentle sense of warmth and hope, never a spotlight. */
+  .dawn-glow {
+    background-image: radial-gradient(
+      60% 55% at 50% 0%,
+      hsl(var(--dawn) / 0.16),
+      transparent 70%
+    );
   }
   [contenteditable][data-placeholder]:empty::before {
     content: attr(data-placeholder);

@@ -29,6 +29,7 @@ import NotifyPage from "@/pages/notify";
 import PresentPage from "@/pages/present";
 import Pricing from "@/pages/pricing";
 import Caregiver from "@/pages/caregiver";
+import Sandbox from "@/pages/sandbox";
 import SelectRole from "@/pages/select-role";
 
 import Home from "@/pages/home";
@@ -325,6 +326,7 @@ function AppRouterSwitch() {
       <Route path="/present" component={PresentPage} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/caregiver" component={Caregiver} />
+      <Route path="/sandbox" component={Sandbox} />
       <Route path="/care/invite" component={CareInvite} />
       <Route path="/select-role" component={SelectRoleGate} />
       <Route component={AppGate} />

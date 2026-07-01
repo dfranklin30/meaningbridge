@@ -42,6 +42,7 @@ import JournalList from "@/pages/journal/index";
 import JournalEditor from "@/pages/journal/editor";
 import PracticesList from "@/pages/practices/index";
 import PracticePlayer from "@/pages/practices/player";
+import PracticeEditor from "@/pages/practices/editor";
 import LovedOne from "@/pages/loved-one";
 import Therapists from "@/pages/therapists";
 import Crisis from "@/pages/crisis";
@@ -231,6 +232,8 @@ function AppRoutes() {
         <Route path="/journal/new" component={JournalEditor} />
         <Route path="/journal/:id" component={JournalEditor} />
         <Route path="/practices" component={PracticesList} />
+        <Route path="/practices/new" component={PracticeEditor} />
+        <Route path="/practices/:id/edit" component={PracticeEditor} />
         <Route path="/practices/:id" component={PracticePlayer} />
         <Route path="/loved-one" component={LovedOne} />
         <Route path="/therapists" component={Therapists} />

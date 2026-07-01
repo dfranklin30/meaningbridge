@@ -406,6 +406,38 @@ export interface Practice {
   breathPattern?: PracticeBreathPatternItem[] | null;
 }
 
+export type PracticeInputBreathPatternItem = {
+  /** @minLength 1 */
+  label: string;
+  /** @minimum 1 */
+  seconds: number;
+  /** @minimum 0 */
+  scale: number;
+};
+
+export interface PracticeInput {
+  /** Optional URL-safe id; auto-generated from title when omitted. */
+  slug?: string;
+  /** @minLength 1 */
+  title: string;
+  /**
+   * breathwork | meditation | art | ritual | reflection
+   * @minLength 1
+   */
+  category: string;
+  /** @minimum 1 */
+  durationMinutes: number;
+  /** @minLength 1 */
+  summary: string;
+  /** @minItems 1 */
+  steps: string[];
+  /**
+   * Ordered breath phases for the on-screen pacer. Null or empty means no counter.
+   * @nullable
+   */
+  breathPattern?: PracticeInputBreathPatternItem[] | null;
+}
+
 export interface Therapist {
   id: number;
   name: string;

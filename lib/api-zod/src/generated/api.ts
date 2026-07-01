@@ -546,6 +546,39 @@ export const ListPracticesResponseItem = zod.object({
 });
 export const ListPracticesResponse = zod.array(ListPracticesResponseItem);
 
+/**
+ * @summary Create a practice (authenticated editor)
+ */
+
+export const createPracticeBodyBreathPatternItemScaleMin = 0;
+
+export const CreatePracticeBody = zod.object({
+  slug: zod
+    .string()
+    .optional()
+    .describe("Optional URL-safe id; auto-generated from title when omitted."),
+  title: zod.string().min(1),
+  category: zod
+    .string()
+    .min(1)
+    .describe("breathwork | meditation | art | ritual | reflection"),
+  durationMinutes: zod.number().min(1),
+  summary: zod.string().min(1),
+  steps: zod.array(zod.string().min(1)).min(1),
+  breathPattern: zod
+    .array(
+      zod.object({
+        label: zod.string().min(1),
+        seconds: zod.number().min(1),
+        scale: zod.number().min(createPracticeBodyBreathPatternItemScaleMin),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
+    ),
+});
+
 export const GetPracticeParams = zod.object({
   id: zod.coerce.number(),
 });
@@ -572,6 +605,73 @@ export const GetPracticeResponse = zod.object({
     .describe(
       "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
     ),
+});
+
+/**
+ * @summary Update a practice (authenticated editor)
+ */
+export const UpdatePracticeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const updatePracticeBodyBreathPatternItemScaleMin = 0;
+
+export const UpdatePracticeBody = zod.object({
+  slug: zod
+    .string()
+    .optional()
+    .describe("Optional URL-safe id; auto-generated from title when omitted."),
+  title: zod.string().min(1),
+  category: zod
+    .string()
+    .min(1)
+    .describe("breathwork | meditation | art | ritual | reflection"),
+  durationMinutes: zod.number().min(1),
+  summary: zod.string().min(1),
+  steps: zod.array(zod.string().min(1)).min(1),
+  breathPattern: zod
+    .array(
+      zod.object({
+        label: zod.string().min(1),
+        seconds: zod.number().min(1),
+        scale: zod.number().min(updatePracticeBodyBreathPatternItemScaleMin),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
+    ),
+});
+
+export const UpdatePracticeResponse = zod.object({
+  id: zod.number(),
+  slug: zod.string(),
+  title: zod.string(),
+  category: zod
+    .string()
+    .describe("breathwork | meditation | art | ritual | reflection"),
+  durationMinutes: zod.number(),
+  summary: zod.string(),
+  steps: zod.array(zod.string()),
+  breathPattern: zod
+    .array(
+      zod.object({
+        label: zod.string(),
+        seconds: zod.number(),
+        scale: zod.number(),
+      }),
+    )
+    .nullish()
+    .describe(
+      "Ordered breath phases for the on-screen pacer. Null or empty means no counter.",
+    ),
+});
+
+/**
+ * @summary Delete a practice (authenticated editor)
+ */
+export const DeletePracticeParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 /**

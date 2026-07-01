@@ -48,6 +48,7 @@ import type {
   NotifyOptInInput,
   NotifyOptInResult,
   Practice,
+  PracticeInput,
   Profile,
   ProfileInput,
   SafetyEvent,
@@ -2554,6 +2555,92 @@ export function useListPractices<
   return { ...query, queryKey: queryOptions.queryKey };
 }
 
+/**
+ * @summary Create a practice (authenticated editor)
+ */
+export const getCreatePracticeUrl = () => {
+  return `/api/practices`;
+};
+
+export const createPractice = async (
+  practiceInput: PracticeInput,
+  options?: RequestInit,
+): Promise<Practice> => {
+  return customFetch<Practice>(getCreatePracticeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(practiceInput),
+  });
+};
+
+export const getCreatePracticeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPractice>>,
+    TError,
+    { data: BodyType<PracticeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPractice>>,
+  TError,
+  { data: BodyType<PracticeInput> },
+  TContext
+> => {
+  const mutationKey = ["createPractice"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPractice>>,
+    { data: BodyType<PracticeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createPractice(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreatePracticeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPractice>>
+>;
+export type CreatePracticeMutationBody = BodyType<PracticeInput>;
+export type CreatePracticeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a practice (authenticated editor)
+ */
+export const useCreatePractice = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPractice>>,
+    TError,
+    { data: BodyType<PracticeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createPractice>>,
+  TError,
+  { data: BodyType<PracticeInput> },
+  TContext
+> => {
+  return useMutation(getCreatePracticeMutationOptions(options));
+};
+
 export const getGetPracticeUrl = (id: number) => {
   return `/api/practices/${id}`;
 };
@@ -2633,6 +2720,177 @@ export function useGetPractice<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Update a practice (authenticated editor)
+ */
+export const getUpdatePracticeUrl = (id: number) => {
+  return `/api/practices/${id}`;
+};
+
+export const updatePractice = async (
+  id: number,
+  practiceInput: PracticeInput,
+  options?: RequestInit,
+): Promise<Practice> => {
+  return customFetch<Practice>(getUpdatePracticeUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(practiceInput),
+  });
+};
+
+export const getUpdatePracticeMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePractice>>,
+    TError,
+    { id: number; data: BodyType<PracticeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updatePractice>>,
+  TError,
+  { id: number; data: BodyType<PracticeInput> },
+  TContext
+> => {
+  const mutationKey = ["updatePractice"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updatePractice>>,
+    { id: number; data: BodyType<PracticeInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updatePractice(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdatePracticeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updatePractice>>
+>;
+export type UpdatePracticeMutationBody = BodyType<PracticeInput>;
+export type UpdatePracticeMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Update a practice (authenticated editor)
+ */
+export const useUpdatePractice = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updatePractice>>,
+    TError,
+    { id: number; data: BodyType<PracticeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updatePractice>>,
+  TError,
+  { id: number; data: BodyType<PracticeInput> },
+  TContext
+> => {
+  return useMutation(getUpdatePracticeMutationOptions(options));
+};
+
+/**
+ * @summary Delete a practice (authenticated editor)
+ */
+export const getDeletePracticeUrl = (id: number) => {
+  return `/api/practices/${id}`;
+};
+
+export const deletePractice = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeletePracticeUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeletePracticeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePractice>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deletePractice>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deletePractice"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deletePractice>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deletePractice(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeletePracticeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deletePractice>>
+>;
+
+export type DeletePracticeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a practice (authenticated editor)
+ */
+export const useDeletePractice = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deletePractice>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deletePractice>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeletePracticeMutationOptions(options));
+};
 
 /**
  * @summary Therapist directory placeholder (Portland Institute–style)

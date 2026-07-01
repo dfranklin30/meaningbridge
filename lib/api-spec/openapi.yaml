@@ -551,6 +551,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Practice"
+    post:
+      operationId: createPractice
+      tags: [practices]
+      summary: Create a practice (authenticated editor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PracticeInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Practice"
   /practices/{id}:
     get:
       operationId: getPractice
@@ -572,6 +589,45 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AnthropicError" }
+    put:
+      operationId: updatePractice
+      tags: [practices]
+      summary: Update a practice (authenticated editor)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PracticeInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Practice"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    delete:
+      operationId: deletePractice
+      tags: [practices]
+      summary: Delete a practice (authenticated editor)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
 
   /resources/therapists:
     get:
@@ -1231,6 +1287,30 @@ components:
               scale: { type: number }
             required: [label, seconds, scale]
       required: [id, slug, title, category, durationMinutes, summary, steps]
+
+    PracticeInput:
+      type: object
+      properties:
+        slug: { type: string, description: "Optional URL-safe id; auto-generated from title when omitted." }
+        title: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1, description: "breathwork | meditation | art | ritual | reflection" }
+        durationMinutes: { type: integer, minimum: 1 }
+        summary: { type: string, minLength: 1 }
+        steps:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1 }
+        breathPattern:
+          type: ["array", "null"]
+          description: "Ordered breath phases for the on-screen pacer. Null or empty means no counter."
+          items:
+            type: object
+            properties:
+              label: { type: string, minLength: 1 }
+              seconds: { type: integer, minimum: 1 }
+              scale: { type: number, minimum: 0 }
+            required: [label, seconds, scale]
+      required: [title, category, durationMinutes, summary, steps]
 
     Therapist:
       type: object

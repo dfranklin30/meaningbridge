@@ -1,1 +1,1 @@
-- [Magical theme direction + sandbox roadmap](magical-theme-direction.md) — "Disney magical" resolved as gentle warmth/light/hope (dawn-gold), NOT literal Disney; 5-phase plan for the big request.
+- [Generated API client base URL](api-client-base-url.md) — Orval client isn't BASE_URL-aware (setBaseUrl never called); works only because app is root-mounted. Also holds the journal-save debugging conclusion.

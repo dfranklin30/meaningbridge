@@ -50,6 +50,7 @@ export default function JournalEditor() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const initialized = useRef(false);
 
   const [reflection, setReflection] = useState<string | null>(null);
@@ -97,6 +98,7 @@ export default function JournalEditor() {
   const handleSave = async () => {
     if (!title.trim() && !body.trim()) return;
     setIsSaving(true);
+    setSaveError(false);
 
     try {
       if (isNew) {
@@ -112,6 +114,7 @@ export default function JournalEditor() {
       }
     } catch (e) {
       console.error(e);
+      setSaveError(true);
     } finally {
       setIsSaving(false);
     }
@@ -183,6 +186,12 @@ export default function JournalEditor() {
           </button>
         </div>
       </div>
+
+      {saveError && (
+        <div className="mb-6 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          This entry could not be saved just now. Please check your connection and try again.
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col gap-6">
         <div className="flex flex-wrap items-center gap-3">

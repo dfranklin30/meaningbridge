@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
@@ -55,5 +55,21 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Centralized error handler. Express 5 forwards rejected promises from async
+// route handlers here. Without this, thrown errors return an opaque 500 with no
+// log detail, making failures (e.g. a failed journal save) invisible.
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  const e = err as { name?: string; message?: string; issues?: unknown };
+  req.log.error({ err }, "unhandled route error");
+  if (res.headersSent) {
+    return;
+  }
+  if (e?.name === "ZodError") {
+    res.status(400).json({ error: "Invalid request", issues: e.issues });
+    return;
+  }
+  res.status(500).json({ error: "Something went wrong" });
+});
 
 export default app;

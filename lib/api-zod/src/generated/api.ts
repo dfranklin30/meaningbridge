@@ -139,6 +139,12 @@ export const GetProfileResponse = zod.object({
     ),
   gisScore: zod.number().nullish(),
   gisCompletedAt: zod.coerce.date().nullish(),
+  breathCueEnabled: zod
+    .boolean()
+    .describe("Breath pacer chime on (off by default)"),
+  breathCounterVisible: zod
+    .boolean()
+    .describe("Breath pacer counter visible (visible by default)"),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -153,6 +159,8 @@ export const UpdateProfileBody = zod.object({
   consentJournal: zod.boolean().optional(),
   consentContinuingBonds: zod.boolean().optional(),
   onboardingComplete: zod.boolean().optional(),
+  breathCueEnabled: zod.boolean().optional(),
+  breathCounterVisible: zod.boolean().optional(),
 });
 
 export const UpdateProfileResponse = zod.object({
@@ -179,6 +187,12 @@ export const UpdateProfileResponse = zod.object({
     ),
   gisScore: zod.number().nullish(),
   gisCompletedAt: zod.coerce.date().nullish(),
+  breathCueEnabled: zod
+    .boolean()
+    .describe("Breath pacer chime on (off by default)"),
+  breathCounterVisible: zod
+    .boolean()
+    .describe("Breath pacer counter visible (visible by default)"),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });

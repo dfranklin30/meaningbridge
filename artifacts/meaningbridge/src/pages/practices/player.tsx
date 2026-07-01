@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "wouter";
-import { useGetPractice, getGetPracticeQueryKey } from "@workspace/api-client-react";
+import {
+  useGetPractice,
+  getGetPracticeQueryKey,
+  useGetProfile,
+  useUpdateProfile,
+  getGetProfileQueryKey,
+} from "@workspace/api-client-react";
 import type { PracticeBreathPatternItem } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, Check, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -132,10 +139,36 @@ export default function PracticePlayer() {
   const practiceId = parseInt(id || "0");
   const { data: practice } = useGetPractice(practiceId, { query: { enabled: !!practiceId, queryKey: getGetPracticeQueryKey(practiceId) } });
 
+  const queryClient = useQueryClient();
+  const { data: profile } = useGetProfile();
+  const { mutate: updateProfile } = useUpdateProfile();
+
   const [currentStep, setCurrentStep] = useState(0);
+  // Seed from localStorage for an instant, offline-safe starting value; the
+  // profile (source of truth across devices) reconciles it once it loads.
   const [showCounter, setShowCounter] = useState(readCounterPref);
   const [cueEnabled, setCueEnabled] = useState(readCuePref);
   const reducedMotion = usePrefersReducedMotion();
+
+  // When the profile arrives, adopt its stored preferences so the same calm
+  // setup follows the person across devices. Runs once per profile load.
+  const profileAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!profile || profileAppliedRef.current) return;
+    profileAppliedRef.current = true;
+    setShowCounter(profile.breathCounterVisible);
+    setCueEnabled(profile.breathCueEnabled);
+  }, [profile]);
+
+  // Persist a preference to the profile (cross-device). localStorage is written
+  // separately below so it stays as the offline fallback even if this fails.
+  function persistPref(patch: { breathCounterVisible?: boolean; breathCueEnabled?: boolean }) {
+    if (!profile) return;
+    updateProfile(
+      { data: patch },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() }) },
+    );
+  }
 
   // Reduced motion is a hard suppressor: no chime, no haptic, even if the
   // in-app toggle is on. The sound toggle is hidden in that case.
@@ -179,17 +212,16 @@ export default function PracticePlayer() {
   }, [phaseIndex, cuesAllowed, breathActive]);
 
   function toggleCue() {
-    setCueEnabled((v) => {
-      const next = !v;
-      if (next) {
-        // Enabling is a user gesture: prime (create + resume) the audio context
-        // now so the first phase-boundary chime isn't blocked by autoplay
-        // policy. No tone is played here — cues fire only at phase boundaries.
-        const ctx = getAudioContext();
-        if (ctx?.state === "suspended") void ctx.resume();
-      }
-      return next;
-    });
+    const next = !cueEnabled;
+    if (next) {
+      // Enabling is a user gesture: prime (create + resume) the audio context
+      // now so the first phase-boundary chime isn't blocked by autoplay
+      // policy. No tone is played here — cues fire only at phase boundaries.
+      const ctx = getAudioContext();
+      if (ctx?.state === "suspended") void ctx.resume();
+    }
+    setCueEnabled(next);
+    persistPref({ breathCueEnabled: next });
   }
 
   if (!practice) return null;
@@ -227,7 +259,11 @@ export default function PracticePlayer() {
             )}
             <button
               type="button"
-              onClick={() => setShowCounter((v) => !v)}
+              onClick={() => {
+                const next = !showCounter;
+                setShowCounter(next);
+                persistPref({ breathCounterVisible: next });
+              }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               aria-pressed={showCounter}
             >

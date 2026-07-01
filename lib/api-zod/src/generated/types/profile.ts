@@ -31,6 +31,10 @@ export interface Profile {
   gisScore?: number | null;
   /** @nullable */
   gisCompletedAt?: Date | null;
+  /** Breath pacer chime on (off by default) */
+  breathCueEnabled: boolean;
+  /** Breath pacer counter visible (visible by default) */
+  breathCounterVisible: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

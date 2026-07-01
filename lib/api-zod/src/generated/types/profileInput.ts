@@ -20,4 +20,6 @@ export interface ProfileInput {
   consentJournal?: boolean;
   consentContinuingBonds?: boolean;
   onboardingComplete?: boolean;
+  breathCueEnabled?: boolean;
+  breathCounterVisible?: boolean;
 }

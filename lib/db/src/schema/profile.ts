@@ -22,6 +22,10 @@ export const profileTable = pgTable("profile", {
   tier: text("tier"),
   gisScore: integer("gis_score"),
   gisCompletedAt: timestamp("gis_completed_at", { withTimezone: true }),
+  // Breath pacer preferences, carried across devices. Sound off by default
+  // (trauma-informed, never a surprise sound); counter visible by default.
+  breathCueEnabled: boolean("breath_cue_enabled").notNull().default(false),
+  breathCounterVisible: boolean("breath_counter_visible").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

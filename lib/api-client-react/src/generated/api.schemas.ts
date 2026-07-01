@@ -120,6 +120,10 @@ export interface Profile {
   gisScore?: number | null;
   /** @nullable */
   gisCompletedAt?: string | null;
+  /** Breath pacer chime on (off by default) */
+  breathCueEnabled: boolean;
+  /** Breath pacer counter visible (visible by default) */
+  breathCounterVisible: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -138,6 +142,8 @@ export interface ProfileInput {
   consentJournal?: boolean;
   consentContinuingBonds?: boolean;
   onboardingComplete?: boolean;
+  breathCueEnabled?: boolean;
+  breathCounterVisible?: boolean;
 }
 
 /**

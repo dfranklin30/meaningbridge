@@ -13,5 +13,10 @@ export interface ChatSession {
   title: string;
   /** @nullable */
   deceasedId?: number | null;
+  /**
+   * For continuing-bonds: open | final | forgiveness | gratitude | unfinished | legacy | meaning
+   * @nullable
+   */
+  conversationType?: string | null;
   createdAt: Date;
 }

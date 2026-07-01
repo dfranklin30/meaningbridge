@@ -124,6 +124,10 @@ export interface Profile {
   breathCueEnabled: boolean;
   /** Breath pacer counter visible (visible by default) */
   breathCounterVisible: boolean;
+  /** Consent to automated safety screening of journal entries */
+  safetyScreeningConsent: boolean;
+  /** Consent to notify the care team when serious risk is detected */
+  clinicianMonitoringConsent: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -144,6 +148,8 @@ export interface ProfileInput {
   onboardingComplete?: boolean;
   breathCueEnabled?: boolean;
   breathCounterVisible?: boolean;
+  safetyScreeningConsent?: boolean;
+  clinicianMonitoringConsent?: boolean;
 }
 
 /**
@@ -291,6 +297,11 @@ export interface ChatSession {
   title: string;
   /** @nullable */
   deceasedId?: number | null;
+  /**
+   * For continuing-bonds: open | final | forgiveness | gratitude | unfinished | legacy | meaning
+   * @nullable
+   */
+  conversationType?: string | null;
   createdAt: string;
 }
 
@@ -299,6 +310,8 @@ export interface ChatSessionInput {
   title: string;
   /** @nullable */
   deceasedId?: number | null;
+  /** @nullable */
+  conversationType?: string | null;
 }
 
 export interface ChatMessageRecord {
@@ -316,6 +329,8 @@ export interface ChatSessionWithMessages {
   title: string;
   /** @nullable */
   deceasedId?: number | null;
+  /** @nullable */
+  conversationType?: string | null;
   createdAt: string;
   messages: ChatMessageRecord[];
 }
@@ -325,6 +340,18 @@ export interface ChatMessageInput {
   content: string;
 }
 
+/**
+ * Who can see this entry. Defaults to private.
+ */
+export type JournalEntryPrivacyStatus =
+  (typeof JournalEntryPrivacyStatus)[keyof typeof JournalEntryPrivacyStatus];
+
+export const JournalEntryPrivacyStatus = {
+  private: "private",
+  shared: "shared",
+  "share-later": "share-later",
+} as const;
+
 export interface JournalEntry {
   id: number;
   title: string;
@@ -332,9 +359,33 @@ export interface JournalEntry {
   category: string;
   /** @nullable */
   promptId?: number | null;
+  /** @nullable */
+  mood?: string | null;
+  /** Who can see this entry. Defaults to private. */
+  privacyStatus: JournalEntryPrivacyStatus;
+  /**
+   * The most recent gentle AI reflection, if any
+   * @nullable
+   */
+  aiReflection?: string | null;
+  /** Internal safety screening level 0-4. Never shown to the user as a number. */
+  riskLevel: number;
+  /** @nullable */
+  riskFlags?: string[] | null;
+  sharedWithTherapist: boolean;
+  clinicianAlertSent: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+export type JournalEntryInputPrivacyStatus =
+  (typeof JournalEntryInputPrivacyStatus)[keyof typeof JournalEntryInputPrivacyStatus];
+
+export const JournalEntryInputPrivacyStatus = {
+  private: "private",
+  shared: "shared",
+  "share-later": "share-later",
+} as const;
 
 export interface JournalEntryInput {
   /** @minLength 1 */
@@ -343,6 +394,21 @@ export interface JournalEntryInput {
   category: string;
   /** @nullable */
   promptId?: number | null;
+  /** @nullable */
+  mood?: string | null;
+  privacyStatus?: JournalEntryInputPrivacyStatus;
+  sharedWithTherapist?: boolean;
+}
+
+export interface JournalReflectionResult {
+  /** A short, gentle reflection on the entry */
+  reflection: string;
+  /** True when the screening surfaced a concern the UI should respond to gently */
+  riskAcknowledged: boolean;
+  /** True when the UI should surface crisis support (higher risk levels) */
+  showCrisisSupport: boolean;
+  /** True when it may help to offer a one-tap share with the care team */
+  suggestShare: boolean;
 }
 
 export interface JournalPrompt {

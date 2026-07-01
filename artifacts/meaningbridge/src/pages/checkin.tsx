@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useCreateCheckIn, getListCheckInsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { VoiceInput } from "../components/voice-input";
 
 function ScaleSlider({
   label,
@@ -91,13 +92,23 @@ export default function CheckIn() {
         />
         <ScaleSlider label="Ability to function today" value={functioning} onChange={setFunctioning} />
 
-        <div className="space-y-4 pt-4 border-t border-border">
+        <div className="space-y-3 pt-4 border-t border-border">
           <textarea
             className="w-full bg-background border border-border rounded-md px-4 py-3 min-h-[100px]"
             placeholder="Any notes about today? (Optional)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
+          <div className="flex items-center gap-3">
+            <VoiceInput
+              onTranscript={(text) =>
+                setNote((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              You can speak your note and review it here before saving.
+            </p>
+          </div>
         </div>
 
         <button

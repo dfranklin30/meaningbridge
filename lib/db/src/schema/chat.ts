@@ -11,6 +11,9 @@ export const chatSessionsTable = pgTable("chat_sessions", {
   mode: text("mode").notNull(),
   title: text("title").notNull(),
   deceasedId: integer("deceased_id"),
+  // For continuing-bonds sessions: "open" | "final" | "forgiveness" |
+  // "gratitude" | "unfinished" | "legacy" | "meaning". Null for other modes.
+  conversationType: text("conversation_type"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

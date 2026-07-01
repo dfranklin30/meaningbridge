@@ -72,8 +72,27 @@ export default function JournalList() {
                   <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                     {entry.body.replace(/[#*`_]/g, '')}
                   </p>
-                  <div className="mt-4 inline-block px-2.5 py-1 bg-secondary rounded text-[10px] uppercase tracking-wider text-secondary-foreground/70">
-                    {entry.category}
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="inline-block px-2.5 py-1 bg-secondary rounded text-[10px] uppercase tracking-wider text-secondary-foreground/70">
+                      {entry.category}
+                    </span>
+                    {entry.mood && (
+                      <span className="inline-block px-2.5 py-1 rounded text-[10px] tracking-wider text-muted-foreground border border-border/60">
+                        {entry.mood}
+                      </span>
+                    )}
+                    <span className="inline-block px-2.5 py-1 rounded text-[10px] uppercase tracking-wider text-muted-foreground border border-border/60">
+                      {entry.privacyStatus === "shared"
+                        ? "Shared with care team"
+                        : entry.privacyStatus === "share-later"
+                          ? "Decide later"
+                          : "Private"}
+                    </span>
+                    {entry.aiReflection && (
+                      <span className="inline-block px-2.5 py-1 rounded text-[10px] uppercase tracking-wider text-primary/80 border border-primary/30">
+                        Reflection saved
+                      </span>
+                    )}
                   </div>
                 </div>
               </Link>

@@ -15,7 +15,9 @@ export default function Settings() {
     workingWithTherapist: false,
     preferredMode: "",
     consentJournal: false,
-    consentContinuingBonds: false
+    consentContinuingBonds: false,
+    safetyScreeningConsent: true,
+    clinicianMonitoringConsent: false
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -31,7 +33,9 @@ export default function Settings() {
         workingWithTherapist: profile.workingWithTherapist,
         preferredMode: profile.preferredMode || "",
         consentJournal: profile.consentJournal,
-        consentContinuingBonds: profile.consentContinuingBonds
+        consentContinuingBonds: profile.consentContinuingBonds,
+        safetyScreeningConsent: profile.safetyScreeningConsent,
+        clinicianMonitoringConsent: profile.clinicianMonitoringConsent
       });
     }
   }, [profile]);
@@ -135,6 +139,38 @@ export default function Settings() {
               <div>
                 <span className="text-sm font-medium block">Continuing Bonds</span>
                 <span className="text-xs text-muted-foreground block mt-1">Allow the companion to use the deceased profile information to help maintain a sense of connection.</span>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <section className="space-y-6">
+          <h2 className="text-xl font-serif border-b border-border/50 pb-2">Safety and Care</h2>
+
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 p-4 border border-border rounded-md cursor-pointer hover:bg-secondary/10 transition-colors">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded text-primary focus:ring-primary mt-1"
+                checked={formData.safetyScreeningConsent}
+                onChange={e => setFormData(d => ({ ...d, safetyScreeningConsent: e.target.checked }))}
+              />
+              <div>
+                <span className="text-sm font-medium block">Gentle safety awareness</span>
+                <span className="text-xs text-muted-foreground block mt-1">As you write, MeaningBridge quietly notices language that suggests you may be in danger, so it can offer support at the right moment. You are never shown a score.</span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-4 border border-border rounded-md cursor-pointer hover:bg-secondary/10 transition-colors">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded text-primary focus:ring-primary mt-1"
+                checked={formData.clinicianMonitoringConsent}
+                onChange={e => setFormData(d => ({ ...d, clinicianMonitoringConsent: e.target.checked }))}
+              />
+              <div>
+                <span className="text-sm font-medium block">Let my care team be notified in serious moments</span>
+                <span className="text-xs text-muted-foreground block mt-1">If you are working with a therapist, you can allow MeaningBridge to let them know when it detects serious risk, so a real person can reach out. This is optional and off unless you turn it on.</span>
               </div>
             </label>
           </div>

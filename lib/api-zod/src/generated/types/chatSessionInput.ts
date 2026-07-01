@@ -11,4 +11,6 @@ export interface ChatSessionInput {
   title: string;
   /** @nullable */
   deceasedId?: number | null;
+  /** @nullable */
+  conversationType?: string | null;
 }

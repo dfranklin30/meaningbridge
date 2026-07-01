@@ -22,4 +22,6 @@ export interface ProfileInput {
   onboardingComplete?: boolean;
   breathCueEnabled?: boolean;
   breathCounterVisible?: boolean;
+  safetyScreeningConsent?: boolean;
+  clinicianMonitoringConsent?: boolean;
 }

@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { JournalEntryPrivacyStatus } from "./journalEntryPrivacyStatus";
 
 export interface JournalEntry {
   id: number;
@@ -13,6 +14,21 @@ export interface JournalEntry {
   category: string;
   /** @nullable */
   promptId?: number | null;
+  /** @nullable */
+  mood?: string | null;
+  /** Who can see this entry. Defaults to private. */
+  privacyStatus: JournalEntryPrivacyStatus;
+  /**
+   * The most recent gentle AI reflection, if any
+   * @nullable
+   */
+  aiReflection?: string | null;
+  /** Internal safety screening level 0-4. Never shown to the user as a number. */
+  riskLevel: number;
+  /** @nullable */
+  riskFlags?: string[] | null;
+  sharedWithTherapist: boolean;
+  clinicianAlertSent: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

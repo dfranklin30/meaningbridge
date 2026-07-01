@@ -26,6 +26,10 @@ export const profileTable = pgTable("profile", {
   // (trauma-informed, never a surprise sound); counter visible by default.
   breathCueEnabled: boolean("breath_cue_enabled").notNull().default(false),
   breathCounterVisible: boolean("breath_counter_visible").notNull().default(true),
+  // Consent for the interactive journal safety model. Both default false so
+  // consent is an explicit, opt-in choice the person makes in onboarding/settings.
+  safetyScreeningConsent: boolean("safety_screening_consent").notNull().default(false),
+  clinicianMonitoringConsent: boolean("clinician_monitoring_consent").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

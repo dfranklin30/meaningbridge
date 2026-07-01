@@ -1,17 +1,37 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { useGetChatSession, getGetChatSessionQueryKey } from "@workspace/api-client-react";
+import {
+  useGetChatSession,
+  getGetChatSessionQueryKey,
+  useListDeceasedPhotos,
+  getListDeceasedPhotosQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Send, ArrowLeft, AlertTriangle } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
+
+const CONVERSATION_LABELS: Record<string, string> = {
+  open: "an open conversation",
+  final: "something left unsaid",
+  gratitude: "remembering with gratitude",
+  forgiveness: "forgiveness",
+  unfinished: "unfinished business",
+  legacy: "their legacy in you",
+  meaning: "making meaning",
+};
 
 export default function CompanionSession() {
   const { sessionId } = useParams();
   const id = parseInt(sessionId || "0");
   const queryClient = useQueryClient();
   const { data: session } = useGetChatSession(id, { query: { enabled: !!id, queryKey: getGetChatSessionQueryKey(id) } });
-  
+  const deceasedId = session?.deceasedId ?? 0;
+  const { data: photos } = useListDeceasedPhotos(deceasedId, {
+    query: { enabled: !!deceasedId, queryKey: getListDeceasedPhotosQueryKey(deceasedId) },
+  });
+  const photo = photos?.[0];
+
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedResponse, setStreamedResponse] = useState("");
@@ -88,9 +108,25 @@ export default function CompanionSession() {
         <Link href="/companion" className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 text-muted-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
+        {session.mode === "continuing-bonds" && (
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-secondary flex items-center justify-center text-muted-foreground shrink-0">
+            {photo ? (
+              <img
+                src={`${import.meta.env.BASE_URL}api/storage${photo.objectPath}`}
+                alt="Loved one"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-4 h-4" />
+            )}
+          </div>
+        )}
         <div>
           <h1 className="font-serif text-xl">{session.title}</h1>
-          <p className="text-xs text-muted-foreground capitalize tracking-wide">{session.mode.replace('-', ' ')}</p>
+          <p className="text-xs text-muted-foreground capitalize tracking-wide">
+            {session.mode.replace('-', ' ')}
+            {session.conversationType ? `, ${CONVERSATION_LABELS[session.conversationType] ?? session.conversationType}` : ""}
+          </p>
         </div>
       </div>
 

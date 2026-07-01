@@ -19,7 +19,7 @@ import {
   type Tier,
 } from "../lib/clinical";
 
-type Step = "name" | "loved-one" | "gis-intro" | "gis" | "tier" | "safety";
+type Step = "name" | "loved-one" | "gis-intro" | "gis" | "tier" | "safety" | "consent";
 
 export default function Onboarding() {
   const [, setLocation] = useLocation();
@@ -38,6 +38,8 @@ export default function Onboarding() {
     5: null,
   });
   const [gisResult, setGisResult] = useState<GisResult | null>(null);
+  const [screeningConsent, setScreeningConsent] = useState(true);
+  const [monitoringConsent, setMonitoringConsent] = useState(false);
 
   const { mutateAsync: updateProfile } = useUpdateProfile();
   const { mutateAsync: createDeceased } = useCreateDeceasedProfile();
@@ -84,6 +86,8 @@ export default function Onboarding() {
         crisisAcknowledged: true,
         consentJournal: true,
         consentContinuingBonds: true,
+        safetyScreeningConsent: screeningConsent,
+        clinicianMonitoringConsent: monitoringConsent,
         preferredMode: "continuing-bonds",
       },
     });
@@ -243,6 +247,58 @@ export default function Onboarding() {
               </div>
               <button
                 className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium"
+                onClick={() => setStep("consent")}
+              >
+                Continue
+              </button>
+            </div>
+          )}
+
+          {step === "consent" && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-serif">A word about privacy and safety.</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                You are in control of how MeaningBridge supports you. You can change either of
+                these anytime in Settings.
+              </p>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 p-4 border border-border rounded-md cursor-pointer hover:bg-secondary/10 transition-colors">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded text-primary focus:ring-primary mt-1"
+                    checked={screeningConsent}
+                    onChange={(e) => setScreeningConsent(e.target.checked)}
+                  />
+                  <div>
+                    <span className="text-sm font-medium block">Gentle safety awareness</span>
+                    <span className="text-xs text-muted-foreground block mt-1">
+                      As you write, MeaningBridge quietly notices language that suggests you may be
+                      in danger, so it can offer support at the right moment. You are never shown a
+                      score.
+                    </span>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 p-4 border border-border rounded-md cursor-pointer hover:bg-secondary/10 transition-colors">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded text-primary focus:ring-primary mt-1"
+                    checked={monitoringConsent}
+                    onChange={(e) => setMonitoringConsent(e.target.checked)}
+                  />
+                  <div>
+                    <span className="text-sm font-medium block">
+                      Let my care team be notified in serious moments
+                    </span>
+                    <span className="text-xs text-muted-foreground block mt-1">
+                      If you are working with a therapist, you can allow MeaningBridge to let them
+                      know when it detects serious risk, so a real person can reach out. This is
+                      optional.
+                    </span>
+                  </div>
+                </label>
+              </div>
+              <button
+                className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium"
                 onClick={finish}
               >
                 Enter the space
@@ -274,9 +330,9 @@ export default function Onboarding() {
                 </a>
                 <button
                   className="w-full bg-secondary text-secondary-foreground py-3 rounded-md"
-                  onClick={finish}
+                  onClick={() => setStep("consent")}
                 >
-                  I am safe right now — continue
+                  I am safe right now, continue
                 </button>
               </div>
               <p className="text-xs text-muted-foreground italic">

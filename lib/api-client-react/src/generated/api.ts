@@ -43,6 +43,7 @@ import type {
   JournalEntry,
   JournalEntryInput,
   JournalPrompt,
+  JournalReflectionResult,
   Me,
   NotifyOptIn,
   NotifyOptInInput,
@@ -2170,6 +2171,90 @@ export function useListJournalPrompts<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Offer a gentle AI reflection on an entry and run safety screening.
+ */
+export const getReflectOnJournalEntryUrl = (id: number) => {
+  return `/api/journal/${id}/reflect`;
+};
+
+export const reflectOnJournalEntry = async (
+  id: number,
+  options?: RequestInit,
+): Promise<JournalReflectionResult> => {
+  return customFetch<JournalReflectionResult>(getReflectOnJournalEntryUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getReflectOnJournalEntryMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reflectOnJournalEntry>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reflectOnJournalEntry>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["reflectOnJournalEntry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reflectOnJournalEntry>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return reflectOnJournalEntry(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReflectOnJournalEntryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reflectOnJournalEntry>>
+>;
+
+export type ReflectOnJournalEntryMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Offer a gentle AI reflection on an entry and run safety screening.
+ */
+export const useReflectOnJournalEntry = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reflectOnJournalEntry>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reflectOnJournalEntry>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getReflectOnJournalEntryMutationOptions(options));
+};
 
 /**
  * @summary Submit the 5-item Grief Impairment Scale (Lee & Neimeyer 2022). Scores, assigns a care tier, and logs a safety event if item 3 indicates self-destructive coping.

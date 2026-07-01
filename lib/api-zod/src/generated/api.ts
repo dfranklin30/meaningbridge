@@ -145,6 +145,12 @@ export const GetProfileResponse = zod.object({
   breathCounterVisible: zod
     .boolean()
     .describe("Breath pacer counter visible (visible by default)"),
+  safetyScreeningConsent: zod
+    .boolean()
+    .describe("Consent to automated safety screening of journal entries"),
+  clinicianMonitoringConsent: zod
+    .boolean()
+    .describe("Consent to notify the care team when serious risk is detected"),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -161,6 +167,8 @@ export const UpdateProfileBody = zod.object({
   onboardingComplete: zod.boolean().optional(),
   breathCueEnabled: zod.boolean().optional(),
   breathCounterVisible: zod.boolean().optional(),
+  safetyScreeningConsent: zod.boolean().optional(),
+  clinicianMonitoringConsent: zod.boolean().optional(),
 });
 
 export const UpdateProfileResponse = zod.object({
@@ -193,6 +201,12 @@ export const UpdateProfileResponse = zod.object({
   breathCounterVisible: zod
     .boolean()
     .describe("Breath pacer counter visible (visible by default)"),
+  safetyScreeningConsent: zod
+    .boolean()
+    .describe("Consent to automated safety screening of journal entries"),
+  clinicianMonitoringConsent: zod
+    .boolean()
+    .describe("Consent to notify the care team when serious risk is detected"),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -293,6 +307,12 @@ export const ListChatSessionsResponseItem = zod.object({
     .describe("meaning | continuing-bonds | journaling | practices"),
   title: zod.string(),
   deceasedId: zod.number().nullish(),
+  conversationType: zod
+    .string()
+    .nullish()
+    .describe(
+      "For continuing-bonds: open | final | forgiveness | gratitude | unfinished | legacy | meaning",
+    ),
   createdAt: zod.coerce.date(),
 });
 export const ListChatSessionsResponse = zod.array(ListChatSessionsResponseItem);
@@ -301,6 +321,7 @@ export const CreateChatSessionBody = zod.object({
   mode: zod.string(),
   title: zod.string(),
   deceasedId: zod.number().nullish(),
+  conversationType: zod.string().nullish(),
 });
 
 export const GetChatSessionParams = zod.object({
@@ -312,6 +333,7 @@ export const GetChatSessionResponse = zod.object({
   mode: zod.string(),
   title: zod.string(),
   deceasedId: zod.number().nullish(),
+  conversationType: zod.string().nullish(),
   createdAt: zod.coerce.date(),
   messages: zod.array(
     zod.object({
@@ -346,6 +368,22 @@ export const ListJournalEntriesResponseItem = zod.object({
   body: zod.string(),
   category: zod.string(),
   promptId: zod.number().nullish(),
+  mood: zod.string().nullish(),
+  privacyStatus: zod
+    .enum(["private", "shared", "share-later"])
+    .describe("Who can see this entry. Defaults to private."),
+  aiReflection: zod
+    .string()
+    .nullish()
+    .describe("The most recent gentle AI reflection, if any"),
+  riskLevel: zod
+    .number()
+    .describe(
+      "Internal safety screening level 0-4. Never shown to the user as a number.",
+    ),
+  riskFlags: zod.array(zod.string()).nullish(),
+  sharedWithTherapist: zod.boolean(),
+  clinicianAlertSent: zod.boolean(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -358,6 +396,9 @@ export const CreateJournalEntryBody = zod.object({
   body: zod.string(),
   category: zod.string(),
   promptId: zod.number().nullish(),
+  mood: zod.string().nullish(),
+  privacyStatus: zod.enum(["private", "shared", "share-later"]).optional(),
+  sharedWithTherapist: zod.boolean().optional(),
 });
 
 export const GetJournalEntryParams = zod.object({
@@ -370,6 +411,22 @@ export const GetJournalEntryResponse = zod.object({
   body: zod.string(),
   category: zod.string(),
   promptId: zod.number().nullish(),
+  mood: zod.string().nullish(),
+  privacyStatus: zod
+    .enum(["private", "shared", "share-later"])
+    .describe("Who can see this entry. Defaults to private."),
+  aiReflection: zod
+    .string()
+    .nullish()
+    .describe("The most recent gentle AI reflection, if any"),
+  riskLevel: zod
+    .number()
+    .describe(
+      "Internal safety screening level 0-4. Never shown to the user as a number.",
+    ),
+  riskFlags: zod.array(zod.string()).nullish(),
+  sharedWithTherapist: zod.boolean(),
+  clinicianAlertSent: zod.boolean(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -383,6 +440,9 @@ export const UpdateJournalEntryBody = zod.object({
   body: zod.string(),
   category: zod.string(),
   promptId: zod.number().nullish(),
+  mood: zod.string().nullish(),
+  privacyStatus: zod.enum(["private", "shared", "share-later"]).optional(),
+  sharedWithTherapist: zod.boolean().optional(),
 });
 
 export const UpdateJournalEntryResponse = zod.object({
@@ -391,6 +451,22 @@ export const UpdateJournalEntryResponse = zod.object({
   body: zod.string(),
   category: zod.string(),
   promptId: zod.number().nullish(),
+  mood: zod.string().nullish(),
+  privacyStatus: zod
+    .enum(["private", "shared", "share-later"])
+    .describe("Who can see this entry. Defaults to private."),
+  aiReflection: zod
+    .string()
+    .nullish()
+    .describe("The most recent gentle AI reflection, if any"),
+  riskLevel: zod
+    .number()
+    .describe(
+      "Internal safety screening level 0-4. Never shown to the user as a number.",
+    ),
+  riskFlags: zod.array(zod.string()).nullish(),
+  sharedWithTherapist: zod.boolean(),
+  clinicianAlertSent: zod.boolean(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
 });
@@ -411,6 +487,32 @@ export const ListJournalPromptsResponseItem = zod.object({
 export const ListJournalPromptsResponse = zod.array(
   ListJournalPromptsResponseItem,
 );
+
+/**
+ * @summary Offer a gentle AI reflection on an entry and run safety screening.
+ */
+export const ReflectOnJournalEntryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReflectOnJournalEntryResponse = zod.object({
+  reflection: zod.string().describe("A short, gentle reflection on the entry"),
+  riskAcknowledged: zod
+    .boolean()
+    .describe(
+      "True when the screening surfaced a concern the UI should respond to gently",
+    ),
+  showCrisisSupport: zod
+    .boolean()
+    .describe(
+      "True when the UI should surface crisis support (higher risk levels)",
+    ),
+  suggestShare: zod
+    .boolean()
+    .describe(
+      "True when it may help to offer a one-tap share with the care team",
+    ),
+});
 
 /**
  * @summary Submit the 5-item Grief Impairment Scale (Lee & Neimeyer 2022). Scores, assigns a care tier, and logs a safety event if item 3 indicates self-destructive coping.
@@ -737,6 +839,22 @@ export const GetDashboardSummaryResponse = zod.object({
       body: zod.string(),
       category: zod.string(),
       promptId: zod.number().nullish(),
+      mood: zod.string().nullish(),
+      privacyStatus: zod
+        .enum(["private", "shared", "share-later"])
+        .describe("Who can see this entry. Defaults to private."),
+      aiReflection: zod
+        .string()
+        .nullish()
+        .describe("The most recent gentle AI reflection, if any"),
+      riskLevel: zod
+        .number()
+        .describe(
+          "Internal safety screening level 0-4. Never shown to the user as a number.",
+        ),
+      riskFlags: zod.array(zod.string()).nullish(),
+      sharedWithTherapist: zod.boolean(),
+      clinicianAlertSent: zod.boolean(),
       createdAt: zod.coerce.date(),
       updatedAt: zod.coerce.date(),
     }),
@@ -749,6 +867,12 @@ export const GetDashboardSummaryResponse = zod.object({
         .describe("meaning | continuing-bonds | journaling | practices"),
       title: zod.string(),
       deceasedId: zod.number().nullish(),
+      conversationType: zod
+        .string()
+        .nullish()
+        .describe(
+          "For continuing-bonds: open | final | forgiveness | gratitude | unfinished | legacy | meaning",
+        ),
       createdAt: zod.coerce.date(),
     }),
   ),

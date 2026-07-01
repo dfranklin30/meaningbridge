@@ -35,6 +35,10 @@ export interface Profile {
   breathCueEnabled: boolean;
   /** Breath pacer counter visible (visible by default) */
   breathCounterVisible: boolean;
+  /** Consent to automated safety screening of journal entries */
+  safetyScreeningConsent: boolean;
+  /** Consent to notify the care team when serious risk is detected */
+  clinicianMonitoringConsent: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

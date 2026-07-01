@@ -11,6 +11,10 @@ export const safetyEventsTable = pgTable("safety_events", {
   source: text("source").notNull(),
   severity: text("severity").notNull(),
   note: text("note"),
+  // Optional link back to the journal entry that triggered screening, plus the
+  // detected risk level (0-4). Null for non-journal sources.
+  journalEntryId: integer("journal_entry_id"),
+  riskLevel: integer("risk_level"),
   acknowledged: boolean("acknowledged").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

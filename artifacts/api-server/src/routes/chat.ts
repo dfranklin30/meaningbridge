@@ -15,7 +15,11 @@ import {
   SendChatMessageBody,
 } from "@workspace/api-zod";
 import { detectCrisis } from "../lib/crisis";
-import { meaningSystemPrompt, continuingBondsSystemPrompt } from "../lib/prompts";
+import {
+  meaningSystemPrompt,
+  continuingBondsSystemPrompt,
+  type ConversationType,
+} from "../lib/prompts";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -100,7 +104,11 @@ router.post("/sessions/:id/messages", async (req, res) => {
         .where(and(eq(deceasedTable.id, session.deceasedId), eq(deceasedTable.userId, req.userId!)));
       deceased = d ?? null;
     }
-    systemPrompt = continuingBondsSystemPrompt({ profile: profile ?? null, deceased });
+    systemPrompt = continuingBondsSystemPrompt({
+      profile: profile ?? null,
+      deceased,
+      conversationType: (session.conversationType as ConversationType | null) ?? null,
+    });
   } else {
     systemPrompt = meaningSystemPrompt({ profile: profile ?? null });
   }

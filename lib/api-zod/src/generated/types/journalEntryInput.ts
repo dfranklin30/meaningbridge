@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { JournalEntryInputPrivacyStatus } from "./journalEntryInputPrivacyStatus";
 
 export interface JournalEntryInput {
   /** @minLength 1 */
@@ -13,4 +14,8 @@ export interface JournalEntryInput {
   category: string;
   /** @nullable */
   promptId?: number | null;
+  /** @nullable */
+  mood?: string | null;
+  privacyStatus?: JournalEntryInputPrivacyStatus;
+  sharedWithTherapist?: boolean;
 }

@@ -475,6 +475,29 @@ paths:
                 items:
                   $ref: "#/components/schemas/JournalPrompt"
 
+  /journal/{id}/reflect:
+    post:
+      operationId: reflectOnJournalEntry
+      tags: [journal]
+      summary: Offer a gentle AI reflection on an entry and run safety screening.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Reflection and screening result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalReflectionResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
   /assessments/gis:
     post:
       operationId: submitGisScreener
@@ -1070,6 +1093,8 @@ components:
         gisCompletedAt: { type: ["string", "null"], format: date-time }
         breathCueEnabled: { type: boolean, description: "Breath pacer chime on (off by default)" }
         breathCounterVisible: { type: boolean, description: "Breath pacer counter visible (visible by default)" }
+        safetyScreeningConsent: { type: boolean, description: "Consent to automated safety screening of journal entries" }
+        clinicianMonitoringConsent: { type: boolean, description: "Consent to notify the care team when serious risk is detected" }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
       required:
@@ -1081,6 +1106,8 @@ components:
         - onboardingComplete
         - breathCueEnabled
         - breathCounterVisible
+        - safetyScreeningConsent
+        - clinicianMonitoringConsent
         - createdAt
         - updatedAt
     ProfileInput:
@@ -1097,6 +1124,8 @@ components:
         onboardingComplete: { type: boolean }
         breathCueEnabled: { type: boolean }
         breathCounterVisible: { type: boolean }
+        safetyScreeningConsent: { type: boolean }
+        clinicianMonitoringConsent: { type: boolean }
 
     Me:
       type: object
@@ -1182,6 +1211,9 @@ components:
         mode: { type: string, description: "meaning | continuing-bonds | journaling | practices" }
         title: { type: string }
         deceasedId: { type: ["integer", "null"] }
+        conversationType:
+          type: ["string", "null"]
+          description: "For continuing-bonds: open | final | forgiveness | gratitude | unfinished | legacy | meaning"
         createdAt: { type: string, format: date-time }
       required: [id, mode, title, createdAt]
     ChatSessionInput:
@@ -1190,6 +1222,7 @@ components:
         mode: { type: string }
         title: { type: string }
         deceasedId: { type: ["integer", "null"] }
+        conversationType: { type: ["string", "null"] }
       required: [mode, title]
     ChatMessageRecord:
       type: object
@@ -1208,6 +1241,7 @@ components:
         mode: { type: string }
         title: { type: string }
         deceasedId: { type: ["integer", "null"] }
+        conversationType: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
         messages:
           type: array
@@ -1227,9 +1261,23 @@ components:
         body: { type: string }
         category: { type: string }
         promptId: { type: ["integer", "null"] }
+        mood: { type: ["string", "null"] }
+        privacyStatus:
+          type: string
+          enum: ["private", "shared", "share-later"]
+          description: "Who can see this entry. Defaults to private."
+        aiReflection: { type: ["string", "null"], description: "The most recent gentle AI reflection, if any" }
+        riskLevel:
+          type: integer
+          description: "Internal safety screening level 0-4. Never shown to the user as a number."
+        riskFlags:
+          type: ["array", "null"]
+          items: { type: string }
+        sharedWithTherapist: { type: boolean }
+        clinicianAlertSent: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
-      required: [id, title, body, category, createdAt, updatedAt]
+      required: [id, title, body, category, privacyStatus, riskLevel, sharedWithTherapist, clinicianAlertSent, createdAt, updatedAt]
     JournalEntryInput:
       type: object
       properties:
@@ -1237,7 +1285,26 @@ components:
         body: { type: string }
         category: { type: string }
         promptId: { type: ["integer", "null"] }
+        mood: { type: ["string", "null"] }
+        privacyStatus:
+          type: string
+          enum: ["private", "shared", "share-later"]
+        sharedWithTherapist: { type: boolean }
       required: [title, body, category]
+    JournalReflectionResult:
+      type: object
+      properties:
+        reflection: { type: string, description: "A short, gentle reflection on the entry" }
+        riskAcknowledged:
+          type: boolean
+          description: "True when the screening surfaced a concern the UI should respond to gently"
+        showCrisisSupport:
+          type: boolean
+          description: "True when the UI should surface crisis support (higher risk levels)"
+        suggestShare:
+          type: boolean
+          description: "True when it may help to offer a one-tap share with the care team"
+      required: [reflection, riskAcknowledged, showCrisisSupport, suggestShare]
     JournalPrompt:
       type: object
       properties:

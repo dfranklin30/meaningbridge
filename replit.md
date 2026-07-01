@@ -10,6 +10,7 @@ A warm, trauma-informed grief-support web app: Continuing Bonds and Meaning Reco
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/scripts run seed-practices` — seed/upsert the canonical practices (by slug), including breath-pacer patterns for breathwork practices
 - Required env: `DATABASE_URL` (Postgres), Anthropic via Replit AI Integrations
 
 ## Stack

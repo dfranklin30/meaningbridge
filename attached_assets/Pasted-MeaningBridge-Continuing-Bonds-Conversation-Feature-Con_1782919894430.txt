@@ -1,0 +1,273 @@
+MeaningBridge Continuing Bonds Conversation Feature
+
+Concept Summary
+
+The feature allows a grieving user to create a personalized “continuing bond” profile for a deceased loved one, so they can later have guided therapeutic conversations that feel emotionally familiar, meaningful, and grounded in memory.
+
+Each user may create multiple loved-one profiles, since people can experience more than one loss. Each profile stores information about the deceased person’s voice, personality, beliefs, memories, phrases, relationships, and emotional significance. The AI then uses that profile to support conversations that resemble the person’s style while remaining clearly framed as a therapeutic grief-support experience, not a literal replacement for the person.
+
+The goal is not just open-ended chatting. The larger vision is to provide guided conversations based on grief therapy approaches, especially continuing bonds theory and Dr. Robert Neimeyer’s meaning reconstruction work. Users may eventually choose conversation types such as final words, forgiveness, gratitude, unresolved questions, reassurance, legacy, or saying goodbye.
+
+Core User Flow
+
+User opens the Continuing Bonds section.
+User creates a loved-one profile.
+User optionally uploads a photo or selects an icon/avatar.
+User answers setup prompts about the loved one.
+User may add writing samples, text messages, emails, phrases, nicknames, memories, beliefs, and personality traits.
+The profile is saved and editable later.
+When the user wants a conversation, they select the loved one from a list of profile cards.
+The AI loads that person’s profile into the conversation context.
+The user chooses either:
+Open conversation
+Guided therapeutic conversation
+Final conversation
+Forgiveness conversation
+Gratitude conversation
+Legacy conversation
+Unfinished business conversation
+The AI conducts the conversation in a gentle, supportive, grief-informed way.
+
+Loved-One Profile Data Fields
+
+Basic Information
+
+Name
+Relationship to user
+Nicknames they used for the user
+Nicknames the user used for them
+Optional photo/avatar
+Date of birth
+Date of death
+Where they were from
+Where they lived
+Languages, dialects, or regional expressions
+
+Voice and Personality
+
+Common phrases
+Favorite sayings
+Tone of voice
+Humor style
+Level of warmth
+Religious or spiritual beliefs
+Values
+Things they cared about
+Things they would often say during hard times
+How they showed love
+How they handled conflict
+How they gave advice
+
+Memory Inputs
+
+Favorite memories
+Important shared experiences
+Text messages
+Emails
+Letters
+Writing samples
+Stories the user remembers
+Things that strongly remind the user of them
+Music, places, foods, smells, holidays, or rituals associated with them
+
+Therapeutic Context
+
+What the user misses most
+What feels unfinished
+What the user wishes they could say
+Whether the user seeks comfort, forgiveness, closure, guidance, gratitude, or connection
+Emotional sensitivity level
+Topics to avoid
+Topics that are especially meaningful
+
+Setup Modes
+
+Basic Setup
+
+A quick version for users who are emotionally overwhelmed. This should ask only a few gentle questions:
+
+Who are you creating this profile for?
+What was your relationship?
+What did they call you?
+What are a few phrases they used?
+What do you miss most about them?
+What kind of conversation would help you right now?
+
+Expanded Setup
+
+A deeper version for users who want a more accurate and emotionally rich profile:
+
+Upload writing samples
+Add text messages or emails
+Add memories
+Add religious/spiritual beliefs
+Add personality traits
+Add family context
+Add unfinished topics
+Add things the loved one would never say
+Add preferred therapeutic conversation goals
+
+Conversation Types
+
+Open Continuing Bond Conversation
+
+A gentle, emotionally supportive conversation where the user can speak freely.
+
+Final Conversation
+
+For users who did not get to say goodbye or want one more meaningful exchange.
+
+Forgiveness Conversation
+
+For guilt, regret, conflict, or unresolved pain.
+
+Gratitude Conversation
+
+For expressing love, appreciation, and legacy.
+
+Unfinished Business Conversation
+
+For things left unsaid, unresolved conflicts, or unanswered questions.
+
+Legacy Conversation
+
+For remembering what the person taught, valued, and passed on.
+
+Guided Meaning Reconstruction Conversation
+
+Based on grief therapy principles, helping the user integrate the loss into their continuing life story.
+
+Safety and Ethical Guardrails
+
+The AI should never claim to actually be the deceased person. It should be framed as a therapeutic reconstruction based on the user’s memories and provided materials.
+
+Suggested disclaimer:
+“This conversation is created from your memories and the details you provided. It is not your loved one, but a reflective support tool to help you continue your bond, express what matters, and process grief.”
+
+The AI should:
+
+Stay gentle and nonjudgmental.
+Avoid making new factual claims about the deceased.
+Avoid manipulative or overly certain language.
+Avoid saying “I am really here” or “I never died.”
+Encourage professional support if the user expresses severe distress, self-harm, or inability to function.
+Allow users to pause, exit, or save the conversation.
+
+Development Components
+
+Frontend
+
+Continuing Bonds dashboard
+Loved-one profile cards
+Create/Edit profile form
+Basic setup flow
+Expanded setup flow
+Photo/avatar upload
+Conversation type selector
+Chat interface
+Conversation history
+Edit profile button
+Safety/disclaimer screen
+
+Backend
+
+User authentication
+Loved-one profile storage
+Uploaded memory/writing sample storage
+Prompt builder that converts profile data into structured AI instructions
+Conversation history storage
+Safety moderation layer
+Crisis escalation handling
+Data privacy controls
+
+Suggested Database Tables
+
+loved_one_profiles
+
+id
+user_id
+name
+relationship
+photo_url
+birth_date
+death_date
+location_background
+spiritual_beliefs
+personality_summary
+common_phrases
+nicknames
+values
+memories_summary
+topics_to_avoid
+emotional_goals
+created_at
+updated_at
+
+loved_one_memories
+
+id
+profile_id
+memory_type
+content
+source_label
+created_at
+
+conversations
+
+id
+user_id
+profile_id
+conversation_type
+title
+created_at
+updated_at
+
+messages
+
+id
+conversation_id
+sender
+content
+created_at
+
+AI Prompting Approach
+
+The system should combine:
+
+A safety and ethics prompt.
+The selected therapeutic conversation mode.
+The loved-one profile.
+The user’s current emotional goal.
+Instructions to speak in a style inspired by the loved one’s remembered voice, without claiming to literally be them.
+
+Example AI instruction:
+“You are facilitating a continuing bonds grief-support conversation. Speak in a voice inspired by the user’s memories of [Name], using only the traits, phrases, values, and memories provided. Do not claim to literally be the deceased person. Keep the tone gentle, grounded, emotionally supportive, and aligned with grief therapy principles.”
+
+MVP Version
+
+The first version should include:
+
+Create one or more loved-one profiles
+Basic profile fields
+Optional photo upload
+Common phrases and memory inputs
+Select profile from dashboard
+Open conversation mode
+One guided mode: Final Conversation
+Clear disclaimer
+Save conversation history
+
+Future Enhancements
+
+Multiple therapeutic conversation templates
+Clinician review mode
+Export conversation as journal entry
+Memory timeline
+Voice-style tuning from writing samples
+Ritual mode for anniversaries, birthdays, holidays
+Integration with MeaningBridge journaling
+HVP or meaning reconstruction reflections
+Clinician-facing insights with user permission
+Expanded grief exercises based on Dr. Neimeyer’s work
+
+This is the strongest framing: not “talking to the dead,” but a grief-informed continuing bond profile that helps people have meaningful, guided conversations based on memory, love, and therapeutic intention.

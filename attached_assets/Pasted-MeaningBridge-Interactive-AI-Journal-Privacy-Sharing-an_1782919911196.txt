@@ -1,0 +1,265 @@
+MeaningBridge Interactive AI Journal: Privacy, Sharing, and Crisis Safety
+
+Concept Summary
+
+MeaningBridge should include an interactive AI journal where users can write freely about grief, loss, guilt, anger, regret, love, trauma, or continuing bonds. Because some journal entries may feel too private to share immediately, each entry should have a clear privacy control that lets the user decide whether it is private or shared with their therapist/clinician.
+
+The journal should create emotional safety by letting users express difficult feelings without feeling watched, while also including crisis safeguards for self-harm, suicide risk, abuse, or imminent danger.
+
+The goal is to balance:
+
+User privacy
+Therapeutic trust
+Clinical usefulness
+Safety and liability protection
+Responsible AI oversight
+
+Core Feature
+
+Each journal entry has a visibility setting:
+
+Private
+
+The entry is not visible to the therapist by default. The user can write freely without immediate disclosure.
+
+Shared With Therapist
+
+The entry is visible to the therapist/clinician dashboard.
+
+Share Later
+
+The entry remains private now, but the user can choose to share it later.
+
+AI-Assisted Reflection
+
+Regardless of sharing status, the user may optionally ask the AI for reflection, grounding, emotional labeling, or gentle prompts.
+
+Important Safety Principle
+
+Even if an entry is marked private, MeaningBridge should reserve the right to run automated safety screening for crisis indicators.
+
+This must be disclosed clearly to the user.
+
+Suggested language:
+“Your private journal entries are not shown to your therapist unless you choose to share them. However, MeaningBridge may use automated safety screening to detect signs of imminent harm, suicide risk, abuse, or emergency danger. If serious risk is detected, the system may prompt you to seek immediate support or may alert your clinician according to the safety policy you agreed to.”
+
+Why This Matters
+
+If users believe every word automatically goes to their therapist, they may withhold the most honest material. Privacy helps people write more openly. But if a user writes something like a suicide note, a final goodbye, or a direct plan to harm themselves, the system needs a defined response protocol.
+
+Interactive AI Journal Behavior
+
+The journal should not be a passive text box only. It should feel like a supportive reflective companion.
+
+Examples of AI feedback:
+
+“You seem to be carrying a lot of guilt here. Would it help to write what you wish you could say?”
+“You mentioned feeling alone. Is this similar to what you felt in your last entry?”
+“This sounds heavier than usual. Would you like a grounding exercise before continuing?”
+“You wrote that you don’t want to be here anymore. Are you in immediate danger right now?”
+
+Crisis Detection
+
+The system should scan entries for indicators such as:
+
+Suicidal thoughts
+Self-harm intent
+Goodbye/final letter language
+Plans, means, or timing
+Harm to others
+Abuse or exploitation
+Medical emergency
+Severe dissociation or inability to stay safe
+
+Risk Levels
+
+Level 0: No Risk
+
+Normal journaling. No intervention.
+
+Level 1: Emotional Distress
+
+AI offers support, grounding, journaling prompts, or encouragement to share with therapist.
+
+Level 2: Concerning Language
+
+AI encourages user to share with therapist and offers a one-click “share this entry” option.
+
+Level 3: Possible Crisis
+
+AI asks direct safety questions:
+
+“Are you thinking about hurting yourself?”
+“Do you have a plan?”
+“Are you in immediate danger?”
+
+The system may recommend contacting therapist, crisis line, trusted person, or emergency services.
+
+Level 4: Imminent Risk
+
+If the user expresses clear intent, plan, means, or immediate danger, the system triggers the crisis protocol:
+
+Show emergency message
+Encourage calling 911 or 988
+Encourage contacting a trusted person
+Alert clinician if the user has opted into clinician monitoring
+Log the safety event
+Preserve the entry for clinical review according to policy
+
+Clinician Alert Logic
+
+Private entries should not be visible to clinicians unless:
+
+The user shares the entry, or
+The entry triggers a defined safety threshold, and
+The user has consented to the crisis safety policy during onboarding.
+
+Clinician alerts should include:
+
+Risk level
+Timestamp
+Entry excerpt or full entry, depending on policy
+Recommended response
+Whether the user was prompted to contact emergency support
+
+User Consent During Onboarding
+
+MeaningBridge should clearly explain:
+
+Private means private from the therapist unless shared.
+AI safety screening may still occur.
+Certain crisis indicators may override privacy.
+The app is not an emergency service.
+If the user is in immediate danger, they should call 911 or 988.
+Clinician monitoring depends on the care model and consent settings.
+
+Suggested Onboarding Consent Text
+
+“MeaningBridge is a reflective grief-support tool, not an emergency service. You may keep journal entries private from your therapist, or choose to share them. To help protect your safety, MeaningBridge may use automated screening to detect signs of serious or imminent harm. If a serious safety concern is detected, the system may provide crisis resources and, where applicable, notify your clinician or care team according to your consent settings.”
+
+Journal Entry UI Requirements
+
+Each journal entry should include:
+
+Title
+Date/time
+Mood check-in
+Text entry area
+Privacy toggle: Private / Shared / Share Later
+AI reflection toggle
+“Ask MeaningBridge to reflect” button
+“Share with therapist” button
+“Save as private” button
+“I need help now” crisis support button
+
+Therapist Dashboard Requirements
+
+Therapists should be able to see:
+
+Shared journal entries
+Entries flagged for crisis risk
+Risk level summaries
+User mood trends
+User-selected themes
+Conversation history only where permission is granted
+Safety events and timestamps
+
+Therapists should not see private entries unless shared or safety protocol is triggered.
+
+Development Components
+
+Frontend
+
+Journal dashboard
+New entry screen
+Privacy toggle
+AI reflection panel
+Crisis message modal
+Share with therapist confirmation
+Entry history
+Therapist dashboard view
+Safety alert banner
+
+Backend
+
+Journal entry storage
+Privacy status field
+AI reflection endpoint
+Safety screening endpoint
+Risk scoring logic
+Clinician alert system
+Audit logs
+Consent management
+Emergency resource configuration
+
+Suggested Database Fields
+
+journal_entries
+
+id
+user_id
+title
+content
+mood
+privacy_status
+ai_reflection_enabled
+risk_level
+risk_flags
+shared_with_therapist
+clinician_alert_sent
+created_at
+updated_at
+
+safety_events
+
+id
+user_id
+journal_entry_id
+risk_level
+detected_flags
+action_taken
+clinician_notified
+emergency_resources_shown
+created_at
+
+user_consents
+
+id
+user_id
+consent_type
+consent_given
+consent_text_version
+created_at
+
+MVP Version
+
+The first build should include:
+
+Journal entry creation
+Private/shared toggle
+AI reflection
+Basic crisis keyword/sentiment screening
+988/911 crisis prompt
+User option to share entry with therapist
+Therapist dashboard for shared entries
+Crisis-flagged entry alert logic
+
+Future Enhancements
+
+More advanced AI risk classification
+Mood trend analysis
+Repeated theme detection
+“You mentioned this before” memory feature
+Guided journaling prompts
+Continuing bonds journal prompts
+Therapist comment/reply feature
+Export journal entries
+Anniversary and grief trigger check-ins
+Custom clinician safety protocols
+
+Product Positioning
+
+This feature should be positioned as a private, emotionally safe journal with optional sharing and responsible crisis safeguards.
+
+It should not feel like surveillance. It should feel like:
+“You control what you share. We protect your privacy. And if the system detects that you may be in danger, MeaningBridge will help you get support.”

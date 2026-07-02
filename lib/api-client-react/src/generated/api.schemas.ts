@@ -225,6 +225,20 @@ export const AppointmentStatus = {
   cancelled: "cancelled",
 } as const;
 
+/**
+ * Outcome of the last attempt to mirror this session onto the provider's Google Calendar. null when sync was off or not connected.
+ * @nullable
+ */
+export type AppointmentCalendarSyncStatus =
+  | (typeof AppointmentCalendarSyncStatus)[keyof typeof AppointmentCalendarSyncStatus]
+  | null;
+
+export const AppointmentCalendarSyncStatus = {
+  synced: "synced",
+  fallback: "fallback",
+  failed: "failed",
+} as const;
+
 export interface Appointment {
   id: number;
   patientId: number;
@@ -239,6 +253,16 @@ export interface Appointment {
   notes?: string | null;
   /** @nullable */
   googleEventId?: string | null;
+  /**
+   * Outcome of the last attempt to mirror this session onto the provider's Google Calendar. null when sync was off or not connected.
+   * @nullable
+   */
+  calendarSyncStatus?: AppointmentCalendarSyncStatus;
+  /**
+   * A calm, provider-facing explanation shown when calendarSyncStatus is "fallback" or "failed". null otherwise.
+   * @nullable
+   */
+  calendarSyncMessage?: string | null;
   createdAt: string;
 }
 

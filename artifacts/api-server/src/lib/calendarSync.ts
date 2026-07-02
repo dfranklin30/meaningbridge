@@ -43,6 +43,37 @@ export interface CalendarChoice {
 }
 
 /**
+ * Raised when Google refuses a calendar write. Carries the HTTP status so
+ * callers can tell "access lost / calendar deleted" (403/404) apart from a
+ * transient failure and surface a calm, specific message to the provider.
+ */
+export class CalendarSyncError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "CalendarSyncError";
+  }
+}
+
+/**
+ * Turn a caught calendar error into a calm, provider-facing sentence. Never
+ * leaks raw Google payloads; distinguishes lost access / deleted calendar from
+ * a generic hiccup.
+ */
+export function describeCalendarSyncError(err: unknown): string {
+  const status = err instanceof CalendarSyncError ? err.status : 0;
+  if (status === 403) {
+    return "MeaningBridge no longer has permission to add events to this calendar, so this session was not added. Reconnect the calendar or choose another to resume syncing.";
+  }
+  if (status === 404 || status === 410) {
+    return "The calendar chosen for sync could not be found — it may have been deleted or unshared — so this session was not added. Choose another calendar to resume syncing.";
+  }
+  return "This session could not be added to your Google Calendar just now. The invitation was still emailed to your patient.";
+}
+
+/**
  * Whether a Google Calendar account is connected. False until the integration
  * is authorized (or when the connector proxy is unreachable); callers fall back
  * to email-only scheduling.
@@ -113,7 +144,10 @@ export async function syncAppointmentToCalendar(
     { method: "POST", body },
   );
   if (!res.ok) {
-    throw new Error(`Google Calendar create failed: ${res.status} ${await res.text()}`);
+    throw new CalendarSyncError(
+      `Google Calendar create failed: ${res.status} ${await res.text()}`,
+      res.status,
+    );
   }
   const event = (await res.json()) as { id?: string };
   return { eventId: event.id ?? null };
@@ -161,6 +195,44 @@ export async function updateAppointmentInCalendar(
     throw new Error(`Google Calendar update failed: ${res.status} ${await res.text()}`);
   }
   return { ok: true, missing: false };
+}
+
+export interface ResolvedCalendar {
+  /** The calendar id the event should actually be written to. */
+  calendarId: string;
+  /** True when the provider's chosen calendar was unavailable and we fell back. */
+  fellBack: boolean;
+}
+
+/**
+ * Validate a provider's saved calendar choice against the calendars the
+ * connected account can currently write to. If the choice is gone (deleted,
+ * unshared, or access revoked), fall back to the account's primary calendar so
+ * the session still lands somewhere the provider can see — and report that a
+ * fallback happened so the caller can note it. When the writable list cannot be
+ * fetched, we do not block: return the original choice and let the event write
+ * surface any real error.
+ */
+export async function resolveWritableCalendarId(preferredId: string): Promise<ResolvedCalendar> {
+  let choices: CalendarChoice[];
+  try {
+    choices = await listCalendars();
+  } catch (err) {
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err) },
+      "could not list calendars to validate choice; using saved choice as-is",
+    );
+    return { calendarId: preferredId, fellBack: false };
+  }
+  if (choices.length === 0) {
+    // Nothing came back at all — don't second-guess; let the write attempt speak.
+    return { calendarId: preferredId, fellBack: false };
+  }
+  if (choices.some((c) => c.id === preferredId)) {
+    return { calendarId: preferredId, fellBack: false };
+  }
+  const primary = choices.find((c) => c.primary)?.id ?? "primary";
+  return { calendarId: primary, fellBack: true };
 }
 
 /** Remove a previously mirrored event. */

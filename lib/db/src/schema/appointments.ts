@@ -34,6 +34,17 @@ export const appointmentsTable = pgTable(
     confirmTokenHash: text("confirm_token_hash"),
     googleEventId: text("google_event_id"),
     googleCalendarId: text("google_calendar_id"),
+    // Outcome of the last attempt to mirror this session onto the provider's
+    // Google Calendar: "synced" (written cleanly), "fallback" (chosen calendar
+    // was unavailable so it landed on primary), or "failed" (Google refused the
+    // write, e.g. access lost or calendar deleted). null when sync was not
+    // attempted (off or not connected). Surfaced to the provider so a silent
+    // calendar-sync failure never leaves them believing a session is on their
+    // calendar when it is not.
+    calendarSyncStatus: text("calendar_sync_status"),
+    // A calm, human-readable explanation shown to the provider when
+    // calendarSyncStatus is "fallback" or "failed". null otherwise.
+    calendarSyncMessage: text("calendar_sync_message"),
     lastReminderAt: timestamp("last_reminder_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })

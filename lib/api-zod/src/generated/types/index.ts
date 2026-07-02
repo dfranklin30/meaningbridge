@@ -14,6 +14,7 @@ export * from "./anthropicError";
 export * from "./anthropicMessage";
 export * from "./anthropicMessageInput";
 export * from "./appointment";
+export * from "./appointmentCalendarSyncStatus";
 export * from "./appointmentEditInput";
 export * from "./appointmentInput";
 export * from "./appointmentPublicView";

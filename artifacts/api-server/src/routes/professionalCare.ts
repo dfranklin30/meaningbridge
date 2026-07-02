@@ -23,9 +23,11 @@ import { buildPatientEngagement, answerProviderQuestion } from "../lib/providerA
 import { generateAppointmentToken } from "../lib/appointmentToken";
 import { sendAppointmentInvite } from "../lib/appointmentInvite";
 import {
+  describeCalendarSyncError,
   isCalendarConnected,
   listCalendars,
   removeAppointmentFromCalendar,
+  resolveWritableCalendarId,
   syncAppointmentToCalendar,
   updateAppointmentInCalendar,
 } from "../lib/calendarSync";
@@ -58,6 +60,8 @@ function toAppointment(a: Appointment) {
     location: a.location,
     notes: a.notes,
     googleEventId: a.googleEventId,
+    calendarSyncStatus: a.calendarSyncStatus,
+    calendarSyncMessage: a.calendarSyncMessage,
     createdAt: a.createdAt,
   };
 }
@@ -192,10 +196,15 @@ router.post("/patients/:id/appointments", async (req, res) => {
 
   let googleEventId: string | null = null;
   let googleCalendarId: string | null = null;
+  let calendarSyncStatus: string | null = null;
+  let calendarSyncMessage: string | null = null;
   if (calendar.syncEnabled && (await isCalendarConnected())) {
+    // Validate the saved choice first: a deleted/unshared calendar falls back to
+    // primary (with a note) instead of the write failing silently.
+    const resolved = await resolveWritableCalendarId(calendar.calendarId);
     try {
       const { eventId } = await syncAppointmentToCalendar({
-        calendarId: calendar.calendarId,
+        calendarId: resolved.calendarId,
         title: parsed.data.title ?? "MeaningBridge session",
         startsAt: parsed.data.startsAt,
         endsAt: parsed.data.endsAt,
@@ -203,8 +212,17 @@ router.post("/patients/:id/appointments", async (req, res) => {
         attendeeEmail: decryptPhi(patient.emailEnc),
       });
       googleEventId = eventId;
-      googleCalendarId = calendar.calendarId;
+      googleCalendarId = resolved.calendarId;
+      if (resolved.fellBack) {
+        calendarSyncStatus = "fallback";
+        calendarSyncMessage =
+          "Your selected calendar was no longer available, so this session was added to your primary Google Calendar instead. Pick a calendar again to change where sessions sync.";
+      } else {
+        calendarSyncStatus = "synced";
+      }
     } catch (err) {
+      calendarSyncStatus = "failed";
+      calendarSyncMessage = describeCalendarSyncError(err);
       req.log.warn({ err }, "calendar sync on propose failed (email flow unaffected)");
     }
   }
@@ -223,6 +241,8 @@ router.post("/patients/:id/appointments", async (req, res) => {
       confirmTokenHash: hash,
       googleEventId,
       googleCalendarId,
+      calendarSyncStatus,
+      calendarSyncMessage,
     })
     .returning();
 
@@ -361,7 +381,13 @@ router.post("/appointments/:id/cancel", async (req, res) => {
   }
   const [row] = await db
     .update(appointmentsTable)
-    .set({ status: "cancelled", googleEventId: null, updatedAt: new Date() })
+    .set({
+      status: "cancelled",
+      googleEventId: null,
+      calendarSyncStatus: null,
+      calendarSyncMessage: null,
+      updatedAt: new Date(),
+    })
     .where(eq(appointmentsTable.id, id))
     .returning();
   await audit(req, "appointment.cancel", { detail: `appointment ${id}` });

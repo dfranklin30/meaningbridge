@@ -6,6 +6,7 @@ import {
   ShieldAlert,
   CalendarPlus,
   CalendarClock,
+  CalendarX,
   Loader2,
   X,
   Pencil,
@@ -63,6 +64,35 @@ function Metric({ label, value }: { label: string; value: string | number }) {
     <div className="rounded-lg border border-border/70 bg-background px-4 py-3">
       <div className="text-2xl font-serif">{value}</div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+    </div>
+  );
+}
+
+/**
+ * Calm, non-alarming notice shown under a session when its Google Calendar sync
+ * did not complete cleanly. "failed" means the write was refused (access lost or
+ * calendar deleted); "fallback" means the chosen calendar was gone so it landed
+ * on the primary calendar. A clean "synced" (or an un-attempted null) shows
+ * nothing — silence is the reassuring default.
+ */
+function CalendarSyncNotice({
+  status,
+  message,
+}: {
+  status: Appointment["calendarSyncStatus"];
+  message: Appointment["calendarSyncMessage"];
+}) {
+  if (status !== "failed" && status !== "fallback") return null;
+  const tone =
+    status === "failed"
+      ? "border-amber-200 bg-amber-50 text-amber-800"
+      : "border-border/70 bg-muted/40 text-muted-foreground";
+  const fallbackCopy =
+    "This session was added to your primary Google Calendar because your selected calendar was no longer available.";
+  return (
+    <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${tone}`}>
+      <CalendarX className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+      <span>{message ?? fallbackCopy}</span>
     </div>
   );
 }
@@ -592,7 +622,7 @@ function AppointmentsPanel({
           {[...active, ...past].map((a) => (
             <li
               key={a.id}
-              className="rounded-lg border border-border/70 bg-background px-4 py-3"
+              className="rounded-lg border border-border/70 bg-background px-4 py-3 space-y-2"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-0.5">
@@ -703,6 +733,11 @@ function AppointmentsPanel({
                   )}
                 </div>
               )}
+
+              <CalendarSyncNotice
+                status={a.calendarSyncStatus}
+                message={a.calendarSyncMessage}
+              />
             </li>
           ))}
         </ul>

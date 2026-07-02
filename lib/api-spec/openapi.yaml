@@ -2298,6 +2298,17 @@ components:
         location: { type: ["string", "null"] }
         notes: { type: ["string", "null"] }
         googleEventId: { type: ["string", "null"] }
+        calendarSyncStatus:
+          type: ["string", "null"]
+          enum: [synced, fallback, failed, null]
+          description: >-
+            Outcome of the last attempt to mirror this session onto the
+            provider's Google Calendar. null when sync was off or not connected.
+        calendarSyncMessage:
+          type: ["string", "null"]
+          description: >-
+            A calm, provider-facing explanation shown when calendarSyncStatus is
+            "fallback" or "failed". null otherwise.
         createdAt: { type: string, format: date-time }
       required: [id, patientId, providerUserId, title, startsAt, endsAt, status, createdAt]
 

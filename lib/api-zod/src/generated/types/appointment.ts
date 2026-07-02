@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { AppointmentCalendarSyncStatus } from "./appointmentCalendarSyncStatus";
 import type { AppointmentStatus } from "./appointmentStatus";
 
 export interface Appointment {
@@ -21,5 +22,15 @@ export interface Appointment {
   notes?: string | null;
   /** @nullable */
   googleEventId?: string | null;
+  /**
+   * Outcome of the last attempt to mirror this session onto the provider's Google Calendar. null when sync was off or not connected.
+   * @nullable
+   */
+  calendarSyncStatus?: AppointmentCalendarSyncStatus;
+  /**
+   * A calm, provider-facing explanation shown when calendarSyncStatus is "fallback" or "failed". null otherwise.
+   * @nullable
+   */
+  calendarSyncMessage?: string | null;
   createdAt: Date;
 }

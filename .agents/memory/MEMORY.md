@@ -4,6 +4,7 @@
 - [Provider portal data-access](provider-portal-data-access.md) — clinician pages use a manual api()+2FA guard helper (not generated hooks) and stay metadata-only; seeker pages use generated react-query hooks.
 - [Outreach consent floor](outreach-consent-floor.md) — all proactive sends/scheduling gate on patient status (consented/active), not on preference flags; scheduler bypasses the provider-visibility choke point so it must check itself.
 - [Google Calendar connector proxy](google-calendar-connector-proxy.md) — SDK proxy forwards to googleapis host root; Calendar paths need the /calendar/v3 prefix or you get an HTML 404 that looks like "not connected".
+- [Calendar-sync failure surfacing](calendar-sync-failure-surfacing.md) — calendar write outcomes persist per-appointment (synced/fallback/failed) + validate the chosen calendar vs writable list; never fail silently in a log line.
 - [Frontend test harness](frontend-test-harness.md) — meaningbridge has Vitest+RTL+jsdom with its OWN vitest.config (app vite.config throws without PORT/BASE_PATH); mock generated hooks + wrap in QueryClientProvider.
 - [Outreach delivery channels](outreach-delivery-channels.md) — email + SMS use env-var creds (not Replit connectors) with graceful degradation; new channels must log-and-skip on missing config, never crash or fake a send.
 - [Companion bubble personas](companion-bubble-personas.md) — corner chat persona is route+capability based; provider persona MUST stay PHI-free (separate stateless endpoint); reset transcript on persona switch.

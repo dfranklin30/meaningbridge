@@ -64,6 +64,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link href="/companion" className={navLinkCls("/companion")}>Companion</Link>
             <Link href="/journal" className={navLinkCls("/journal")}>Journal</Link>
             <Link href="/practices" className={navLinkCls("/practices")}>Practices</Link>
+            <Link href="/reflections" className={navLinkCls("/reflections")}>Reflections</Link>
             <Link href="/dashboard" className={navLinkCls("/dashboard")}>Insights</Link>
             <Link href="/loved-one" className={navLinkCls("/loved-one")}>Loved One</Link>
           </nav>

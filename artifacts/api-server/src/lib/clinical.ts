@@ -118,3 +118,93 @@ export function gisSafetySignal(itemResponses: Record<number, number>): GisSafet
 export function gisSafetyFlag(itemResponses: Record<number, number>): boolean {
   return gisSafetySignal(itemResponses).flag;
 }
+
+/* ------------------------------------------------------------------ *
+ * GMRI — Grief & Meaning Reconstruction Inventory (Neimeyer).
+ * 29 items, 1-5. Public domain for clinical/research use with citation.
+ * Reflective instrument: it does NOT change the GIS care tier or fire safety
+ * events. Server is the source of truth for scoring; the client mirrors the
+ * item wording for rendering only.
+ * ------------------------------------------------------------------ */
+
+/** Item ids (1-based, as printed) grouped into the five published factors. */
+export const GMRI_FACTORS = {
+  continuingBonds: [1, 5, 11, 14, 18, 21, 26],
+  personalGrowth: [3, 8, 13, 19, 22, 25, 29],
+  senseOfPeace: [7, 10, 15, 17, 23],
+  emptiness: [2, 6, 9, 16, 20, 27],
+  valuingLife: [4, 12, 24, 28],
+} as const;
+
+export type GmriFactorKey = keyof typeof GMRI_FACTORS;
+
+/** Emptiness & meaninglessness items are reverse-scored (6 - raw on a 1-5 scale). */
+export const GMRI_REVERSE_ITEMS: readonly number[] = GMRI_FACTORS.emptiness;
+
+export const GMRI_ITEM_COUNT = 29;
+
+function reverse1to5(raw: number): number {
+  return 6 - raw;
+}
+
+export interface GmriScore {
+  /** Meaning-reconstruction total (29-145), emptiness reverse-scored. */
+  total: number;
+  /** Per-factor means on the 1-5 scale, all oriented so higher = healthier. */
+  factors: Record<GmriFactorKey, number>;
+}
+
+/**
+ * Score the GMRI from an ordered array of 29 responses (1-5).
+ * Emptiness items are reverse-scored so every factor and the total read
+ * "higher = healthier meaning reconstruction."
+ */
+export function scoreGmri(responses: number[]): GmriScore {
+  const oriented = (itemId: number): number => {
+    const raw = responses[itemId - 1] ?? 0;
+    return GMRI_REVERSE_ITEMS.includes(itemId) ? reverse1to5(raw) : raw;
+  };
+
+  const factors = {} as Record<GmriFactorKey, number>;
+  let total = 0;
+  for (const key of Object.keys(GMRI_FACTORS) as GmriFactorKey[]) {
+    const ids = GMRI_FACTORS[key];
+    const sum = ids.reduce((acc, id) => acc + oriented(id), 0);
+    total += sum;
+    factors[key] = Math.round((sum / ids.length) * 100) / 100;
+  }
+  return { total, factors };
+}
+
+/* ------------------------------------------------------------------ *
+ * IDWL — Inventory of Daily Widowed Life (Caserta & Lund).
+ * 22 items, 1-4, plus companion items. Public domain with citation.
+ * Loss-oriented (1-11) and restoration-oriented (12-22) subscales measure the
+ * Dual Process Model; oscillation balance = RO - LO. Reflective only.
+ * ------------------------------------------------------------------ */
+
+export const IDWL_ITEM_COUNT = 22;
+export const IDWL_LOSS_ITEMS = Array.from({ length: 11 }, (_, i) => i + 1); // 1-11
+export const IDWL_RESTORATION_ITEMS = Array.from({ length: 11 }, (_, i) => i + 12); // 12-22
+
+export interface IdwlCompanionInput {
+  awarenessLoss: number;
+  awarenessRestoration: number;
+  oscillationFrequency: number;
+  control: number;
+}
+
+export interface IdwlScore {
+  lossOriented: number;
+  restorationOriented: number;
+  /** restorationOriented - lossOriented (-33..33). */
+  balance: number;
+}
+
+/** Score the IDWL from an ordered array of 22 responses (1-4). */
+export function scoreIdwl(responses: number[]): IdwlScore {
+  const sum = (ids: number[]) => ids.reduce((acc, id) => acc + (responses[id - 1] ?? 0), 0);
+  const lossOriented = sum(IDWL_LOSS_ITEMS);
+  const restorationOriented = sum(IDWL_RESTORATION_ITEMS);
+  return { lossOriented, restorationOriented, balance: restorationOriented - lossOriented };
+}

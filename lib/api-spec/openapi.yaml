@@ -532,6 +532,70 @@ paths:
                 items:
                   $ref: "#/components/schemas/GisResult"
 
+  /assessments/gmri:
+    post:
+      operationId: submitGmri
+      tags: [assessments]
+      summary: Submit the 29-item Grief & Meaning Reconstruction Inventory (Neimeyer, public domain). Scores five factors and a meaning-reconstruction total; reflective only (does not change care tier).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GmriSubmission"
+      responses:
+        "200":
+          description: GMRI result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GmriResult"
+    get:
+      operationId: listGmriResults
+      tags: [assessments]
+      summary: History of GMRI reflections (most recent first)
+      responses:
+        "200":
+          description: GMRI history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GmriResult"
+
+  /assessments/idwl:
+    post:
+      operationId: submitIdwl
+      tags: [assessments]
+      summary: Submit the 22-item Inventory of Daily Widowed Life (Caserta & Lund, public domain). Scores loss- vs restoration-oriented subscales and oscillation balance; reflective only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdwlSubmission"
+      responses:
+        "200":
+          description: IDWL result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdwlResult"
+    get:
+      operationId: listIdwlResults
+      tags: [assessments]
+      summary: History of IDWL reflections (most recent first)
+      responses:
+        "200":
+          description: IDWL history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IdwlResult"
+
   /assessments/checkins:
     get:
       operationId: listCheckIns
@@ -2186,6 +2250,72 @@ components:
           additionalProperties: { type: integer }
         completedAt: { type: string, format: date-time }
       required: [id, score, tier, cutPointFlag, safetyFlag, itemResponses, completedAt]
+
+    GmriSubmission:
+      type: object
+      description: 29 integers (1-5) in item order, one per GMRI statement.
+      properties:
+        responses:
+          type: array
+          items: { type: integer, minimum: 1, maximum: 5 }
+          minItems: 29
+          maxItems: 29
+      required: [responses]
+    GmriFactors:
+      type: object
+      description: Factor means on the 1-5 scale (all oriented so higher = healthier; emptiness is reverse-scored).
+      properties:
+        continuingBonds: { type: number }
+        personalGrowth: { type: number }
+        senseOfPeace: { type: number }
+        emptiness: { type: number }
+        valuingLife: { type: number }
+      required: [continuingBonds, personalGrowth, senseOfPeace, emptiness, valuingLife]
+    GmriResult:
+      type: object
+      properties:
+        id: { type: integer }
+        total: { type: integer, description: "Meaning-reconstruction total (29-145), emptiness items reverse-scored." }
+        factors: { $ref: "#/components/schemas/GmriFactors" }
+        responses:
+          type: array
+          items: { type: integer }
+        completedAt: { type: string, format: date-time }
+      required: [id, total, factors, responses, completedAt]
+
+    IdwlCompanion:
+      type: object
+      description: IDWL companion items on the Dual Process oscillation.
+      properties:
+        awarenessLoss: { type: integer, minimum: 1, maximum: 5, description: "C1 attention to grief/emotions" }
+        awarenessRestoration: { type: integer, minimum: 1, maximum: 5, description: "C2 attention to new responsibilities" }
+        oscillationFrequency: { type: integer, minimum: 0, maximum: 4, description: "C3 how often gone back and forth (0=only one issue .. 4=several times each day)" }
+        control: { type: integer, minimum: 1, maximum: 5, description: "C4 control over going back and forth" }
+      required: [awarenessLoss, awarenessRestoration, oscillationFrequency, control]
+    IdwlSubmission:
+      type: object
+      description: 22 integers (1-4) in item order plus companion items.
+      properties:
+        responses:
+          type: array
+          items: { type: integer, minimum: 1, maximum: 4 }
+          minItems: 22
+          maxItems: 22
+        companion: { $ref: "#/components/schemas/IdwlCompanion" }
+      required: [responses, companion]
+    IdwlResult:
+      type: object
+      properties:
+        id: { type: integer }
+        lossOriented: { type: integer, description: "Sum of items 1-11 (11-44)" }
+        restorationOriented: { type: integer, description: "Sum of items 12-22 (11-44)" }
+        balance: { type: integer, description: "restorationOriented - lossOriented (-33..33)" }
+        companion: { $ref: "#/components/schemas/IdwlCompanion" }
+        responses:
+          type: array
+          items: { type: integer }
+        completedAt: { type: string, format: date-time }
+      required: [id, lossOriented, restorationOriented, balance, companion, responses, completedAt]
 
     DeceasedProfile:
       type: object

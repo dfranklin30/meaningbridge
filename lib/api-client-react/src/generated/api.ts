@@ -45,7 +45,11 @@ import type {
   FindTherapistsParams,
   GisResult,
   GisSubmission,
+  GmriResult,
+  GmriSubmission,
   HealthStatus,
+  IdwlResult,
+  IdwlSubmission,
   Intake,
   IntakeInput,
   IntegrationConnection,
@@ -2440,6 +2444,328 @@ export function useListGisResults<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListGisResultsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit the 29-item Grief & Meaning Reconstruction Inventory (Neimeyer, public domain). Scores five factors and a meaning-reconstruction total; reflective only (does not change care tier).
+ */
+export const getSubmitGmriUrl = () => {
+  return `/api/assessments/gmri`;
+};
+
+export const submitGmri = async (
+  gmriSubmission: GmriSubmission,
+  options?: RequestInit,
+): Promise<GmriResult> => {
+  return customFetch<GmriResult>(getSubmitGmriUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(gmriSubmission),
+  });
+};
+
+export const getSubmitGmriMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitGmri>>,
+    TError,
+    { data: BodyType<GmriSubmission> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitGmri>>,
+  TError,
+  { data: BodyType<GmriSubmission> },
+  TContext
+> => {
+  const mutationKey = ["submitGmri"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitGmri>>,
+    { data: BodyType<GmriSubmission> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitGmri(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitGmriMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitGmri>>
+>;
+export type SubmitGmriMutationBody = BodyType<GmriSubmission>;
+export type SubmitGmriMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit the 29-item Grief & Meaning Reconstruction Inventory (Neimeyer, public domain). Scores five factors and a meaning-reconstruction total; reflective only (does not change care tier).
+ */
+export const useSubmitGmri = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitGmri>>,
+    TError,
+    { data: BodyType<GmriSubmission> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitGmri>>,
+  TError,
+  { data: BodyType<GmriSubmission> },
+  TContext
+> => {
+  return useMutation(getSubmitGmriMutationOptions(options));
+};
+
+/**
+ * @summary History of GMRI reflections (most recent first)
+ */
+export const getListGmriResultsUrl = () => {
+  return `/api/assessments/gmri`;
+};
+
+export const listGmriResults = async (
+  options?: RequestInit,
+): Promise<GmriResult[]> => {
+  return customFetch<GmriResult[]>(getListGmriResultsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListGmriResultsQueryKey = () => {
+  return [`/api/assessments/gmri`] as const;
+};
+
+export const getListGmriResultsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listGmriResults>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGmriResults>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListGmriResultsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listGmriResults>>> = ({
+    signal,
+  }) => listGmriResults({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listGmriResults>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListGmriResultsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listGmriResults>>
+>;
+export type ListGmriResultsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary History of GMRI reflections (most recent first)
+ */
+
+export function useListGmriResults<
+  TData = Awaited<ReturnType<typeof listGmriResults>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listGmriResults>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListGmriResultsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit the 22-item Inventory of Daily Widowed Life (Caserta & Lund, public domain). Scores loss- vs restoration-oriented subscales and oscillation balance; reflective only.
+ */
+export const getSubmitIdwlUrl = () => {
+  return `/api/assessments/idwl`;
+};
+
+export const submitIdwl = async (
+  idwlSubmission: IdwlSubmission,
+  options?: RequestInit,
+): Promise<IdwlResult> => {
+  return customFetch<IdwlResult>(getSubmitIdwlUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(idwlSubmission),
+  });
+};
+
+export const getSubmitIdwlMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitIdwl>>,
+    TError,
+    { data: BodyType<IdwlSubmission> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitIdwl>>,
+  TError,
+  { data: BodyType<IdwlSubmission> },
+  TContext
+> => {
+  const mutationKey = ["submitIdwl"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitIdwl>>,
+    { data: BodyType<IdwlSubmission> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return submitIdwl(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitIdwlMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitIdwl>>
+>;
+export type SubmitIdwlMutationBody = BodyType<IdwlSubmission>;
+export type SubmitIdwlMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit the 22-item Inventory of Daily Widowed Life (Caserta & Lund, public domain). Scores loss- vs restoration-oriented subscales and oscillation balance; reflective only.
+ */
+export const useSubmitIdwl = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitIdwl>>,
+    TError,
+    { data: BodyType<IdwlSubmission> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitIdwl>>,
+  TError,
+  { data: BodyType<IdwlSubmission> },
+  TContext
+> => {
+  return useMutation(getSubmitIdwlMutationOptions(options));
+};
+
+/**
+ * @summary History of IDWL reflections (most recent first)
+ */
+export const getListIdwlResultsUrl = () => {
+  return `/api/assessments/idwl`;
+};
+
+export const listIdwlResults = async (
+  options?: RequestInit,
+): Promise<IdwlResult[]> => {
+  return customFetch<IdwlResult[]>(getListIdwlResultsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListIdwlResultsQueryKey = () => {
+  return [`/api/assessments/idwl`] as const;
+};
+
+export const getListIdwlResultsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listIdwlResults>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listIdwlResults>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListIdwlResultsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listIdwlResults>>> = ({
+    signal,
+  }) => listIdwlResults({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listIdwlResults>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListIdwlResultsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listIdwlResults>>
+>;
+export type ListIdwlResultsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary History of IDWL reflections (most recent first)
+ */
+
+export function useListIdwlResults<
+  TData = Awaited<ReturnType<typeof listIdwlResults>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listIdwlResults>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListIdwlResultsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

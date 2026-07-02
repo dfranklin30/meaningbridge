@@ -4,16 +4,44 @@ import {
   useGetDashboardSummary,
   useGetDashboardTrends,
   useGetProfile,
+  useListGmriResults,
+  useListIdwlResults,
+  type GmriResult,
+  type IdwlResult,
 } from "@workspace/api-client-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { TIER_LABELS, TIER_NARRATIVE, type Tier } from "../lib/clinical";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+} from "recharts";
+import {
+  TIER_LABELS,
+  TIER_NARRATIVE,
+  type Tier,
+  GMRI_FACTORS,
+  GMRI_FACTOR_ORDER,
+  idwlBalanceNarrative,
+  type GmriFactorKey,
+} from "../lib/clinical";
 import { ArrowRight } from "lucide-react";
 
 export default function Dashboard() {
   const { data: summary } = useGetDashboardSummary();
   const { data: trends } = useGetDashboardTrends();
   const { data: profile } = useGetProfile();
+  const { data: gmri } = useListGmriResults();
+  const { data: idwl } = useListIdwlResults();
   const tier = (profile?.tier ?? null) as Tier | null;
+  const latestGmri = gmri?.[0] ?? null;
+  const latestIdwl = idwl?.[0] ?? null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -46,6 +74,13 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {(latestGmri || latestIdwl) && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {latestGmri && <GmriSnapshot result={latestGmri} />}
+          {latestIdwl && <IdwlSnapshot result={latestIdwl} />}
+        </div>
+      )}
+
       <div className="bg-card border border-border p-6 rounded-xl space-y-6">
         <h2 className="text-xl font-serif">Your Path Over Time</h2>
         <div className="h-64">
@@ -67,6 +102,76 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+function GmriSnapshot({ result }: { result: GmriResult }) {
+  const factors = result.factors as Record<GmriFactorKey, number>;
+  const data = GMRI_FACTOR_ORDER.map((key) => ({
+    factor: GMRI_FACTORS[key].label,
+    value: factors[key] ?? 0,
+  }));
+  return (
+    <Link href="/reflections/gmri">
+      <div className="bg-card border border-border p-6 rounded-xl space-y-3 h-full hover:bg-secondary/10 transition-colors cursor-pointer">
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Grief and meaning</p>
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={data} outerRadius="70%">
+              <PolarGrid stroke="hsl(var(--border))" />
+              <PolarAngleAxis
+                dataKey="factor"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+              />
+              <PolarRadiusAxis domain={[1, 5]} tick={false} axisLine={false} />
+              <Radar
+                dataKey="value"
+                stroke="hsl(var(--primary))"
+                fill="hsl(var(--primary))"
+                fillOpacity={0.25}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function IdwlSnapshot({ result }: { result: IdwlResult }) {
+  const narrative = idwlBalanceNarrative(result.balance);
+  const total = result.lossOriented + result.restorationOriented;
+  const lossPct = total > 0 ? (result.lossOriented / total) * 100 : 50;
+  return (
+    <Link href="/reflections/idwl">
+      <div className="bg-card border border-border p-6 rounded-xl space-y-4 h-full hover:bg-secondary/10 transition-colors cursor-pointer">
+        <div className="flex items-center justify-between">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Grief and daily life
+          </p>
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground/80">
+            <span>Loss</span>
+            <span>Daily life</span>
+          </div>
+          <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-secondary/40">
+            <div className="h-full bg-primary/40" style={{ width: `${lossPct}%` }} />
+            <div className="h-full bg-primary/70" style={{ width: `${100 - lossPct}%` }} />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <p className="font-serif text-base text-foreground">{narrative.title}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+            {narrative.body}
+          </p>
+        </div>
+      </div>
+    </Link>
   );
 }
 

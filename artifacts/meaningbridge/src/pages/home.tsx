@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useGetProfile, useListCheckIns, useGetDashboardSummary } from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Feather, BookOpen, Wind } from "lucide-react";
+import { Feather, BookOpen, Wind, Compass } from "lucide-react";
 
 export default function Home() {
   const { data: profile } = useGetProfile();
@@ -60,6 +60,19 @@ export default function Home() {
             <h3 className="font-serif text-xl">Journal</h3>
             <p className="text-muted-foreground text-sm leading-relaxed">
               A private space to write, remember, and process what you are feeling.
+            </p>
+          </div>
+        </Link>
+
+        <Link href="/reflections">
+          <div className="group block bg-card hover:bg-secondary/20 border border-border rounded-xl p-6 transition-colors cursor-pointer space-y-3 h-full">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4 group-hover:scale-105 transition-transform duration-500">
+              <Compass className="w-5 h-5" />
+            </div>
+            <h3 className="font-serif text-xl">Reflections</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Gentle, research-grounded self-reflections on meaning and the rhythm
+              of grieving, mirrored back with care.
             </p>
           </div>
         </Link>

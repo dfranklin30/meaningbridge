@@ -707,6 +707,92 @@ export interface GisResult {
   completedAt: string;
 }
 
+/**
+ * 29 integers (1-5) in item order, one per GMRI statement.
+ */
+export interface GmriSubmission {
+  /**
+   * @minItems 29
+   * @maxItems 29
+   */
+  responses: number[];
+}
+
+/**
+ * Factor means on the 1-5 scale (all oriented so higher = healthier; emptiness is reverse-scored).
+ */
+export interface GmriFactors {
+  continuingBonds: number;
+  personalGrowth: number;
+  senseOfPeace: number;
+  emptiness: number;
+  valuingLife: number;
+}
+
+export interface GmriResult {
+  id: number;
+  /** Meaning-reconstruction total (29-145), emptiness items reverse-scored. */
+  total: number;
+  factors: GmriFactors;
+  responses: number[];
+  completedAt: string;
+}
+
+/**
+ * IDWL companion items on the Dual Process oscillation.
+ */
+export interface IdwlCompanion {
+  /**
+   * C1 attention to grief/emotions
+   * @minimum 1
+   * @maximum 5
+   */
+  awarenessLoss: number;
+  /**
+   * C2 attention to new responsibilities
+   * @minimum 1
+   * @maximum 5
+   */
+  awarenessRestoration: number;
+  /**
+   * C3 how often gone back and forth (0=only one issue .. 4=several times each day)
+   * @minimum 0
+   * @maximum 4
+   */
+  oscillationFrequency: number;
+  /**
+   * C4 control over going back and forth
+   * @minimum 1
+   * @maximum 5
+   */
+  control: number;
+}
+
+/**
+ * 22 integers (1-4) in item order plus companion items.
+ */
+export interface IdwlSubmission {
+  /**
+   * @minItems 22
+   * @maxItems 22
+   */
+  responses: number[];
+  companion: IdwlCompanion;
+}
+
+export interface IdwlResult {
+  id: number;
+  /** Sum of items 1-11 (11-44) */
+  lossOriented: number;
+  /** Sum of items 12-22 (11-44) */
+  restorationOriented: number;
+  /** restorationOriented - lossOriented (-33..33) */
+  balance: number;
+  companion: IdwlCompanion;
+  responses: number[];
+  completedAt: string;
+}
+
 export interface DeceasedProfile {
   id: number;
   name: string;

@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { isPhiKeyConfigured } from "./lib/phi";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,12 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  if (isPhiKeyConfigured()) {
+    logger.info("PHI encryption key configured and valid");
+  } else {
+    logger.warn(
+      "PHI_ENCRYPTION_KEY is missing or not exactly 32 bytes; professional/PHI endpoints will fail until it is provisioned correctly",
+    );
+  }
 });

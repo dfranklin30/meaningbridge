@@ -6,6 +6,7 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { requireProfessional } from "../middlewares/requireProfessional";
 import { logAudit as audit } from "../lib/audit";
 import { toProviderView } from "../lib/professionalViews";
+import { validateNpi, lookupNpiRegistry } from "../lib/npi";
 
 const router: IRouter = Router();
 
@@ -31,10 +32,26 @@ const providerInput = z.object({
   bio: z.string().optional(),
 });
 
+/**
+ * Validate an NPI (format + checksum) with a best-effort NPPES registry lookup.
+ * Used by the onboarding form to give live feedback before submit.
+ */
+router.get("/providers/npi-lookup", requireAuth, requireProfessional, async (req, res) => {
+  const npi = String(req.query["npi"] ?? "").trim();
+  const check = validateNpi(npi);
+  const registry = check.valid ? await lookupNpiRegistry(npi) : { found: false };
+  res.json({ npi, ...check, registry });
+});
+
 router.post("/providers", requireAuth, requireProfessional, async (req, res) => {
   const parsed = providerInput.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid provider profile", details: parsed.error.issues });
+    return;
+  }
+
+  if (parsed.data.npi && !validateNpi(parsed.data.npi).valid) {
+    res.status(400).json({ error: "That NPI is not valid", code: "invalid_npi" });
     return;
   }
 
@@ -74,6 +91,11 @@ router.patch("/providers/me", requireAuth, requireProfessional, async (req, res)
   const parsed = providerInput.partial().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid provider profile", details: parsed.error.issues });
+    return;
+  }
+
+  if (parsed.data.npi && !validateNpi(parsed.data.npi).valid) {
+    res.status(400).json({ error: "That NPI is not valid", code: "invalid_npi" });
     return;
   }
 

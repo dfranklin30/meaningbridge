@@ -21,4 +21,19 @@ export interface Referral {
   /** @nullable */
   respondedAt?: Date | null;
   createdAt: Date;
+  /**
+   * Present on list responses.
+   * @nullable
+   */
+  fromProviderName?: string | null;
+  /**
+   * Present on list responses.
+   * @nullable
+   */
+  toProviderName?: string | null;
+  /**
+   * Patient first name; present on list responses.
+   * @nullable
+   */
+  patientLabel?: string | null;
 }

@@ -986,6 +986,184 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProfessionalMeta"
 
+  /professional/providers/npi-lookup:
+    get:
+      operationId: lookupNpi
+      tags: [professional]
+      summary: Validate an NPI (format + checksum) with a best-effort NPPES registry lookup.
+      parameters:
+        - name: npi
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: NPI validation result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NpiLookupResult" }
+
+  /professional/security:
+    get:
+      operationId: getSecurityStatus
+      tags: [professional]
+      summary: The provider's two-factor status and idle-timeout window.
+      responses:
+        "200":
+          description: Security status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecurityStatus" }
+
+  /professional/security/totp/setup:
+    post:
+      operationId: setupTotp
+      tags: [professional]
+      summary: Begin authenticator-app enrollment; returns a secret and otpauth URI.
+      responses:
+        "200":
+          description: Pending TOTP secret
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TotpSetup" }
+        "409":
+          description: Already enabled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/security/totp/enable:
+    post:
+      operationId: enableTotp
+      tags: [professional]
+      summary: Confirm a code to finish enrollment; returns one-time recovery codes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TotpCodeInput" }
+      responses:
+        "200":
+          description: Enrollment complete
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TotpEnableResult" }
+        "400":
+          description: Invalid code
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/security/totp/challenge:
+    post:
+      operationId: challengeTotp
+      tags: [professional]
+      summary: Verify a code (or recovery code) to start an authorized PHI session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TotpChallengeInput" }
+      responses:
+        "200":
+          description: Second factor confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResult" }
+        "400":
+          description: Invalid code
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/security/totp/disable:
+    post:
+      operationId: disableTotp
+      tags: [professional]
+      summary: Disable the authenticator-app second factor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TotpCodeInput" }
+      responses:
+        "200":
+          description: Disabled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OkResult" }
+        "400":
+          description: Invalid code
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/directory:
+    get:
+      operationId: searchDirectory
+      tags: [professional]
+      summary: Search the opt-in colleague directory (verified providers only).
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string } }
+        - { name: specialty, in: query, required: false, schema: { type: string } }
+        - { name: state, in: query, required: false, schema: { type: string } }
+        - { name: telehealth, in: query, required: false, schema: { type: string, enum: ["true"] } }
+        - { name: accepting, in: query, required: false, schema: { type: string, enum: ["true"] } }
+      responses:
+        "200":
+          description: Directory entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DirectoryEntry" }
+
+  /professional/admin/providers:
+    get:
+      operationId: listProvidersForAdmin
+      tags: [professional]
+      summary: Admin-only provider verification queue.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [pending, verified, rejected, all] }
+      responses:
+        "200":
+          description: Providers with account contact info
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AdminProviderListItem" }
+
+  /professional/admin/providers/{id}/decision:
+    post:
+      operationId: decideProviderVerification
+      tags: [professional]
+      summary: Admin approve or reject a pending provider.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderDecisionInput" }
+      responses:
+        "200":
+          description: Updated provider
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Provider" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
   /professional/providers:
     post:
       operationId: createProviderProfile
@@ -1530,6 +1708,96 @@ components:
         bio: { type: string }
       required: [fullName]
 
+    NpiLookupResult:
+      type: object
+      properties:
+        npi: { type: string }
+        formatValid: { type: boolean }
+        checksumValid: { type: boolean }
+        valid: { type: boolean }
+        registry:
+          type: object
+          properties:
+            found: { type: boolean }
+            name: { type: string }
+            credential: { type: string }
+            primaryTaxonomy: { type: string }
+            state: { type: string }
+            enumerationType: { type: string }
+          required: [found]
+      required: [npi, formatValid, checksumValid, valid]
+
+    SecurityStatus:
+      type: object
+      properties:
+        totpEnabled: { type: boolean }
+        twoFactorActive: { type: boolean }
+        recoveryCodesRemaining: { type: integer }
+        idleTimeoutMinutes: { type: integer }
+      required: [totpEnabled, twoFactorActive, recoveryCodesRemaining, idleTimeoutMinutes]
+
+    TotpSetup:
+      type: object
+      properties:
+        secret: { type: string }
+        otpauthUri: { type: string }
+      required: [secret, otpauthUri]
+
+    TotpCodeInput:
+      type: object
+      properties:
+        code: { type: string, minLength: 1 }
+      required: [code]
+
+    TotpChallengeInput:
+      type: object
+      description: Provide either a current authenticator code or a one-time recovery code.
+      properties:
+        code: { type: string }
+        recoveryCode: { type: string }
+
+    TotpEnableResult:
+      type: object
+      properties:
+        recoveryCodes: { type: array, items: { type: string } }
+      required: [recoveryCodes]
+
+    OkResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+      required: [ok]
+
+    DirectoryEntry:
+      type: object
+      description: Non-PHI professional profile shown in the colleague directory.
+      properties:
+        userId: { type: integer }
+        fullName: { type: ["string", "null"] }
+        credential: { type: ["string", "null"] }
+        practiceName: { type: ["string", "null"] }
+        specialtyTags: { type: array, items: { type: string } }
+        statesLicensed: { type: array, items: { type: string } }
+        telehealth: { type: boolean }
+        acceptingReferrals: { type: boolean }
+        bio: { type: ["string", "null"] }
+      required: [userId, specialtyTags, statesLicensed, telehealth, acceptingReferrals]
+
+    AdminProviderListItem:
+      allOf:
+        - $ref: "#/components/schemas/Provider"
+        - type: object
+          properties:
+            userEmail: { type: ["string", "null"] }
+            userFirstName: { type: ["string", "null"] }
+
+    ProviderDecisionInput:
+      type: object
+      properties:
+        action: { type: string, enum: [approve, reject] }
+        note: { type: string }
+      required: [action]
+
     PatientSummary:
       type: object
       description: Minimum-necessary view of a patient shown to a provider — decrypted identity plus engagement metadata, never conversation content.
@@ -1638,6 +1906,9 @@ components:
         summary: { type: ["string", "null"], description: "Decrypted intake summary." }
         respondedAt: { type: ["string", "null"], format: date-time }
         createdAt: { type: string, format: date-time }
+        fromProviderName: { type: ["string", "null"], description: "Present on list responses." }
+        toProviderName: { type: ["string", "null"], description: "Present on list responses." }
+        patientLabel: { type: ["string", "null"], description: "Patient first name; present on list responses." }
       required: [id, patientId, fromProviderUserId, toProviderUserId, status, createdAt]
 
     ReferralInput:
@@ -1880,6 +2151,7 @@ components:
           type: ["string", "null"]
           enum: ["seeker", "professional", null]
           description: "Account role (null = not yet chosen)"
+        isAdmin: { type: boolean, description: "Platform-admin flag (oversight surfaces)." }
       required: [id, role]
     UpdateMeInput:
       type: object

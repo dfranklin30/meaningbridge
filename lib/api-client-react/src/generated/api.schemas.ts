@@ -91,6 +91,95 @@ export interface ProviderInput {
   bio?: string;
 }
 
+export type NpiLookupResultRegistry = {
+  found: boolean;
+  name?: string;
+  credential?: string;
+  primaryTaxonomy?: string;
+  state?: string;
+  enumerationType?: string;
+};
+
+export interface NpiLookupResult {
+  npi: string;
+  formatValid: boolean;
+  checksumValid: boolean;
+  valid: boolean;
+  registry?: NpiLookupResultRegistry;
+}
+
+export interface SecurityStatus {
+  totpEnabled: boolean;
+  twoFactorActive: boolean;
+  recoveryCodesRemaining: number;
+  idleTimeoutMinutes: number;
+}
+
+export interface TotpSetup {
+  secret: string;
+  otpauthUri: string;
+}
+
+export interface TotpCodeInput {
+  /** @minLength 1 */
+  code: string;
+}
+
+/**
+ * Provide either a current authenticator code or a one-time recovery code.
+ */
+export interface TotpChallengeInput {
+  code?: string;
+  recoveryCode?: string;
+}
+
+export interface TotpEnableResult {
+  recoveryCodes: string[];
+}
+
+export interface OkResult {
+  ok: boolean;
+}
+
+/**
+ * Non-PHI professional profile shown in the colleague directory.
+ */
+export interface DirectoryEntry {
+  userId: number;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  credential?: string | null;
+  /** @nullable */
+  practiceName?: string | null;
+  specialtyTags: string[];
+  statesLicensed: string[];
+  telehealth: boolean;
+  acceptingReferrals: boolean;
+  /** @nullable */
+  bio?: string | null;
+}
+
+export type AdminProviderListItem = Provider & {
+  /** @nullable */
+  userEmail?: string | null;
+  /** @nullable */
+  userFirstName?: string | null;
+};
+
+export type ProviderDecisionInputAction =
+  (typeof ProviderDecisionInputAction)[keyof typeof ProviderDecisionInputAction];
+
+export const ProviderDecisionInputAction = {
+  approve: "approve",
+  reject: "reject",
+} as const;
+
+export interface ProviderDecisionInput {
+  action: ProviderDecisionInputAction;
+  note?: string;
+}
+
 export type PatientSummaryStatus =
   (typeof PatientSummaryStatus)[keyof typeof PatientSummaryStatus];
 
@@ -248,6 +337,21 @@ export interface Referral {
   /** @nullable */
   respondedAt?: string | null;
   createdAt: string;
+  /**
+   * Present on list responses.
+   * @nullable
+   */
+  fromProviderName?: string | null;
+  /**
+   * Present on list responses.
+   * @nullable
+   */
+  toProviderName?: string | null;
+  /**
+   * Patient first name; present on list responses.
+   * @nullable
+   */
+  patientLabel?: string | null;
 }
 
 export interface ReferralInput {
@@ -532,6 +636,8 @@ export interface Me {
    * @nullable
    */
   role: MeRole;
+  /** Platform-admin flag (oversight surfaces). */
+  isAdmin?: boolean;
 }
 
 export type UpdateMeInputRole =
@@ -1037,3 +1143,43 @@ export interface SandboxFeedbackResult {
 export type FindTherapistsParams = {
   zip?: string;
 };
+
+export type LookupNpiParams = {
+  npi: string;
+};
+
+export type SearchDirectoryParams = {
+  q?: string;
+  specialty?: string;
+  state?: string;
+  telehealth?: SearchDirectoryTelehealth;
+  accepting?: SearchDirectoryAccepting;
+};
+
+export type SearchDirectoryTelehealth =
+  (typeof SearchDirectoryTelehealth)[keyof typeof SearchDirectoryTelehealth];
+
+export const SearchDirectoryTelehealth = {
+  true: "true",
+} as const;
+
+export type SearchDirectoryAccepting =
+  (typeof SearchDirectoryAccepting)[keyof typeof SearchDirectoryAccepting];
+
+export const SearchDirectoryAccepting = {
+  true: "true",
+} as const;
+
+export type ListProvidersForAdminParams = {
+  status?: ListProvidersForAdminStatus;
+};
+
+export type ListProvidersForAdminStatus =
+  (typeof ListProvidersForAdminStatus)[keyof typeof ListProvidersForAdminStatus];
+
+export const ListProvidersForAdminStatus = {
+  pending: "pending",
+  verified: "verified",
+  rejected: "rejected",
+  all: "all",
+} as const;

@@ -11,7 +11,7 @@ const router: IRouter = Router();
 // sibling router, including public ones.
 router.get("/me", requireAuth, (req, res) => {
   const u = req.appUser!;
-  res.json({ id: u.id, email: u.email, firstName: u.firstName, role: u.role });
+  res.json({ id: u.id, email: u.email, firstName: u.firstName, role: u.role, isAdmin: u.isAdmin });
 });
 
 router.patch("/me", requireAuth, async (req, res) => {

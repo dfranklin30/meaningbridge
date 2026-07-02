@@ -22,6 +22,10 @@ export const GetMeResponse = zod.object({
     ])
     .nullable()
     .describe("Account role (null = not yet chosen)"),
+  isAdmin: zod
+    .boolean()
+    .optional()
+    .describe("Platform-admin flag (oversight surfaces)."),
 });
 
 /**
@@ -44,6 +48,10 @@ export const UpdateMeResponse = zod.object({
     ])
     .nullable()
     .describe("Account role (null = not yet chosen)"),
+  isAdmin: zod
+    .boolean()
+    .optional()
+    .describe("Platform-admin flag (oversight surfaces)."),
 });
 
 /**
@@ -1185,6 +1193,187 @@ export const GetProfessionalMetaResponse = zod
   );
 
 /**
+ * @summary Validate an NPI (format + checksum) with a best-effort NPPES registry lookup.
+ */
+export const LookupNpiQueryParams = zod.object({
+  npi: zod.coerce.string(),
+});
+
+export const LookupNpiResponse = zod.object({
+  npi: zod.string(),
+  formatValid: zod.boolean(),
+  checksumValid: zod.boolean(),
+  valid: zod.boolean(),
+  registry: zod
+    .object({
+      found: zod.boolean(),
+      name: zod.string().optional(),
+      credential: zod.string().optional(),
+      primaryTaxonomy: zod.string().optional(),
+      state: zod.string().optional(),
+      enumerationType: zod.string().optional(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary The provider's two-factor status and idle-timeout window.
+ */
+export const GetSecurityStatusResponse = zod.object({
+  totpEnabled: zod.boolean(),
+  twoFactorActive: zod.boolean(),
+  recoveryCodesRemaining: zod.number(),
+  idleTimeoutMinutes: zod.number(),
+});
+
+/**
+ * @summary Begin authenticator-app enrollment; returns a secret and otpauth URI.
+ */
+export const SetupTotpResponse = zod.object({
+  secret: zod.string(),
+  otpauthUri: zod.string(),
+});
+
+/**
+ * @summary Confirm a code to finish enrollment; returns one-time recovery codes.
+ */
+
+export const EnableTotpBody = zod.object({
+  code: zod.string().min(1),
+});
+
+export const EnableTotpResponse = zod.object({
+  recoveryCodes: zod.array(zod.string()),
+});
+
+/**
+ * @summary Verify a code (or recovery code) to start an authorized PHI session.
+ */
+export const ChallengeTotpBody = zod
+  .object({
+    code: zod.string().optional(),
+    recoveryCode: zod.string().optional(),
+  })
+  .describe(
+    "Provide either a current authenticator code or a one-time recovery code.",
+  );
+
+export const ChallengeTotpResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
+ * @summary Disable the authenticator-app second factor.
+ */
+
+export const DisableTotpBody = zod.object({
+  code: zod.string().min(1),
+});
+
+export const DisableTotpResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
+ * @summary Search the opt-in colleague directory (verified providers only).
+ */
+export const SearchDirectoryQueryParams = zod.object({
+  q: zod.coerce.string().optional(),
+  specialty: zod.coerce.string().optional(),
+  state: zod.coerce.string().optional(),
+  telehealth: zod.enum(["true"]).optional(),
+  accepting: zod.enum(["true"]).optional(),
+});
+
+export const SearchDirectoryResponseItem = zod
+  .object({
+    userId: zod.number(),
+    fullName: zod.string().nullish(),
+    credential: zod.string().nullish(),
+    practiceName: zod.string().nullish(),
+    specialtyTags: zod.array(zod.string()),
+    statesLicensed: zod.array(zod.string()),
+    telehealth: zod.boolean(),
+    acceptingReferrals: zod.boolean(),
+    bio: zod.string().nullish(),
+  })
+  .describe("Non-PHI professional profile shown in the colleague directory.");
+export const SearchDirectoryResponse = zod.array(SearchDirectoryResponseItem);
+
+/**
+ * @summary Admin-only provider verification queue.
+ */
+export const ListProvidersForAdminQueryParams = zod.object({
+  status: zod.enum(["pending", "verified", "rejected", "all"]).optional(),
+});
+
+export const ListProvidersForAdminResponseItem = zod
+  .object({
+    id: zod.number(),
+    userId: zod.number(),
+    fullName: zod.string().nullish(),
+    credential: zod.string().nullish(),
+    licenseNumber: zod.string().nullish(),
+    licenseState: zod.string().nullish(),
+    npi: zod.string().nullish(),
+    practiceName: zod.string().nullish(),
+    practiceAddress: zod.string().nullish(),
+    verificationStatus: zod.enum(["pending", "verified", "rejected"]),
+    verifiedAt: zod.coerce.date().nullish(),
+    directoryOptIn: zod.boolean(),
+    specialtyTags: zod.array(zod.string()),
+    statesLicensed: zod.array(zod.string()),
+    telehealth: zod.boolean(),
+    acceptingReferrals: zod.boolean(),
+    bio: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      userEmail: zod.string().nullish(),
+      userFirstName: zod.string().nullish(),
+    }),
+  );
+export const ListProvidersForAdminResponse = zod.array(
+  ListProvidersForAdminResponseItem,
+);
+
+/**
+ * @summary Admin approve or reject a pending provider.
+ */
+export const DecideProviderVerificationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DecideProviderVerificationBody = zod.object({
+  action: zod.enum(["approve", "reject"]),
+  note: zod.string().optional(),
+});
+
+export const DecideProviderVerificationResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  fullName: zod.string().nullish(),
+  credential: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  licenseState: zod.string().nullish(),
+  npi: zod.string().nullish(),
+  practiceName: zod.string().nullish(),
+  practiceAddress: zod.string().nullish(),
+  verificationStatus: zod.enum(["pending", "verified", "rejected"]),
+  verifiedAt: zod.coerce.date().nullish(),
+  directoryOptIn: zod.boolean(),
+  specialtyTags: zod.array(zod.string()),
+  statesLicensed: zod.array(zod.string()),
+  telehealth: zod.boolean(),
+  acceptingReferrals: zod.boolean(),
+  bio: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
  * @summary Create the authenticated clinician's provider profile.
  */
 
@@ -1508,6 +1697,15 @@ export const ListReferralsResponseItem = zod.object({
   summary: zod.string().nullish().describe("Decrypted intake summary."),
   respondedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
+  fromProviderName: zod
+    .string()
+    .nullish()
+    .describe("Present on list responses."),
+  toProviderName: zod.string().nullish().describe("Present on list responses."),
+  patientLabel: zod
+    .string()
+    .nullish()
+    .describe("Patient first name; present on list responses."),
 });
 export const ListReferralsResponse = zod.array(ListReferralsResponseItem);
 
@@ -1540,6 +1738,15 @@ export const RespondToReferralResponse = zod.object({
   summary: zod.string().nullish().describe("Decrypted intake summary."),
   respondedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
+  fromProviderName: zod
+    .string()
+    .nullish()
+    .describe("Present on list responses."),
+  toProviderName: zod.string().nullish().describe("Present on list responses."),
+  patientLabel: zod
+    .string()
+    .nullish()
+    .describe("Patient first name; present on list responses."),
 });
 
 export const ListReferralMessagesParams = zod.object({

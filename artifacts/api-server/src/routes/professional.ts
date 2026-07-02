@@ -1,8 +1,13 @@
 import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireProfessional } from "../middlewares/requireProfessional";
+import { requireVerifiedProvider } from "../middlewares/requireVerifiedProvider";
+import { requireTwoFactor } from "../middlewares/requireTwoFactor";
 import { professionalMeta } from "../lib/professionalMeta";
 import providersRouter from "./professionalProviders";
+import securityRouter from "./professionalSecurity";
+import directoryRouter from "./professionalDirectory";
+import adminRouter from "./professionalAdmin";
 import patientsRouter from "./professionalPatients";
 import intakesRouter from "./professionalIntakes";
 import referralsRouter from "./professionalReferrals";
@@ -27,11 +32,20 @@ router.get("/meta", requireAuth, requireProfessional, (_req, res) => {
   res.json(professionalMeta());
 });
 
+// Account-management routers: reachable before verification / 2FA so a provider
+// can onboard, enroll a second factor, and (once verified) browse the directory.
 router.use(providersRouter);
-router.use(patientsRouter);
-router.use(intakesRouter);
-router.use(referralsRouter);
-router.use(integrationsRouter);
-router.use(batchRouter);
+router.use(securityRouter);
+router.use(directoryRouter);
+router.use(adminRouter);
+
+// PHI routers: gated behind admin verification AND an active second factor.
+// Applied at mount so no individual PHI route can forget the gate.
+const phiGate = [requireAuth, requireProfessional, requireVerifiedProvider, requireTwoFactor];
+router.use(phiGate, patientsRouter);
+router.use(phiGate, intakesRouter);
+router.use(phiGate, referralsRouter);
+router.use(phiGate, integrationsRouter);
+router.use(phiGate, batchRouter);
 
 export default router;

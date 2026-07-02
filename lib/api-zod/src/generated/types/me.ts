@@ -18,4 +18,6 @@ export interface Me {
    * @nullable
    */
   role: MeRole;
+  /** Platform-admin flag (oversight surfaces). */
+  isAdmin?: boolean;
 }

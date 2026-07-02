@@ -17,6 +17,7 @@ export * from "./sandboxFeedback";
 export * from "./screenerResults";
 export * from "./care";
 export * from "./providers";
+export * from "./providerSecurity";
 export * from "./patients";
 export * from "./referrals";
 export * from "./integrations";

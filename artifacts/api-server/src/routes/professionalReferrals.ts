@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
 import { and, desc, eq, or } from "drizzle-orm";
 import { z } from "zod/v4";
-import { db, referralsTable, referralMessagesTable } from "@workspace/db";
+import { db, referralsTable, referralMessagesTable, providersTable, patientsTable } from "@workspace/db";
+import { inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireProfessional } from "../middlewares/requireProfessional";
 import { logAudit as audit } from "../lib/audit";
-import { encryptPhi } from "../lib/phi";
+import { encryptPhi, decryptPhi } from "../lib/phi";
 import { getPatientForProvider, linkProviderToPatient } from "../lib/patientAccess";
 import { toReferralView, toReferralMessageView, parseId } from "../lib/professionalViews";
 
@@ -55,8 +56,40 @@ router.get("/referrals", requireAuth, requireProfessional, async (req, res) => {
       ),
     )
     .orderBy(desc(referralsTable.createdAt));
+
+  // Enrich with colleague names and patient first name so the UI can label each
+  // referral without extra round-trips. Both participants are authorized to see
+  // the patient's identity on a referral they belong to.
+  const providerUserIds = [
+    ...new Set(rows.flatMap((r) => [r.fromProviderUserId, r.toProviderUserId])),
+  ];
+  const patientIds = [...new Set(rows.map((r) => r.patientId))];
+
+  const providerRows = providerUserIds.length
+    ? await db
+        .select({ userId: providersTable.userId, fullName: providersTable.fullName })
+        .from(providersTable)
+        .where(inArray(providersTable.userId, providerUserIds))
+    : [];
+  const patientRows = patientIds.length
+    ? await db
+        .select({ id: patientsTable.id, firstNameEnc: patientsTable.firstNameEnc })
+        .from(patientsTable)
+        .where(inArray(patientsTable.id, patientIds))
+    : [];
+
+  const providerName = new Map(providerRows.map((p) => [p.userId, p.fullName]));
+  const patientName = new Map(patientRows.map((p) => [p.id, decryptPhi(p.firstNameEnc)]));
+
   await audit(req, "referral.list", { detail: `${rows.length} referrals` });
-  res.json(rows.map(toReferralView));
+  res.json(
+    rows.map((r) => ({
+      ...toReferralView(r),
+      fromProviderName: providerName.get(r.fromProviderUserId) ?? null,
+      toProviderName: providerName.get(r.toProviderUserId) ?? null,
+      patientLabel: patientName.get(r.patientId) ?? null,
+    })),
+  );
 });
 
 router.post("/referrals", requireAuth, requireProfessional, async (req, res) => {

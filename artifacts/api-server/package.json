@@ -25,6 +25,7 @@
     "http-proxy-middleware": "^4.1.0",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.7",
+    "otplib": "^13.4.1",
     "pino": "^9",
     "pino-http": "^10",
     "zod": "catalog:"

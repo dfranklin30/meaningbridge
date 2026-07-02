@@ -309,3 +309,12 @@
     inset: -1px;
   }
 }
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-60;
+  }
+  .input {
+    @apply w-full px-3 py-2 bg-background border border-border rounded-md text-sm outline-none transition-colors focus:ring-1 focus:ring-primary/50;
+  }
+}

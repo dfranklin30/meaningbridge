@@ -49,6 +49,13 @@ import Crisis from "@/pages/crisis";
 import Settings from "@/pages/settings";
 import CareInvite from "@/pages/care/invite";
 import ConnectClinician from "@/pages/care/connect";
+import ProviderAccount from "@/pages/care/account";
+import ProviderOnboarding from "@/pages/care/onboarding";
+import ProviderSecurity from "@/pages/care/security";
+import ProviderDirectory from "@/pages/care/directory";
+import ProviderReferrals from "@/pages/care/referrals";
+import AdminProviders from "@/pages/admin/providers";
+import { ProviderShell, type Me } from "@/pages/care/provider-shell";
 import NotFound from "@/pages/not-found";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
@@ -198,7 +205,7 @@ function PortalRedirect() {
   }
 
   if (me.role === "professional") {
-    return <Redirect to="/caregiver" />;
+    return <Redirect to="/care/account" />;
   }
 
   return <Redirect to="/app" />;
@@ -264,10 +271,67 @@ function SeekerAppGate() {
   }
 
   if (me.role === "professional") {
-    return <Redirect to="/caregiver" />;
+    return <Redirect to="/care/account" />;
   }
 
   return <AppRoutes />;
+}
+
+// Signed-in clinician portal (accounts, verification, 2FA, directory, referrals,
+// and the admin verification queue). Renders its own shell + routes.
+function ProviderPortalRoutes() {
+  const { data: me, isLoading, isError } = useGetMe();
+
+  if (isLoading) {
+    return <FullScreenLoader />;
+  }
+  if (isError || !me) {
+    return <AccountErrorState />;
+  }
+  if (!me.role) {
+    return <Redirect to="/select-role" />;
+  }
+  if (me.role !== "professional" && !me.isAdmin) {
+    return <Redirect to="/app" />;
+  }
+
+  const shellMe: Me = {
+    id: me.id,
+    email: me.email ?? null,
+    firstName: me.firstName ?? null,
+    role: me.role,
+    isAdmin: me.isAdmin,
+  };
+
+  return (
+    <ProviderShell me={shellMe}>
+      <Switch>
+        <Route path="/care/account" component={ProviderAccount} />
+        <Route path="/care/onboarding" component={ProviderOnboarding} />
+        <Route path="/care/security" component={ProviderSecurity} />
+        <Route path="/care/directory" component={ProviderDirectory} />
+        <Route path="/care/referrals">{() => <ProviderReferrals me={shellMe} />}</Route>
+        <Route path="/admin/providers" component={AdminProviders} />
+        <Route path="/care/crisis" component={Crisis} />
+        <Route>
+          <Redirect to="/care/account" />
+        </Route>
+      </Switch>
+    </ProviderShell>
+  );
+}
+
+function ProfessionalPortalGate() {
+  return (
+    <>
+      <Show when="signed-out">
+        <Redirect to="/" />
+      </Show>
+      <Show when="signed-in">
+        <ProviderPortalRoutes />
+      </Show>
+    </>
+  );
 }
 
 function AppGate() {
@@ -331,6 +395,13 @@ function AppRouterSwitch() {
       <Route path="/caregiver" component={Caregiver} />
       <Route path="/sandbox" component={Sandbox} />
       <Route path="/care/invite" component={CareInvite} />
+      <Route path="/care/account" component={ProfessionalPortalGate} />
+      <Route path="/care/onboarding" component={ProfessionalPortalGate} />
+      <Route path="/care/security" component={ProfessionalPortalGate} />
+      <Route path="/care/directory" component={ProfessionalPortalGate} />
+      <Route path="/care/referrals" component={ProfessionalPortalGate} />
+      <Route path="/care/crisis" component={ProfessionalPortalGate} />
+      <Route path="/admin/providers" component={ProfessionalPortalGate} />
       <Route path="/select-role" component={SelectRoleGate} />
       <Route component={AppGate} />
     </Switch>

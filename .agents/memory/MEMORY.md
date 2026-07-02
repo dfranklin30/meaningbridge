@@ -1,2 +1,1 @@
-- [drizzle-kit push interactive rename](drizzle-push-interactive-rename.md) — push's create-vs-rename TTY prompt ignores piped stdin; apply renames via psql then re-push.
-- [PHI / professional foundation](phi-professional-foundation.md) — PHI = AES-GCM `Enc` columns; key is a runtime SECRET never in tracked config; tokens hashed; provider-scoped access + audit on every patient CRUD/PHI read.
+- [Replit-managed Clerk limitations](clerk-managed-limitations.md) — no native MFA/orgs/SMS; MeaningBridge does app-level TOTP + signed idle cookie, PHI 403 gate codes.

@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminProviderListItem,
   AnthropicConversation,
   AnthropicConversationInput,
   AnthropicConversationWithMessages,
@@ -40,6 +41,7 @@ import type {
   DeceasedPhotoInput,
   DeceasedProfile,
   DeceasedProfileInput,
+  DirectoryEntry,
   FindTherapistsParams,
   GisResult,
   GisSubmission,
@@ -52,10 +54,14 @@ import type {
   JournalEntryInput,
   JournalPrompt,
   JournalReflectionResult,
+  ListProvidersForAdminParams,
+  LookupNpiParams,
   Me,
   NotifyOptIn,
   NotifyOptInInput,
   NotifyOptInResult,
+  NpiLookupResult,
+  OkResult,
   PatientInput,
   PatientSummary,
   Practice,
@@ -64,6 +70,7 @@ import type {
   Profile,
   ProfileInput,
   Provider,
+  ProviderDecisionInput,
   ProviderInput,
   Referral,
   ReferralInput,
@@ -75,7 +82,13 @@ import type {
   SandboxFeedback,
   SandboxFeedbackInput,
   SandboxFeedbackResult,
+  SearchDirectoryParams,
+  SecurityStatus,
   Therapist,
+  TotpChallengeInput,
+  TotpCodeInput,
+  TotpEnableResult,
+  TotpSetup,
   UpdateMeInput,
   UploadUrlRequest,
   UploadUrlResponse,
@@ -4382,6 +4395,803 @@ export function useGetProfessionalMeta<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Validate an NPI (format + checksum) with a best-effort NPPES registry lookup.
+ */
+export const getLookupNpiUrl = (params: LookupNpiParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/professional/providers/npi-lookup?${stringifiedParams}`
+    : `/api/professional/providers/npi-lookup`;
+};
+
+export const lookupNpi = async (
+  params: LookupNpiParams,
+  options?: RequestInit,
+): Promise<NpiLookupResult> => {
+  return customFetch<NpiLookupResult>(getLookupNpiUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getLookupNpiQueryKey = (params?: LookupNpiParams) => {
+  return [
+    `/api/professional/providers/npi-lookup`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getLookupNpiQueryOptions = <
+  TData = Awaited<ReturnType<typeof lookupNpi>>,
+  TError = ErrorType<unknown>,
+>(
+  params: LookupNpiParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof lookupNpi>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getLookupNpiQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof lookupNpi>>> = ({
+    signal,
+  }) => lookupNpi(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof lookupNpi>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type LookupNpiQueryResult = NonNullable<
+  Awaited<ReturnType<typeof lookupNpi>>
+>;
+export type LookupNpiQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Validate an NPI (format + checksum) with a best-effort NPPES registry lookup.
+ */
+
+export function useLookupNpi<
+  TData = Awaited<ReturnType<typeof lookupNpi>>,
+  TError = ErrorType<unknown>,
+>(
+  params: LookupNpiParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof lookupNpi>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getLookupNpiQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary The provider's two-factor status and idle-timeout window.
+ */
+export const getGetSecurityStatusUrl = () => {
+  return `/api/professional/security`;
+};
+
+export const getSecurityStatus = async (
+  options?: RequestInit,
+): Promise<SecurityStatus> => {
+  return customFetch<SecurityStatus>(getGetSecurityStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSecurityStatusQueryKey = () => {
+  return [`/api/professional/security`] as const;
+};
+
+export const getGetSecurityStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSecurityStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSecurityStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSecurityStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getSecurityStatus>>
+  > = ({ signal }) => getSecurityStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSecurityStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSecurityStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSecurityStatus>>
+>;
+export type GetSecurityStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary The provider's two-factor status and idle-timeout window.
+ */
+
+export function useGetSecurityStatus<
+  TData = Awaited<ReturnType<typeof getSecurityStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSecurityStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSecurityStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Begin authenticator-app enrollment; returns a secret and otpauth URI.
+ */
+export const getSetupTotpUrl = () => {
+  return `/api/professional/security/totp/setup`;
+};
+
+export const setupTotp = async (options?: RequestInit): Promise<TotpSetup> => {
+  return customFetch<TotpSetup>(getSetupTotpUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getSetupTotpMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setupTotp>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof setupTotp>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["setupTotp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof setupTotp>>,
+    void
+  > = () => {
+    return setupTotp(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SetupTotpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof setupTotp>>
+>;
+
+export type SetupTotpMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Begin authenticator-app enrollment; returns a secret and otpauth URI.
+ */
+export const useSetupTotp = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof setupTotp>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof setupTotp>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getSetupTotpMutationOptions(options));
+};
+
+/**
+ * @summary Confirm a code to finish enrollment; returns one-time recovery codes.
+ */
+export const getEnableTotpUrl = () => {
+  return `/api/professional/security/totp/enable`;
+};
+
+export const enableTotp = async (
+  totpCodeInput: TotpCodeInput,
+  options?: RequestInit,
+): Promise<TotpEnableResult> => {
+  return customFetch<TotpEnableResult>(getEnableTotpUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(totpCodeInput),
+  });
+};
+
+export const getEnableTotpMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enableTotp>>,
+    TError,
+    { data: BodyType<TotpCodeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof enableTotp>>,
+  TError,
+  { data: BodyType<TotpCodeInput> },
+  TContext
+> => {
+  const mutationKey = ["enableTotp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof enableTotp>>,
+    { data: BodyType<TotpCodeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return enableTotp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type EnableTotpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof enableTotp>>
+>;
+export type EnableTotpMutationBody = BodyType<TotpCodeInput>;
+export type EnableTotpMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Confirm a code to finish enrollment; returns one-time recovery codes.
+ */
+export const useEnableTotp = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof enableTotp>>,
+    TError,
+    { data: BodyType<TotpCodeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof enableTotp>>,
+  TError,
+  { data: BodyType<TotpCodeInput> },
+  TContext
+> => {
+  return useMutation(getEnableTotpMutationOptions(options));
+};
+
+/**
+ * @summary Verify a code (or recovery code) to start an authorized PHI session.
+ */
+export const getChallengeTotpUrl = () => {
+  return `/api/professional/security/totp/challenge`;
+};
+
+export const challengeTotp = async (
+  totpChallengeInput: TotpChallengeInput,
+  options?: RequestInit,
+): Promise<OkResult> => {
+  return customFetch<OkResult>(getChallengeTotpUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(totpChallengeInput),
+  });
+};
+
+export const getChallengeTotpMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof challengeTotp>>,
+    TError,
+    { data: BodyType<TotpChallengeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof challengeTotp>>,
+  TError,
+  { data: BodyType<TotpChallengeInput> },
+  TContext
+> => {
+  const mutationKey = ["challengeTotp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof challengeTotp>>,
+    { data: BodyType<TotpChallengeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return challengeTotp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ChallengeTotpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof challengeTotp>>
+>;
+export type ChallengeTotpMutationBody = BodyType<TotpChallengeInput>;
+export type ChallengeTotpMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Verify a code (or recovery code) to start an authorized PHI session.
+ */
+export const useChallengeTotp = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof challengeTotp>>,
+    TError,
+    { data: BodyType<TotpChallengeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof challengeTotp>>,
+  TError,
+  { data: BodyType<TotpChallengeInput> },
+  TContext
+> => {
+  return useMutation(getChallengeTotpMutationOptions(options));
+};
+
+/**
+ * @summary Disable the authenticator-app second factor.
+ */
+export const getDisableTotpUrl = () => {
+  return `/api/professional/security/totp/disable`;
+};
+
+export const disableTotp = async (
+  totpCodeInput: TotpCodeInput,
+  options?: RequestInit,
+): Promise<OkResult> => {
+  return customFetch<OkResult>(getDisableTotpUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(totpCodeInput),
+  });
+};
+
+export const getDisableTotpMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disableTotp>>,
+    TError,
+    { data: BodyType<TotpCodeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof disableTotp>>,
+  TError,
+  { data: BodyType<TotpCodeInput> },
+  TContext
+> => {
+  const mutationKey = ["disableTotp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof disableTotp>>,
+    { data: BodyType<TotpCodeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return disableTotp(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DisableTotpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof disableTotp>>
+>;
+export type DisableTotpMutationBody = BodyType<TotpCodeInput>;
+export type DisableTotpMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Disable the authenticator-app second factor.
+ */
+export const useDisableTotp = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof disableTotp>>,
+    TError,
+    { data: BodyType<TotpCodeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof disableTotp>>,
+  TError,
+  { data: BodyType<TotpCodeInput> },
+  TContext
+> => {
+  return useMutation(getDisableTotpMutationOptions(options));
+};
+
+/**
+ * @summary Search the opt-in colleague directory (verified providers only).
+ */
+export const getSearchDirectoryUrl = (params?: SearchDirectoryParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/professional/directory?${stringifiedParams}`
+    : `/api/professional/directory`;
+};
+
+export const searchDirectory = async (
+  params?: SearchDirectoryParams,
+  options?: RequestInit,
+): Promise<DirectoryEntry[]> => {
+  return customFetch<DirectoryEntry[]>(getSearchDirectoryUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getSearchDirectoryQueryKey = (params?: SearchDirectoryParams) => {
+  return [`/api/professional/directory`, ...(params ? [params] : [])] as const;
+};
+
+export const getSearchDirectoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchDirectory>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchDirectoryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchDirectory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getSearchDirectoryQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchDirectory>>> = ({
+    signal,
+  }) => searchDirectory(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchDirectory>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SearchDirectoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchDirectory>>
+>;
+export type SearchDirectoryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Search the opt-in colleague directory (verified providers only).
+ */
+
+export function useSearchDirectory<
+  TData = Awaited<ReturnType<typeof searchDirectory>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchDirectoryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchDirectory>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSearchDirectoryQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin-only provider verification queue.
+ */
+export const getListProvidersForAdminUrl = (
+  params?: ListProvidersForAdminParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/professional/admin/providers?${stringifiedParams}`
+    : `/api/professional/admin/providers`;
+};
+
+export const listProvidersForAdmin = async (
+  params?: ListProvidersForAdminParams,
+  options?: RequestInit,
+): Promise<AdminProviderListItem[]> => {
+  return customFetch<AdminProviderListItem[]>(
+    getListProvidersForAdminUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListProvidersForAdminQueryKey = (
+  params?: ListProvidersForAdminParams,
+) => {
+  return [
+    `/api/professional/admin/providers`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListProvidersForAdminQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProvidersForAdmin>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListProvidersForAdminParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProvidersForAdmin>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListProvidersForAdminQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listProvidersForAdmin>>
+  > = ({ signal }) =>
+    listProvidersForAdmin(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProvidersForAdmin>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProvidersForAdminQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProvidersForAdmin>>
+>;
+export type ListProvidersForAdminQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin-only provider verification queue.
+ */
+
+export function useListProvidersForAdmin<
+  TData = Awaited<ReturnType<typeof listProvidersForAdmin>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListProvidersForAdminParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProvidersForAdmin>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProvidersForAdminQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin approve or reject a pending provider.
+ */
+export const getDecideProviderVerificationUrl = (id: number) => {
+  return `/api/professional/admin/providers/${id}/decision`;
+};
+
+export const decideProviderVerification = async (
+  id: number,
+  providerDecisionInput: ProviderDecisionInput,
+  options?: RequestInit,
+): Promise<Provider> => {
+  return customFetch<Provider>(getDecideProviderVerificationUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(providerDecisionInput),
+  });
+};
+
+export const getDecideProviderVerificationMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof decideProviderVerification>>,
+    TError,
+    { id: number; data: BodyType<ProviderDecisionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof decideProviderVerification>>,
+  TError,
+  { id: number; data: BodyType<ProviderDecisionInput> },
+  TContext
+> => {
+  const mutationKey = ["decideProviderVerification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof decideProviderVerification>>,
+    { id: number; data: BodyType<ProviderDecisionInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return decideProviderVerification(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DecideProviderVerificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof decideProviderVerification>>
+>;
+export type DecideProviderVerificationMutationBody =
+  BodyType<ProviderDecisionInput>;
+export type DecideProviderVerificationMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Admin approve or reject a pending provider.
+ */
+export const useDecideProviderVerification = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof decideProviderVerification>>,
+    TError,
+    { id: number; data: BodyType<ProviderDecisionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof decideProviderVerification>>,
+  TError,
+  { id: number; data: BodyType<ProviderDecisionInput> },
+  TContext
+> => {
+  return useMutation(getDecideProviderVerificationMutationOptions(options));
+};
 
 /**
  * @summary Create the authenticated clinician's provider profile.

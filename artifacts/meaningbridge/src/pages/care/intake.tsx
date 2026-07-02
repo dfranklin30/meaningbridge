@@ -408,7 +408,7 @@ export default function ProviderIntake() {
           <button
             type="button"
             onClick={submit}
-            disabled={submitting || (riskFlag && !safetyPlanConfirmed)}
+            disabled={submitting || !form.identity.email.trim() || (riskFlag && !safetyPlanConfirmed)}
             className="btn-primary inline-flex items-center gap-1.5"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit & send consent invite"}
@@ -748,8 +748,8 @@ function StepConsent({
         </div>
       ) : (
         <div className="rounded-lg border border-amber-300/60 bg-amber-50/60 px-4 py-3 text-sm text-amber-900">
-          No email was entered. You can still submit, but the patient will not receive an invite until
-          you add an email address.
+          A patient email is required to submit. Return to the identity step and add one so the consent
+          invite can be sent.
         </div>
       )}
       {riskFlag && !safetyPlanConfirmed && (

@@ -1,44 +1,52 @@
 ---
-name: Public consent-token security
-description: Rules for the patient e-sign bearer-token flow (public /api/consent/:token) so tokens can't leak or be replayed.
+name: Public consent-token & PHI intake security
+description: Durable policy invariants for the patient e-sign bearer-token flow and provider intake, so tokens can't leak/replay and safety gates can't be bypassed.
 ---
 
-# Public consent-token flow (patient e-sign)
+# Consent-token & PHI intake invariants
 
-The patient consent link is authed by a bearer token in the **URL path**
-(`/api/consent/:token`), not a Clerk session — the patient has no account. Only
-the token's hash is stored (`patients.consentTokenHash`).
+The patient consent link is authed by a bearer token in the **URL path** (the
+patient has no account/Clerk session). Only the token's hash is stored. These are
+policy rules that survive refactors — grep the code for the current implementation.
 
-## Rules (learned the hard way in review)
+## Bearer-token rules
+- **Redact path tokens from logs.** The token rides in `req.url`, so the request
+  logger must strip it. Query-string redaction alone is insufficient for a token
+  in the path.
+- **Single-use.** Invalidate the stored token hash in the same write that advances
+  status on successful e-sign. **Why:** otherwise the emailed link is a permanent
+  replayable credential to read PHI / re-sign.
 
-- **Redact the token from logs.** It rides in the path, so the pino `req`
-  serializer in `app.ts` must strip it (regex replace `/api/consent/<tok>` →
-  `[redacted]`). Query-string stripping alone is not enough for path tokens.
-  **Why:** request logging serializes `req.url`; a raw path logs the bearer
-  credential.
-- **Single-use.** Clear `consentTokenHash` (set null) in the same update that
-  flips status to `consented`. **Why:** otherwise the emailed link stays a valid
-  bearer credential forever — replayable to read patient PHI.
-- **Risk is server-derived, never a client flag.** The intake safety gate
-  (require safety-plan confirmation) keys off `deriveRiskFlag(data)` =
-  `clinical.cssrsFlag || clinical.activeSuicidalIdeation`, computed from the
-  validated intake blob. `riskFlag` is not accepted from the client. **Why:** a
-  caller could otherwise submit an intake indicating suicidal ideation while
-  claiming `riskFlag:false` to skip the gate. Intake `data` is a strict nested
-  zod schema (screening scores range-checked: PG-13-R 0-50, PHQ-9 0-27,
-  GAD-7 0-21), re-validated at the submit gate from the decrypted blob.
-- **`/caregiver` is public marketing; the real PHI dashboard is authed at
-  `/care/patients`.** The build spec said `/caregiver` should show real patients,
-  but real linked-patient PHI must sit behind Clerk + 2FA — so it lives at
-  `/care/patients` and `/caregiver` only links signed-in providers to it. This
-  spec drift is intentional and security-preserving.
-- **State machine is server-owned.** Intake `status` is NOT client-writable.
-  Creation is always `draft`; only `POST /intakes/:id/submit` advances to
-  `submitted` (it mints the token, creates the patient, sends the invite, and
-  runs the safety gate). **Why:** accepting a client `status` lets callers reach
-  `submitted` while skipping every side effect.
+## Outbound-link origin
+- **Never build user-facing email links from request headers as the primary
+  source.** Resolve the app origin from trusted config (explicit env override →
+  platform deployment domain → dev domain), with request headers only as a
+  last-resort local fallback. **Why:** an authed caller can spoof Host /
+  X-Forwarded-Host and poison the consent-invite URL → token phishing/exfiltration.
 
-## Known gap (deferred, see follow-ups)
-- Submit and e-sign are not wrapped in a DB transaction/lock, so concurrent
-  requests can race and insert duplicate consent rows before the status guard
-  trips. No token TTL/expiry yet.
+## Safety gate & validation
+- **Risk is server-derived, never a client flag.** The safety gate keys off risk
+  computed from the validated intake blob (C-SSRS / active-SI signals), not any
+  client-supplied `riskFlag`. **Why:** a client could otherwise report suicidal
+  ideation yet claim low risk to skip the gate.
+- **Validate the intake blob server-side with a strict nested schema** (not an
+  open record), including numeric ranges for screening instruments, and
+  **re-validate at the submit gate from decrypted storage** — not just on write.
+
+## State machine (server-owned)
+- Intake `status` and `riskFlag` are NOT client-writable. Creation is always a
+  draft; only the submit endpoint advances state, and that same call mints the
+  token, creates the patient, sends the invite, and runs the safety gate.
+- **Email is mandatory at submit.** Submit is the only place the token is minted
+  and the invite sent, so an email-less submit strands the patient in `invited`
+  with no delivery path. Enforce server-side (400) and disable the client submit.
+
+## `/caregiver` vs real dashboard
+- `/caregiver` is **public marketing**; the real linked-patient PHI dashboard is
+  authed (Clerk + 2FA) at a separate route. Real PHI must never sit on a public
+  route even if a spec says so — intentional, security-preserving drift.
+
+## Known gaps (deferred, see follow-ups)
+- Submit + e-sign are not wrapped in a DB transaction/lock, so concurrency can
+  race duplicate consent rows before the status guard trips.
+- No token TTL/expiry, and no resend/refresh invite for changed-email recovery.

@@ -268,7 +268,17 @@ router.post("/intakes/:id/submit", requireAuth, requireProfessional, async (req,
     res.status(400).json({ error: "A patient first name is required before submitting." });
     return;
   }
+  // Email is required: submit is the only point where the consent token is minted
+  // and the invite is sent. Allowing an email-less submit would strand the patient
+  // in "invited" with no way to ever receive the consent link.
   const email = optString(data.identity.email);
+  if (!email) {
+    res.status(400).json({
+      error: "A patient email is required to send the consent invite before submitting.",
+      code: "email_required",
+    });
+    return;
+  }
 
   // Create the patient record from the intake if one is not already linked, and
   // grant the submitting provider owner access.

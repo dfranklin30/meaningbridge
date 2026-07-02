@@ -27,15 +27,66 @@ const router: IRouter = Router();
  * the provider can access. Reads/writes are audited.
  */
 
-// Note: `status` is intentionally NOT client-writable. Intakes are created as
-// drafts and only advance to "submitted" through POST /intakes/:id/submit, which
-// performs patient creation, consent-token minting, the invite email, and the
-// safety gate. Accepting a client-supplied status would let callers reach
-// "submitted" while skipping those side effects.
+// Structured, validated intake payload. Every field is optional/defaulted so a
+// partial draft can be saved and resumed, but the shape and numeric screening
+// ranges are enforced server-side (the client UI can never be the only guard).
+const optStr = z.string().optional().default("");
+
+/** Optional whole-number screening score in [0, max], accepted as a string. */
+const scoreStr = (max: number) =>
+  z
+    .string()
+    .default("")
+    .refine((v) => v.trim() === "" || (/^\d+$/.test(v.trim()) && Number(v.trim()) <= max), {
+      message: `Enter a whole number between 0 and ${max}.`,
+    });
+
+const intakeDataSchema = z.object({
+  identity: z.object({
+    firstName: optStr,
+    lastName: optStr,
+    dob: optStr,
+    pronouns: optStr,
+    phone: optStr,
+    email: optStr,
+    preferredContact: optStr,
+    emergencyName: optStr,
+    emergencyPhone: optStr,
+  }),
+  loss: z.object({ relationship: optStr, dateOfLoss: optStr, causeCategory: optStr }),
+  clinical: z.object({
+    pg13r: scoreStr(50),
+    phq9: scoreStr(27),
+    gad7: scoreStr(21),
+    cssrsFlag: z.boolean().default(false),
+    activeSuicidalIdeation: z.boolean().default(false),
+    diagnoses: optStr,
+    icd10: z.array(z.string()).default([]),
+    medications: optStr,
+    treatments: z.array(z.string()).default([]),
+  }),
+  goals: z.object({ selected: z.array(z.string()).default([]), freeText: optStr }),
+});
+
+type IntakeData = z.infer<typeof intakeDataSchema>;
+
+/**
+ * Risk is derived server-side from the clinical answers, never trusted from a
+ * client-supplied flag. A caller cannot submit an intake indicating suicidal
+ * ideation while claiming riskFlag=false to slip past the safety gate.
+ */
+function deriveRiskFlag(data: IntakeData): boolean {
+  return Boolean(data.clinical.cssrsFlag || data.clinical.activeSuicidalIdeation);
+}
+
+// Note: `status` and `riskFlag` are intentionally NOT client-writable. Intakes
+// are created as drafts and only advance to "submitted" through
+// POST /intakes/:id/submit, which performs patient creation, consent-token
+// minting, the invite email, and the safety gate. riskFlag is computed from the
+// validated clinical answers on every write.
 const intakeInput = z.object({
   patientId: z.number().int().positive().optional(),
-  data: z.record(z.string(), z.unknown()),
-  riskFlag: z.boolean().optional(),
+  data: intakeDataSchema,
   safetyPlanConfirmed: z.boolean().optional(),
 });
 
@@ -85,7 +136,7 @@ router.post("/intakes", requireAuth, requireProfessional, async (req, res) => {
     res.status(400).json({ error: "Invalid intake", details: parsed.error.issues });
     return;
   }
-  const { patientId, data, riskFlag, safetyPlanConfirmed } = parsed.data;
+  const { patientId, data, safetyPlanConfirmed } = parsed.data;
 
   if (patientId !== undefined) {
     const patient = await getPatientForProvider(req.userId!, patientId);
@@ -102,7 +153,7 @@ router.post("/intakes", requireAuth, requireProfessional, async (req, res) => {
       patientId: patientId ?? null,
       status: "draft",
       dataEnc: encryptPhiJson(data),
-      riskFlag: riskFlag ?? false,
+      riskFlag: deriveRiskFlag(data),
       safetyPlanConfirmed: safetyPlanConfirmed ?? false,
       submittedAt: null,
     })
@@ -153,8 +204,11 @@ router.patch("/intakes/:id", requireAuth, requireProfessional, async (req, res) 
     }
     patch.patientId = parsed.data.patientId;
   }
-  if (parsed.data.data !== undefined) patch.dataEnc = encryptPhiJson(parsed.data.data);
-  if (parsed.data.riskFlag !== undefined) patch.riskFlag = parsed.data.riskFlag;
+  if (parsed.data.data !== undefined) {
+    patch.dataEnc = encryptPhiJson(parsed.data.data);
+    // Re-derive risk from the validated clinical answers on every content update.
+    patch.riskFlag = deriveRiskFlag(parsed.data.data);
+  }
   if (parsed.data.safetyPlanConfirmed !== undefined)
     patch.safetyPlanConfirmed = parsed.data.safetyPlanConfirmed;
 
@@ -186,10 +240,22 @@ router.post("/intakes/:id/submit", requireAuth, requireProfessional, async (req,
     return;
   }
 
-  // Server-side safety gate: a risk-flagged intake cannot be submitted until the
-  // provider confirms a safety plan is in place. Mirrors the UI banner, but is
-  // enforced here so the UI can never be bypassed.
-  if (existing.riskFlag && !existing.safetyPlanConfirmed) {
+  // Re-validate the stored intake at the authoritative gate. Structure and
+  // numeric screening ranges must hold before we create a patient from it.
+  const parsedData = intakeDataSchema.safeParse(decryptPhiJson(existing.dataEnc) ?? {});
+  if (!parsedData.success) {
+    res.status(400).json({
+      error: "This intake has invalid or incomplete data and cannot be submitted.",
+      details: parsedData.error.issues,
+    });
+    return;
+  }
+  const data = parsedData.data;
+
+  // Server-side safety gate: risk is derived from the clinical answers (never a
+  // client flag), so a risk-flagged intake cannot be submitted until the provider
+  // confirms a safety plan is in place. Enforced here so the UI can never be bypassed.
+  if (deriveRiskFlag(data) && !existing.safetyPlanConfirmed) {
     res.status(400).json({
       error: "A safety plan must be confirmed before submitting a risk-flagged intake.",
       code: "safety_plan_required",
@@ -197,14 +263,12 @@ router.post("/intakes/:id/submit", requireAuth, requireProfessional, async (req,
     return;
   }
 
-  const data = (decryptPhiJson(existing.dataEnc) ?? {}) as Record<string, unknown>;
-  const identity = (data.identity ?? {}) as Record<string, unknown>;
-  const firstName = optString(identity.firstName);
+  const firstName = optString(data.identity.firstName);
   if (!firstName) {
     res.status(400).json({ error: "A patient first name is required before submitting." });
     return;
   }
-  const email = optString(identity.email);
+  const email = optString(data.identity.email);
 
   // Create the patient record from the intake if one is not already linked, and
   // grant the submitting provider owner access.
@@ -216,11 +280,11 @@ router.post("/intakes/:id/submit", requireAuth, requireProfessional, async (req,
         ownerProviderUserId: req.userId!,
         status: "draft",
         firstNameEnc: encryptPhi(firstName),
-        lastNameEnc: encryptPhi(optString(identity.lastName)),
-        dobEnc: encryptPhi(optString(identity.dob)),
+        lastNameEnc: encryptPhi(optString(data.identity.lastName)),
+        dobEnc: encryptPhi(optString(data.identity.dob)),
         emailEnc: encryptPhi(email),
-        phoneEnc: encryptPhi(optString(identity.phone)),
-        pronouns: optString(identity.pronouns),
+        phoneEnc: encryptPhi(optString(data.identity.phone)),
+        pronouns: optString(data.identity.pronouns),
       })
       .returning();
     patientId = patient!.id;

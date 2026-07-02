@@ -12,7 +12,11 @@ policy rules that survive refactors — grep the code for the current implementa
 ## Bearer-token rules
 - **Redact path tokens from logs.** The token rides in `req.url`, so the request
   logger must strip it. Query-string redaction alone is insufficient for a token
-  in the path.
+  in the path. **This applies to EVERY public token-in-path route** — the pino-http
+  `req` serializer in `app.ts` needs one redaction rule per such route (consent,
+  consent-withdraw, appointments confirm/decline, …). Adding a new public
+  token route without a matching serializer rule leaks a reusable credential;
+  this has been missed twice.
 - **Single-use.** Invalidate the stored token hash in the same write that advances
   status on successful e-sign. **Why:** otherwise the emailed link is a permanent
   replayable credential to read PHI / re-sign.

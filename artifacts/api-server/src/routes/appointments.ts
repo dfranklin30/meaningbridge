@@ -75,10 +75,21 @@ router.post("/:token", async (req, res) => {
   const nextStatus = parsed.data.decision === "confirm" ? "confirmed" : "declined";
   let googleEventId = appt.googleEventId;
 
-  if (nextStatus === "confirmed" && (await isCalendarConnected())) {
+  // Calendar sync on confirm is idempotent: the event is created at proposal
+  // time when the provider has sync enabled, so an appointment that already
+  // carries an event id (and its originating calendar) is left untouched — we
+  // never create a second event or fall back to an unintended "primary"
+  // calendar. We only mirror here if a proposal persisted sync intent
+  // (googleCalendarId) but no event id yet exists.
+  if (
+    nextStatus === "confirmed" &&
+    !appt.googleEventId &&
+    appt.googleCalendarId &&
+    (await isCalendarConnected())
+  ) {
     try {
       const { eventId } = await syncAppointmentToCalendar({
-        calendarId: appt.googleCalendarId ?? "primary",
+        calendarId: appt.googleCalendarId,
         title: appt.title,
         startsAt: appt.startsAt,
         endsAt: appt.endsAt,

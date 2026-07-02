@@ -26,6 +26,7 @@ app.use(
         const path = (req.url?.split("?")[0] ?? "")
           .replace(/(\/api\/consent\/withdraw\/)[^/]+/, "$1[redacted]")
           .replace(/(\/api\/consent\/)[^/]+/, "$1[redacted]")
+          .replace(/(\/api\/appointments\/)[^/]+/, "$1[redacted]")
           .replace(/(\/api\/professional\/(?:patients|intakes|referrals)\/)\d+/, "$1[id]")
           .replace(/(\/api\/care\/connections\/)\d+/, "$1[id]");
         return {

@@ -21,6 +21,10 @@ import {
 
 const router: IRouter = Router();
 
+/** Consecutive bad codes before the challenge locks, and the lock duration. */
+const LOCK_THRESHOLD = 5;
+const LOCK_MINUTES = 15;
+
 /**
  * Provider two-factor (authenticator-app TOTP) enrollment and challenge.
  *
@@ -131,6 +135,18 @@ router.post("/security/totp/challenge", requireAuth, requireProfessional, async 
     return;
   }
 
+  // Brute-force lockout: after LOCK_THRESHOLD consecutive bad codes the challenge
+  // is frozen for LOCK_MINUTES. A successful factor resets the counter.
+  const now = Date.now();
+  if (sec.lockedUntil && sec.lockedUntil.getTime() > now) {
+    const mins = Math.max(1, Math.ceil((sec.lockedUntil.getTime() - now) / 60000));
+    res.status(429).json({
+      error: `Too many attempts. Please try again in about ${mins} minute${mins === 1 ? "" : "s"}.`,
+      code: "locked_out",
+    });
+    return;
+  }
+
   const { code, recoveryCode } = parsed.data;
   let ok = false;
 
@@ -150,8 +166,33 @@ router.post("/security/totp/challenge", requireAuth, requireProfessional, async 
   }
 
   if (!ok) {
+    const attempts = (sec.failedAttempts ?? 0) + 1;
+    if (attempts >= LOCK_THRESHOLD) {
+      const lockedUntil = new Date(now + LOCK_MINUTES * 60000);
+      await db
+        .update(providerSecurityTable)
+        .set({ failedAttempts: 0, lockedUntil })
+        .where(eq(providerSecurityTable.userId, req.userId!));
+      await audit(req, "provider.2fa.lockout", { detail: `${LOCK_MINUTES}m` });
+      res.status(429).json({
+        error: `Too many attempts. Please try again in about ${LOCK_MINUTES} minutes.`,
+        code: "locked_out",
+      });
+      return;
+    }
+    await db
+      .update(providerSecurityTable)
+      .set({ failedAttempts: attempts })
+      .where(eq(providerSecurityTable.userId, req.userId!));
     res.status(400).json({ error: "That code did not match", code: "invalid_code" });
     return;
+  }
+
+  if (sec.failedAttempts !== 0 || sec.lockedUntil !== null) {
+    await db
+      .update(providerSecurityTable)
+      .set({ failedAttempts: 0, lockedUntil: null })
+      .where(eq(providerSecurityTable.userId, req.userId!));
   }
 
   res.cookie(TWO_FACTOR_COOKIE, issueTwoFactorCookie(req.userId!), twoFactorCookieOptions());

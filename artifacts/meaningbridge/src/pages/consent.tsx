@@ -62,6 +62,7 @@ export default function ConsentPage() {
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [withdrawToken, setWithdrawToken] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +110,7 @@ export default function ConsentPage() {
         setError(body?.error ?? "We could not record your signature.");
         return;
       }
+      if (typeof body?.withdrawToken === "string") setWithdrawToken(body.withdrawToken);
       setView({ kind: "success", info: view.info });
     } catch {
       setError("We could not record your signature. Please try again.");
@@ -154,6 +156,18 @@ export default function ConsentPage() {
             {view.info.providerName ? ` ${view.info.providerName} will` : " Your clinician will"} help
             you get started with MeaningBridge. You can close this page.
           </p>
+          {view.kind === "success" && withdrawToken && (
+            <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-4">
+              You may withdraw your consent at any time. Keep this private link to do so later:
+              <br />
+              <a
+                href={`${basePath}/consent/withdraw/${withdrawToken}`}
+                className="text-foreground underline break-all"
+              >
+                {`${window.location.origin}${basePath}/consent/withdraw/${withdrawToken}`}
+              </a>
+            </p>
+          )}
         </div>
       </Shell>
     );

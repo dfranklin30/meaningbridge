@@ -51,6 +51,10 @@ export const patientsTable = pgTable(
     // SHA-256 hash of the single-use consent-link token. The raw token is
     // emailed to the patient once and never stored; lookups hash-and-compare.
     consentTokenHash: text("consent_token_hash"),
+    // SHA-256 hash of a durable single-use withdrawal token, minted when the
+    // patient signs consent so they can later revoke it themselves (see the
+    // public consent-withdraw flow). Cleared once withdrawal is exercised.
+    withdrawTokenHash: text("withdraw_token_hash"),
     // The one fictional worked example — rendered only in Demo mode, watermarked.
     isDemoSample: boolean("is_demo_sample").notNull().default(false),
     // Engagement metadata surfaced to the provider (never conversation content).

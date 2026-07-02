@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 import { db, patientsTable, consentsTable, providersTable } from "@workspace/db";
 import { logAudit as audit, clientIp } from "../lib/audit";
 import { encryptPhi, decryptPhi } from "../lib/phi";
-import { hashConsentToken } from "../lib/consentToken";
+import { hashConsentToken, generateConsentToken } from "../lib/consentToken";
 import { CONSENT_DOCUMENT_VERSION } from "../lib/professionalMeta";
 
 const router: IRouter = Router();
@@ -31,7 +31,78 @@ async function patientByToken(token: string) {
   return row ?? null;
 }
 
+/** Resolve the patient a raw withdrawal token belongs to, or null. */
+async function patientByWithdrawToken(token: string) {
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+  const hash = hashConsentToken(trimmed);
+  const [row] = await db
+    .select()
+    .from(patientsTable)
+    .where(eq(patientsTable.withdrawTokenHash, hash))
+    .limit(1);
+  return row ?? null;
+}
+
 const NOT_VALID = "This link is not valid or has expired. Please contact your clinician.";
+
+/**
+ * PUBLIC consent-withdrawal flow. After signing, the patient receives a durable
+ * single-use withdrawal token (distinct from the sign token). Following it lets
+ * them revoke consent themselves: the relationship is deactivated (status
+ * "revoked"), the provider stops seeing them, and — honoring the documented
+ * deletion workflow — their encrypted PHI is purged from the patient row.
+ */
+router.get("/withdraw/:token", async (req, res) => {
+  const patient = await patientByWithdrawToken(req.params.token);
+  if (!patient) {
+    res.status(404).json({ error: NOT_VALID });
+    return;
+  }
+  const [provider] = await db
+    .select({ fullName: providersTable.fullName, practiceName: providersTable.practiceName })
+    .from(providersTable)
+    .where(eq(providersTable.userId, patient.ownerProviderUserId))
+    .limit(1);
+  res.json({
+    firstName: decryptPhi(patient.firstNameEnc),
+    providerName: provider?.fullName ?? null,
+    practiceName: provider?.practiceName ?? null,
+    status: patient.status,
+  });
+});
+
+router.post("/withdraw/:token", async (req, res) => {
+  const patient = await patientByWithdrawToken(req.params.token);
+  if (!patient) {
+    res.status(404).json({ error: NOT_VALID });
+    return;
+  }
+
+  const now = new Date();
+  // Deactivate, stop provider visibility, and purge identifying PHI. The
+  // non-PHI shell and the append-only audit trail are retained per policy.
+  await db
+    .update(patientsTable)
+    .set({
+      status: "revoked",
+      withdrawTokenHash: null,
+      consentTokenHash: null,
+      firstNameEnc: null,
+      lastNameEnc: null,
+      dobEnc: null,
+      emailEnc: null,
+      phoneEnc: null,
+    })
+    .where(eq(patientsTable.id, patient.id));
+  await db
+    .update(consentsTable)
+    .set({ revokedAt: now })
+    .where(eq(consentsTable.patientId, patient.id));
+  await audit(req, "consent.withdraw", { detail: `patient ${patient.id} self-revoked` });
+
+  res.json({ status: "revoked" });
+});
 
 router.get("/:token", async (req, res) => {
   const patient = await patientByToken(req.params.token);
@@ -97,15 +168,17 @@ router.post("/:token", async (req, res) => {
     ipAddress: clientIp(req),
   });
 
-  // Single-use: clear the token hash so the emailed link cannot be replayed to
-  // read patient details or re-sign after consent is captured.
+  // Single-use: clear the sign token hash so the emailed link cannot be replayed
+  // to read patient details or re-sign after consent is captured. Mint a durable
+  // withdrawal token so the patient can revoke consent themselves later.
+  const withdraw = generateConsentToken();
   await db
     .update(patientsTable)
-    .set({ status: "consented", consentTokenHash: null })
+    .set({ status: "consented", consentTokenHash: null, withdrawTokenHash: withdraw.hash })
     .where(eq(patientsTable.id, patient.id));
   await audit(req, "consent.record", { detail: `patient ${patient.id} self-signed` });
 
-  res.status(201).json({ status: "consented" });
+  res.status(201).json({ status: "consented", withdrawToken: withdraw.token });
 });
 
 export default router;

@@ -59,8 +59,10 @@ import ProviderIntake from "@/pages/care/intake";
 import ProviderImport from "@/pages/care/import";
 import ProviderIntegrations from "@/pages/care/integrations";
 import AdminProviders from "@/pages/admin/providers";
+import AdminAudit from "@/pages/admin/audit";
 import { ProviderShell, type Me } from "@/pages/care/provider-shell";
 import ConsentPage from "@/pages/consent";
+import ConsentWithdrawPage from "@/pages/consent-withdraw";
 import NotFound from "@/pages/not-found";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
@@ -322,6 +324,7 @@ function ProviderPortalRoutes() {
         <Route path="/care/intake" component={ProviderIntake} />
         <Route path="/care/intake/:id" component={ProviderIntake} />
         <Route path="/admin/providers" component={AdminProviders} />
+        <Route path="/admin/audit" component={AdminAudit} />
         <Route path="/care/crisis" component={Crisis} />
         <Route>
           <Redirect to="/care/account" />
@@ -403,6 +406,7 @@ function AppRouterSwitch() {
       <Route path="/present" component={PresentPage} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/caregiver" component={Caregiver} />
+      <Route path="/consent/withdraw/:token" component={ConsentWithdrawPage} />
       <Route path="/consent/:token" component={ConsentPage} />
       <Route path="/sandbox" component={Sandbox} />
       <Route path="/care/invite" component={CareInvite} />
@@ -418,6 +422,7 @@ function AppRouterSwitch() {
       <Route path="/care/intake/:id" component={ProfessionalPortalGate} />
       <Route path="/care/crisis" component={ProfessionalPortalGate} />
       <Route path="/admin/providers" component={ProfessionalPortalGate} />
+      <Route path="/admin/audit" component={ProfessionalPortalGate} />
       <Route path="/select-role" component={SelectRoleGate} />
       <Route component={AppGate} />
     </Switch>

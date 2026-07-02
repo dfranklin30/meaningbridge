@@ -33,6 +33,11 @@ export const providerSecurityTable = pgTable(
     totpSecretEnc: text("totp_secret_enc"),
     totpEnabledAt: timestamp("totp_enabled_at", { withTimezone: true }),
     recoveryCodes: jsonb("recovery_codes").$type<string[]>().notNull().default([]),
+    // Brute-force protection for the second-factor challenge. `failedAttempts`
+    // counts consecutive bad codes; once the threshold is crossed the account is
+    // locked until `lockedUntil`. Both reset to 0/null on any successful factor.
+    failedAttempts: integer("failed_attempts").notNull().default(0),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

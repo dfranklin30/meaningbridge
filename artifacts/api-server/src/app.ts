@@ -19,13 +19,19 @@ app.use(
     logger,
     serializers: {
       req(req) {
-        // Strip the query string, then redact bearer consent tokens that ride
-        // in the path (e.g. /api/consent/<token>) so they never land in logs.
-        const path = req.url?.split("?")[0];
+        // Strip the query string, then scrub identifiers that ride in the path
+        // so no bearer token or patient identifier ever lands in logs: consent /
+        // withdrawal tokens are redacted, and numeric patient-scoped ids in the
+        // professional and care paths are replaced with a placeholder.
+        const path = (req.url?.split("?")[0] ?? "")
+          .replace(/(\/api\/consent\/withdraw\/)[^/]+/, "$1[redacted]")
+          .replace(/(\/api\/consent\/)[^/]+/, "$1[redacted]")
+          .replace(/(\/api\/professional\/(?:patients|intakes|referrals)\/)\d+/, "$1[id]")
+          .replace(/(\/api\/care\/connections\/)\d+/, "$1[id]");
         return {
           id: req.id,
           method: req.method,
-          url: path?.replace(/(\/api\/consent\/)[^/]+/, "$1[redacted]"),
+          url: path,
         };
       },
       res(res) {

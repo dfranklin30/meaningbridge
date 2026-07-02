@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
-import { db, providersTable, usersTable } from "@workspace/db";
+import { db, providersTable, usersTable, auditLogTable, patientsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { logAudit as audit } from "../lib/audit";
@@ -83,6 +84,151 @@ router.post("/admin/providers/:id/decision", requireAuth, requireAdmin, async (r
     detail: `${row.verificationStatus} provider ${id}`,
   });
   res.json(toProviderView(row));
+});
+
+/**
+ * Audit-trail oversight. The append-only audit log is the compliance record of
+ * every sensitive read/write; only platform admins may inspect or export it.
+ * Filters narrow by action (substring), actor, subject, and a date range. The
+ * viewing/export action is itself audited.
+ */
+const auditQuery = z.object({
+  action: z.string().trim().min(1).optional(),
+  actorUserId: z.coerce.number().int().positive().optional(),
+  subjectUserId: z.coerce.number().int().positive().optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(500).catch(100),
+  offset: z.coerce.number().int().min(0).catch(0),
+});
+
+function auditWhere(q: z.infer<typeof auditQuery>) {
+  const conds = [];
+  if (q.action) conds.push(ilike(auditLogTable.action, `%${q.action}%`));
+  if (q.actorUserId) conds.push(eq(auditLogTable.actorUserId, q.actorUserId));
+  if (q.subjectUserId) conds.push(eq(auditLogTable.subjectUserId, q.subjectUserId));
+  if (q.from) {
+    const d = new Date(q.from);
+    if (!Number.isNaN(d.getTime())) conds.push(gte(auditLogTable.createdAt, d));
+  }
+  if (q.to) {
+    const d = new Date(q.to);
+    if (!Number.isNaN(d.getTime())) conds.push(lte(auditLogTable.createdAt, d));
+  }
+  return conds.length ? and(...conds) : undefined;
+}
+
+function auditSelect(q: z.infer<typeof auditQuery>) {
+  const actor = alias(usersTable, "audit_actor");
+  const subject = alias(usersTable, "audit_subject");
+  return db
+    .select({
+      id: auditLogTable.id,
+      action: auditLogTable.action,
+      actorUserId: auditLogTable.actorUserId,
+      actorEmail: actor.email,
+      subjectUserId: auditLogTable.subjectUserId,
+      subjectEmail: subject.email,
+      relationshipId: auditLogTable.relationshipId,
+      detail: auditLogTable.detail,
+      ip: auditLogTable.ip,
+      createdAt: auditLogTable.createdAt,
+    })
+    .from(auditLogTable)
+    .leftJoin(actor, eq(auditLogTable.actorUserId, actor.id))
+    .leftJoin(subject, eq(auditLogTable.subjectUserId, subject.id))
+    .where(auditWhere(q))
+    .orderBy(desc(auditLogTable.createdAt));
+}
+
+router.get("/admin/audit", requireAuth, requireAdmin, async (req, res) => {
+  const q = auditQuery.parse(req.query);
+  const rows = await auditSelect(q).limit(q.limit).offset(q.offset);
+  const [totals] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(auditLogTable)
+    .where(auditWhere(q));
+  const total = totals?.total ?? 0;
+  await audit(req, "admin.audit.view", { detail: `${rows.length} of ${total} entries` });
+  res.json({ rows, total, limit: q.limit, offset: q.offset });
+});
+
+router.get("/admin/audit/export", requireAuth, requireAdmin, async (req, res) => {
+  const q = auditQuery.parse(req.query);
+  const rows = await auditSelect(q).limit(10000);
+  await audit(req, "admin.audit.export", { detail: `${rows.length} entries` });
+
+  const header = [
+    "id",
+    "createdAt",
+    "action",
+    "actorUserId",
+    "actorEmail",
+    "subjectUserId",
+    "subjectEmail",
+    "relationshipId",
+    "ip",
+    "detail",
+  ];
+  const esc = (v: unknown): string => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [
+    header.join(","),
+    ...rows.map((r) =>
+      [
+        r.id,
+        r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+        r.action,
+        r.actorUserId,
+        r.actorEmail,
+        r.subjectUserId,
+        r.subjectEmail,
+        r.relationshipId,
+        r.ip,
+        r.detail,
+      ]
+        .map(esc)
+        .join(","),
+    ),
+  ];
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="meaningbridge-audit-${new Date().toISOString().slice(0, 10)}.csv"`,
+  );
+  res.send(lines.join("\n"));
+});
+
+/**
+ * De-identified platform analytics. Returns only aggregate integer counts —
+ * never names, dates of birth, or any patient identifier — so the oversight
+ * dashboard can show scale without exposing PHI (HIPAA "minimum necessary").
+ */
+router.get("/admin/metrics", requireAuth, requireAdmin, async (req, res) => {
+  const n = sql<number>`count(*)::int`;
+  const [users] = await db.select({ n }).from(usersTable);
+  const [seekers] = await db.select({ n }).from(usersTable).where(eq(usersTable.role, "seeker"));
+  const [providers] = await db
+    .select({ n })
+    .from(usersTable)
+    .where(eq(usersTable.role, "professional"));
+  const [patients] = await db.select({ n }).from(patientsTable);
+  const [activePatients] = await db
+    .select({ n })
+    .from(patientsTable)
+    .where(eq(patientsTable.status, "active"));
+  const [auditEntries] = await db.select({ n }).from(auditLogTable);
+  await audit(req, "admin.metrics.view");
+  res.json({
+    users: users?.n ?? 0,
+    seekers: seekers?.n ?? 0,
+    professionals: providers?.n ?? 0,
+    patients: patients?.n ?? 0,
+    activePatients: activePatients?.n ?? 0,
+    auditEntries: auditEntries?.n ?? 0,
+  });
 });
 
 export default router;

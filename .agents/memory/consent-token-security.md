@@ -46,6 +46,20 @@ policy rules that survive refactors — grep the code for the current implementa
   authed (Clerk + 2FA) at a separate route. Real PHI must never sit on a public
   route even if a spec says so — intentional, security-preserving drift.
 
+## Two consent models — don't conflate revocation paths
+There are TWO distinct consent surfaces; revoking one does not touch the other.
+- **Care relationship (seeker ↔ clinician):** revoke sets status `revoked` AND
+  must clear all three consent flags (summaries/safety/engagement). **Why:**
+  clearing status alone would still leak if the row were reopened.
+- **Professional-patient e-sign:** signing mints a **durable, single-use withdraw
+  token** (separate from the single-use *sign* token) stored as a hash on the
+  patient row. Withdrawal (`/consent/withdraw/:token`, defined BEFORE `/:token`
+  to avoid shadowing) purges the encrypted PHI fields (name/DOB/email/phone →
+  null), sets status `revoked` + `consents.revokedAt`, and nulls both token
+  hashes. **Why:** withdrawal is the honored deletion; the non-PHI shell + audit
+  trail are retained as the compliance record. Operational details live in
+  `docs/DATA_RETENTION.md`.
+
 ## Known gaps (deferred, see follow-ups)
 - Submit + e-sign are not wrapped in a DB transaction/lock, so concurrency can
   race duplicate consent rows before the status guard trips.

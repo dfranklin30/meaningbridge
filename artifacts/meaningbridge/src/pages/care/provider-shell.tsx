@@ -114,6 +114,7 @@ const NAV: { href: string; label: string; admin?: boolean }[] = [
   { href: "/care/referrals", label: "Referrals" },
   { href: "/care/security", label: "Security" },
   { href: "/admin/providers", label: "Verification queue", admin: true },
+  { href: "/admin/audit", label: "Audit trail", admin: true },
 ];
 
 /**

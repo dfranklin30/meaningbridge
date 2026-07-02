@@ -316,9 +316,17 @@ router.post("/connections/:id/revoke", requireAuth, async (req, res) => {
     return;
   }
 
+  // Revocation deactivates the relationship AND withdraws every consent flag, so
+  // no future data can reach the clinician even if the row were ever re-opened.
   const [updated] = await db
     .update(careRelationshipsTable)
-    .set({ status: "revoked", revokedAt: new Date() })
+    .set({
+      status: "revoked",
+      revokedAt: new Date(),
+      consentSummaries: false,
+      consentSafety: false,
+      consentEngagement: false,
+    })
     .where(eq(careRelationshipsTable.id, id))
     .returning();
 

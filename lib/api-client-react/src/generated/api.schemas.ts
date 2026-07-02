@@ -96,6 +96,14 @@ export interface CompanionTaskUpdate {
   dueAt?: string | null;
 }
 
+export type OutreachPreferencesChannel =
+  (typeof OutreachPreferencesChannel)[keyof typeof OutreachPreferencesChannel];
+
+export const OutreachPreferencesChannel = {
+  email: "email",
+  sms: "sms",
+} as const;
+
 export interface OutreachPreferences {
   checkinsEnabled: boolean;
   cadenceDays: number;
@@ -103,11 +111,31 @@ export interface OutreachPreferences {
   quietStartHour: number;
   quietEndHour: number;
   timezone: string;
-  channel: string;
+  channel: OutreachPreferencesChannel;
   paused: boolean;
+  /**
+   * Verified mobile number (E.164) used for SMS outreach.
+   * @nullable
+   */
+  phone?: string | null;
+  /** Whether the phone number has completed one-time-code verification. */
+  phoneVerified: boolean;
+  /**
+   * A number awaiting verification
+   * @nullable
+   */
+  pendingPhone?: string | null;
   /** @nullable */
   lastCheckinAt?: string | null;
 }
+
+export type OutreachPreferencesInputChannel =
+  (typeof OutreachPreferencesInputChannel)[keyof typeof OutreachPreferencesInputChannel];
+
+export const OutreachPreferencesInputChannel = {
+  email: "email",
+  sms: "sms",
+} as const;
 
 export interface OutreachPreferencesInput {
   checkinsEnabled?: boolean;
@@ -128,7 +156,32 @@ export interface OutreachPreferencesInput {
    */
   quietEndHour?: number;
   timezone?: string;
+  channel?: OutreachPreferencesInputChannel;
   paused?: boolean;
+}
+
+export interface PhoneVerificationStartInput {
+  /**
+   * Mobile number in E.164 or a locally-formatted number to be normalized.
+   * @minLength 3
+   */
+  phone: string;
+}
+
+export interface PhoneVerificationStartResult {
+  /** The normalized number the code was sent to. */
+  pendingPhone: string;
+  /** Whether the SMS with the code was actually dispatched. */
+  sent: boolean;
+  expiresAt: string;
+}
+
+export interface PhoneVerificationConfirmInput {
+  /**
+   * @minLength 4
+   * @maxLength 8
+   */
+  code: string;
 }
 
 /**

@@ -2170,8 +2170,21 @@ export const GetOutreachPreferencesResponse = zod.object({
   quietStartHour: zod.number(),
   quietEndHour: zod.number(),
   timezone: zod.string(),
-  channel: zod.string(),
+  channel: zod.enum(["email", "sms"]),
   paused: zod.boolean(),
+  phone: zod
+    .string()
+    .nullish()
+    .describe("Verified mobile number (E.164) used for SMS outreach."),
+  phoneVerified: zod
+    .boolean()
+    .describe(
+      "Whether the phone number has completed one-time-code verification.",
+    ),
+  pendingPhone: zod
+    .string()
+    .nullish()
+    .describe("A number awaiting verification"),
   lastCheckinAt: zod.coerce.date().nullish(),
 });
 
@@ -2202,6 +2215,7 @@ export const UpdateOutreachPreferencesBody = zod.object({
     .max(updateOutreachPreferencesBodyQuietEndHourMax)
     .optional(),
   timezone: zod.string().optional(),
+  channel: zod.enum(["email", "sms"]).optional(),
   paused: zod.boolean().optional(),
 });
 
@@ -2212,8 +2226,111 @@ export const UpdateOutreachPreferencesResponse = zod.object({
   quietStartHour: zod.number(),
   quietEndHour: zod.number(),
   timezone: zod.string(),
-  channel: zod.string(),
+  channel: zod.enum(["email", "sms"]),
   paused: zod.boolean(),
+  phone: zod
+    .string()
+    .nullish()
+    .describe("Verified mobile number (E.164) used for SMS outreach."),
+  phoneVerified: zod
+    .boolean()
+    .describe(
+      "Whether the phone number has completed one-time-code verification.",
+    ),
+  pendingPhone: zod
+    .string()
+    .nullish()
+    .describe("A number awaiting verification"),
+  lastCheckinAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Send a one-time verification code by SMS to a mobile number.
+ */
+export const startPhoneVerificationBodyPhoneMin = 3;
+
+export const StartPhoneVerificationBody = zod.object({
+  phone: zod
+    .string()
+    .min(startPhoneVerificationBodyPhoneMin)
+    .describe(
+      "Mobile number in E.164 or a locally-formatted number to be normalized.",
+    ),
+});
+
+export const StartPhoneVerificationResponse = zod.object({
+  pendingPhone: zod
+    .string()
+    .describe("The normalized number the code was sent to."),
+  sent: zod
+    .boolean()
+    .describe("Whether the SMS with the code was actually dispatched."),
+  expiresAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Confirm a mobile number with the one-time code that was sent.
+ */
+export const confirmPhoneVerificationBodyCodeMin = 4;
+export const confirmPhoneVerificationBodyCodeMax = 8;
+
+export const ConfirmPhoneVerificationBody = zod.object({
+  code: zod
+    .string()
+    .min(confirmPhoneVerificationBodyCodeMin)
+    .max(confirmPhoneVerificationBodyCodeMax),
+});
+
+export const ConfirmPhoneVerificationResponse = zod.object({
+  checkinsEnabled: zod.boolean(),
+  cadenceDays: zod.number(),
+  taskRemindersEnabled: zod.boolean(),
+  quietStartHour: zod.number(),
+  quietEndHour: zod.number(),
+  timezone: zod.string(),
+  channel: zod.enum(["email", "sms"]),
+  paused: zod.boolean(),
+  phone: zod
+    .string()
+    .nullish()
+    .describe("Verified mobile number (E.164) used for SMS outreach."),
+  phoneVerified: zod
+    .boolean()
+    .describe(
+      "Whether the phone number has completed one-time-code verification.",
+    ),
+  pendingPhone: zod
+    .string()
+    .nullish()
+    .describe("A number awaiting verification"),
+  lastCheckinAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Forget the verified number and revert outreach to email.
+ */
+export const RemoveOutreachPhoneResponse = zod.object({
+  checkinsEnabled: zod.boolean(),
+  cadenceDays: zod.number(),
+  taskRemindersEnabled: zod.boolean(),
+  quietStartHour: zod.number(),
+  quietEndHour: zod.number(),
+  timezone: zod.string(),
+  channel: zod.enum(["email", "sms"]),
+  paused: zod.boolean(),
+  phone: zod
+    .string()
+    .nullish()
+    .describe("Verified mobile number (E.164) used for SMS outreach."),
+  phoneVerified: zod
+    .boolean()
+    .describe(
+      "Whether the phone number has completed one-time-code verification.",
+    ),
+  pendingPhone: zod
+    .string()
+    .nullish()
+    .describe("A number awaiting verification"),
   lastCheckinAt: zod.coerce.date().nullish(),
 });
 

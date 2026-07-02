@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { OutreachPreferencesChannel } from "./outreachPreferencesChannel";
 
 export interface OutreachPreferences {
   checkinsEnabled: boolean;
@@ -13,8 +14,20 @@ export interface OutreachPreferences {
   quietStartHour: number;
   quietEndHour: number;
   timezone: string;
-  channel: string;
+  channel: OutreachPreferencesChannel;
   paused: boolean;
+  /**
+   * Verified mobile number (E.164) used for SMS outreach.
+   * @nullable
+   */
+  phone?: string | null;
+  /** Whether the phone number has completed one-time-code verification. */
+  phoneVerified: boolean;
+  /**
+   * A number awaiting verification
+   * @nullable
+   */
+  pendingPhone?: string | null;
   /** @nullable */
   lastCheckinAt?: Date | null;
 }

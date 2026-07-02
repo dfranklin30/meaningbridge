@@ -1823,6 +1823,67 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/OutreachPreferences" }
+        "400":
+          description: Invalid preferences (e.g. SMS chosen without a verified phone)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /companion/outreach/phone/start:
+    post:
+      operationId: startPhoneVerification
+      tags: [companion]
+      summary: Send a one-time verification code by SMS to a mobile number.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhoneVerificationStartInput" }
+      responses:
+        "200":
+          description: Verification code dispatched (or SMS not configured)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PhoneVerificationStartResult" }
+        "400":
+          description: Invalid phone number
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /companion/outreach/phone/verify:
+    post:
+      operationId: confirmPhoneVerification
+      tags: [companion]
+      summary: Confirm a mobile number with the one-time code that was sent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhoneVerificationConfirmInput" }
+      responses:
+        "200":
+          description: Phone verified; updated preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OutreachPreferences" }
+        "400":
+          description: Code invalid, expired, or too many attempts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /companion/outreach/phone:
+    delete:
+      operationId: removeOutreachPhone
+      tags: [companion]
+      summary: Forget the verified number and revert outreach to email.
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OutreachPreferences" }
 
   /professional/patients/{id}/engagement:
     get:
@@ -2072,11 +2133,14 @@ components:
         quietStartHour: { type: integer }
         quietEndHour: { type: integer }
         timezone: { type: string }
-        channel: { type: string }
+        channel: { type: string, enum: [email, sms] }
         paused: { type: boolean }
+        phone: { type: ["string", "null"], description: Verified mobile number (E.164) used for SMS outreach. }
+        phoneVerified: { type: boolean, description: Whether the phone number has completed one-time-code verification. }
+        pendingPhone: { type: ["string", "null"], description: A number awaiting verification, if a code has been sent. }
         lastCheckinAt: { type: ["string", "null"], format: date-time }
       required:
-        [checkinsEnabled, cadenceDays, taskRemindersEnabled, quietStartHour, quietEndHour, timezone, channel, paused]
+        [checkinsEnabled, cadenceDays, taskRemindersEnabled, quietStartHour, quietEndHour, timezone, channel, paused, phoneVerified]
 
     OutreachPreferencesInput:
       type: object
@@ -2087,7 +2151,28 @@ components:
         quietStartHour: { type: integer, minimum: 0, maximum: 23 }
         quietEndHour: { type: integer, minimum: 0, maximum: 23 }
         timezone: { type: string }
+        channel: { type: string, enum: [email, sms] }
         paused: { type: boolean }
+
+    PhoneVerificationStartInput:
+      type: object
+      properties:
+        phone: { type: string, minLength: 3, description: Mobile number in E.164 or a locally-formatted number to be normalized. }
+      required: [phone]
+
+    PhoneVerificationStartResult:
+      type: object
+      properties:
+        pendingPhone: { type: string, description: The normalized number the code was sent to. }
+        sent: { type: boolean, description: Whether the SMS with the code was actually dispatched. }
+        expiresAt: { type: string, format: date-time }
+      required: [pendingPhone, sent, expiresAt]
+
+    PhoneVerificationConfirmInput:
+      type: object
+      properties:
+        code: { type: string, minLength: 4, maxLength: 8 }
+      required: [code]
 
     PatientEngagement:
       type: object

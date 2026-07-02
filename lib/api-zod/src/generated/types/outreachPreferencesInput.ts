@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { OutreachPreferencesInputChannel } from "./outreachPreferencesInputChannel";
 
 export interface OutreachPreferencesInput {
   checkinsEnabled?: boolean;
@@ -25,5 +26,6 @@ export interface OutreachPreferencesInput {
    */
   quietEndHour?: number;
   timezone?: string;
+  channel?: OutreachPreferencesInputChannel;
   paused?: boolean;
 }

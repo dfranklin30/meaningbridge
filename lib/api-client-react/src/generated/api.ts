@@ -80,6 +80,9 @@ import type {
   PatientEngagement,
   PatientInput,
   PatientSummary,
+  PhoneVerificationConfirmInput,
+  PhoneVerificationStartInput,
+  PhoneVerificationStartResult,
   Practice,
   PracticeInput,
   ProfessionalMeta,
@@ -8106,7 +8109,7 @@ export const updateOutreachPreferences = async (
 };
 
 export const getUpdateOutreachPreferencesMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<AnthropicError>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -8148,10 +8151,10 @@ export type UpdateOutreachPreferencesMutationResult = NonNullable<
 >;
 export type UpdateOutreachPreferencesMutationBody =
   BodyType<OutreachPreferencesInput>;
-export type UpdateOutreachPreferencesMutationError = ErrorType<unknown>;
+export type UpdateOutreachPreferencesMutationError = ErrorType<AnthropicError>;
 
 export const useUpdateOutreachPreferences = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<AnthropicError>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -8168,6 +8171,264 @@ export const useUpdateOutreachPreferences = <
   TContext
 > => {
   return useMutation(getUpdateOutreachPreferencesMutationOptions(options));
+};
+
+/**
+ * @summary Send a one-time verification code by SMS to a mobile number.
+ */
+export const getStartPhoneVerificationUrl = () => {
+  return `/api/companion/outreach/phone/start`;
+};
+
+export const startPhoneVerification = async (
+  phoneVerificationStartInput: PhoneVerificationStartInput,
+  options?: RequestInit,
+): Promise<PhoneVerificationStartResult> => {
+  return customFetch<PhoneVerificationStartResult>(
+    getStartPhoneVerificationUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(phoneVerificationStartInput),
+    },
+  );
+};
+
+export const getStartPhoneVerificationMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startPhoneVerification>>,
+    TError,
+    { data: BodyType<PhoneVerificationStartInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof startPhoneVerification>>,
+  TError,
+  { data: BodyType<PhoneVerificationStartInput> },
+  TContext
+> => {
+  const mutationKey = ["startPhoneVerification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof startPhoneVerification>>,
+    { data: BodyType<PhoneVerificationStartInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return startPhoneVerification(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StartPhoneVerificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof startPhoneVerification>>
+>;
+export type StartPhoneVerificationMutationBody =
+  BodyType<PhoneVerificationStartInput>;
+export type StartPhoneVerificationMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Send a one-time verification code by SMS to a mobile number.
+ */
+export const useStartPhoneVerification = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startPhoneVerification>>,
+    TError,
+    { data: BodyType<PhoneVerificationStartInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof startPhoneVerification>>,
+  TError,
+  { data: BodyType<PhoneVerificationStartInput> },
+  TContext
+> => {
+  return useMutation(getStartPhoneVerificationMutationOptions(options));
+};
+
+/**
+ * @summary Confirm a mobile number with the one-time code that was sent.
+ */
+export const getConfirmPhoneVerificationUrl = () => {
+  return `/api/companion/outreach/phone/verify`;
+};
+
+export const confirmPhoneVerification = async (
+  phoneVerificationConfirmInput: PhoneVerificationConfirmInput,
+  options?: RequestInit,
+): Promise<OutreachPreferences> => {
+  return customFetch<OutreachPreferences>(getConfirmPhoneVerificationUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(phoneVerificationConfirmInput),
+  });
+};
+
+export const getConfirmPhoneVerificationMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmPhoneVerification>>,
+    TError,
+    { data: BodyType<PhoneVerificationConfirmInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof confirmPhoneVerification>>,
+  TError,
+  { data: BodyType<PhoneVerificationConfirmInput> },
+  TContext
+> => {
+  const mutationKey = ["confirmPhoneVerification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof confirmPhoneVerification>>,
+    { data: BodyType<PhoneVerificationConfirmInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return confirmPhoneVerification(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConfirmPhoneVerificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof confirmPhoneVerification>>
+>;
+export type ConfirmPhoneVerificationMutationBody =
+  BodyType<PhoneVerificationConfirmInput>;
+export type ConfirmPhoneVerificationMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Confirm a mobile number with the one-time code that was sent.
+ */
+export const useConfirmPhoneVerification = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof confirmPhoneVerification>>,
+    TError,
+    { data: BodyType<PhoneVerificationConfirmInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof confirmPhoneVerification>>,
+  TError,
+  { data: BodyType<PhoneVerificationConfirmInput> },
+  TContext
+> => {
+  return useMutation(getConfirmPhoneVerificationMutationOptions(options));
+};
+
+/**
+ * @summary Forget the verified number and revert outreach to email.
+ */
+export const getRemoveOutreachPhoneUrl = () => {
+  return `/api/companion/outreach/phone`;
+};
+
+export const removeOutreachPhone = async (
+  options?: RequestInit,
+): Promise<OutreachPreferences> => {
+  return customFetch<OutreachPreferences>(getRemoveOutreachPhoneUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getRemoveOutreachPhoneMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeOutreachPhone>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeOutreachPhone>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["removeOutreachPhone"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeOutreachPhone>>,
+    void
+  > = () => {
+    return removeOutreachPhone(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveOutreachPhoneMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeOutreachPhone>>
+>;
+
+export type RemoveOutreachPhoneMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Forget the verified number and revert outreach to email.
+ */
+export const useRemoveOutreachPhone = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeOutreachPhone>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeOutreachPhone>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getRemoveOutreachPhoneMutationOptions(options));
 };
 
 /**

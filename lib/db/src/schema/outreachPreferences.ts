@@ -25,8 +25,19 @@ export const outreachPreferencesTable = pgTable(
     quietEndHour: integer("quiet_end_hour").notNull().default(8),
     // IANA timezone used to interpret quiet hours and cadence.
     timezone: text("timezone").notNull().default("America/New_York"),
-    // Delivery channel seam: "email" today; "sms" reserved for later.
+    // Delivery channel seam: "email" or "sms". SMS requires a verified phone.
     channel: text("channel").notNull().default("email"),
+    // Verified mobile number (E.164) used when channel === "sms". Null until the
+    // person confirms a one-time code sent to the number.
+    phone: text("phone"),
+    phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+    // In-flight verification: the number awaiting confirmation, a HASHED one-time
+    // code (never stored in the clear), its expiry, and an attempt counter to
+    // throttle guessing. All cleared on success or when a new code is requested.
+    pendingPhone: text("pending_phone"),
+    verificationCodeHash: text("verification_code_hash"),
+    verificationExpiresAt: timestamp("verification_expires_at", { withTimezone: true }),
+    verificationAttempts: integer("verification_attempts").notNull().default(0),
     // Temporary "pause everything" switch, independent of the enabled flags.
     paused: boolean("paused").notNull().default(false),
     lastCheckinAt: timestamp("last_checkin_at", { withTimezone: true }),

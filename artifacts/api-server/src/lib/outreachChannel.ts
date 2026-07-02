@@ -1,11 +1,13 @@
 import { sendMail } from "./mailer";
+import { sendSms } from "./smsSender";
 import { logger } from "./logger";
 
 /**
- * Delivery seam for all proactive outreach. Email is the only implementation
- * today; `channel` is the clean seam for future SMS (Twilio). We never silently
- * pretend to deliver on an unimplemented channel — an unsupported channel
- * returns delivered:false with a clear reason so the scheduler logs a "skipped".
+ * Delivery seam for all proactive outreach. Email and SMS are both live; the
+ * `channel` field selects the transport. We never silently pretend to deliver on
+ * an unimplemented channel — an unsupported channel (or one whose credentials
+ * are absent) returns delivered:false with a clear reason so the scheduler logs
+ * a "failed"/"skipped" and never double-sends.
  */
 
 const REPLY_TO = "neimeyer@portlandinstitute.org";
@@ -32,8 +34,13 @@ export async function deliverOutreach(
     return { delivered: result.sent, error: result.error };
   }
 
-  // SMS (Twilio) and other channels are reserved for later — a clean seam, not a
-  // silent fallback.
+  if (input.channel === "sms") {
+    // SMS ignores subject/html — the plain text is the message.
+    const result = await sendSms({ to: input.to, body: input.text });
+    return { delivered: result.sent, error: result.error };
+  }
+
+  // Any other channel has no implementation — a clean seam, not a silent fallback.
   logger.warn({ channel: input.channel }, "outreach channel not implemented; skipping");
   return { delivered: false, error: `channel_not_implemented:${input.channel}` };
 }

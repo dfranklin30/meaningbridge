@@ -89,14 +89,19 @@ async function runCheckins(now: Date): Promise<void> {
       .from(usersTable)
       .where(eq(usersTable.id, pref.userId))
       .limit(1);
-    if (!user?.email) {
-      await markLog(dedupeKey, "skipped", "no email on file");
+
+    const target = resolveTarget(pref, user?.email ?? null);
+    if (!target.to) {
+      await markLog(dedupeKey, "skipped", target.reason);
       continue;
     }
 
     const origin = appOriginStatic();
-    const message = checkinEmail(user.firstName, origin);
-    const result = await deliverOutreach({ channel: pref.channel, to: user.email, ...message });
+    const message =
+      target.channel === "sms"
+        ? checkinSms(user?.firstName ?? null, origin)
+        : checkinEmail(user?.firstName ?? null, origin);
+    const result = await deliverOutreach({ channel: target.channel, to: target.to, ...message });
     if (result.delivered) {
       await db
         .update(outreachPreferencesTable)
@@ -151,14 +156,19 @@ async function runTaskReminders(now: Date): Promise<void> {
       .from(usersTable)
       .where(eq(usersTable.id, task.userId))
       .limit(1);
-    if (!user?.email) {
-      await markLog(dedupeKey, "skipped", "no email on file");
+
+    const target = resolveTarget(pref, user?.email ?? null);
+    if (!target.to) {
+      await markLog(dedupeKey, "skipped", target.reason);
       continue;
     }
 
     const origin = appOriginStatic();
-    const message = taskReminderEmail(user.firstName, task.title, origin);
-    const result = await deliverOutreach({ channel: pref.channel, to: user.email, ...message });
+    const message =
+      target.channel === "sms"
+        ? taskReminderSms(user?.firstName ?? null, task.title, origin)
+        : taskReminderEmail(user?.firstName ?? null, task.title, origin);
+    const result = await deliverOutreach({ channel: target.channel, to: target.to, ...message });
     if (result.delivered) {
       await db
         .update(companionTasksTable)
@@ -218,6 +228,31 @@ async function runAppointmentReminders(now: Date): Promise<void> {
       await markLog(dedupeKey, "failed", result.error);
     }
   }
+}
+
+// --- channel routing -------------------------------------------------------
+
+type TargetPref = Pick<
+  typeof outreachPreferencesTable.$inferSelect,
+  "channel" | "phone" | "phoneVerifiedAt"
+>;
+
+/**
+ * Resolve where a person's outreach should go, honoring their chosen channel.
+ * SMS requires a verified phone; email requires an address on file. When the
+ * destination is missing we return a reason instead of a `to`, so the scheduler
+ * logs a "skipped" rather than silently pretending to deliver.
+ */
+function resolveTarget(
+  pref: TargetPref,
+  email: string | null,
+): { channel: string; to: string | null; reason?: string } {
+  if (pref.channel === "sms") {
+    if (pref.phone && pref.phoneVerifiedAt) return { channel: "sms", to: pref.phone };
+    return { channel: "sms", to: null, reason: "no verified phone on file" };
+  }
+  if (email) return { channel: "email", to: email };
+  return { channel: "email", to: null, reason: "no email on file" };
 }
 
 // --- idempotency ledger ----------------------------------------------------
@@ -365,6 +400,20 @@ function appointmentReminderEmail(
      <p style="margin-top:28px;">With care,<br/>The MeaningBridge team</p>`,
   );
   return { subject: "A reminder of your upcoming session", text, html };
+}
+
+// --- SMS bodies (short, calm, no emojis) -----------------------------------
+
+function checkinSms(firstName: string | null, origin: string) {
+  const name = firstName ? ` ${firstName}` : "";
+  const text = `Hello${name}, a gentle check-in from your MeaningBridge companion. No need to do anything. If it helps to talk, it is here for you: ${origin}/companion`;
+  return { subject: "", text };
+}
+
+function taskReminderSms(firstName: string | null, title: string, origin: string) {
+  const name = firstName ? ` ${firstName}` : "";
+  const text = `Hello${name}, a while ago you set aside "${title}" to return to. No pressure — only if it feels right today: ${origin}/companion`;
+  return { subject: "", text };
 }
 
 function escapeHtml(value: string): string {

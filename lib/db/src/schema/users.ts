@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,6 +19,9 @@ export const usersTable = pgTable(
     email: text("email"),
     firstName: text("first_name"),
     role: text("role"), // null | "seeker" | "professional"
+    // Platform administrator, orthogonal to `role`. Admins verify providers and
+    // access the audit/PHI oversight surfaces. Never self-service; set out of band.
+    isAdmin: boolean("is_admin").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

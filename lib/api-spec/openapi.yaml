@@ -34,6 +34,8 @@ tags:
     description: Voice-to-text transcription
   - name: Storage
     description: Object storage upload and serving endpoints
+  - name: professional
+    description: Professional (clinician) portal — providers, patients, intake, consent, referrals, integrations
 paths:
   /me:
     get:
@@ -971,8 +973,240 @@ paths:
         "204":
           description: Deleted
 
+  /professional/meta:
+    get:
+      operationId: getProfessionalMeta
+      tags: [professional]
+      summary: Reference data for the professional portal (credentials, specialties, EHR systems, consent version)
+      responses:
+        "200":
+          description: Professional portal reference data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfessionalMeta"
+
 components:
   schemas:
+    ProfessionalMeta:
+      type: object
+      description: Static reference data shared by the provider onboarding, intake, and integrations UIs.
+      properties:
+        credentials:
+          type: array
+          items: { type: string }
+        specialtyTags:
+          type: array
+          items: { type: string }
+        causeOfLossCategories:
+          type: array
+          items: { type: string }
+        integrationSystems:
+          type: array
+          items: { $ref: "#/components/schemas/IntegrationSystemOption" }
+        consentDocumentVersion: { type: string }
+      required: [credentials, specialtyTags, causeOfLossCategories, integrationSystems, consentDocumentVersion]
+
+    IntegrationSystemOption:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        kind: { type: string, enum: [fhir, csv_preset, vendor_api] }
+      required: [id, label, kind]
+
+    Provider:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        fullName: { type: ["string", "null"] }
+        credential: { type: ["string", "null"] }
+        licenseNumber: { type: ["string", "null"] }
+        licenseState: { type: ["string", "null"] }
+        npi: { type: ["string", "null"] }
+        practiceName: { type: ["string", "null"] }
+        practiceAddress: { type: ["string", "null"] }
+        verificationStatus: { type: string, enum: [pending, verified, rejected] }
+        verifiedAt: { type: ["string", "null"], format: date-time }
+        directoryOptIn: { type: boolean }
+        specialtyTags: { type: array, items: { type: string } }
+        statesLicensed: { type: array, items: { type: string } }
+        telehealth: { type: boolean }
+        acceptingReferrals: { type: boolean }
+        bio: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required:
+        [id, userId, verificationStatus, directoryOptIn, specialtyTags, statesLicensed, telehealth, acceptingReferrals, createdAt, updatedAt]
+
+    ProviderInput:
+      type: object
+      description: Provider profile fields a clinician submits at onboarding (verification is server-controlled).
+      properties:
+        fullName: { type: string, minLength: 1 }
+        credential: { type: string }
+        licenseNumber: { type: string }
+        licenseState: { type: string }
+        npi: { type: string }
+        practiceName: { type: string }
+        practiceAddress: { type: string }
+        directoryOptIn: { type: boolean }
+        specialtyTags: { type: array, items: { type: string } }
+        statesLicensed: { type: array, items: { type: string } }
+        telehealth: { type: boolean }
+        acceptingReferrals: { type: boolean }
+        bio: { type: string }
+      required: [fullName]
+
+    PatientSummary:
+      type: object
+      description: Minimum-necessary view of a patient shown to a provider — decrypted identity plus engagement metadata, never conversation content.
+      properties:
+        id: { type: integer }
+        firstName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        pronouns: { type: ["string", "null"] }
+        status: { type: string, enum: [draft, invited, consented, active, revoked, inactive] }
+        isDemoSample: { type: boolean }
+        sessionCount: { type: integer }
+        lastActiveAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+      required: [id, status, isDemoSample, sessionCount, createdAt]
+
+    PatientInput:
+      type: object
+      description: Identifying PHI for a patient. Encrypted at rest server-side.
+      properties:
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string }
+        dob: { type: string, description: "ISO date (YYYY-MM-DD)" }
+        email: { type: string, format: email }
+        phone: { type: string }
+        pronouns: { type: string }
+      required: [firstName]
+
+    Intake:
+      type: object
+      properties:
+        id: { type: integer }
+        providerUserId: { type: integer }
+        patientId: { type: ["integer", "null"] }
+        status: { type: string, enum: [draft, submitted] }
+        data:
+          type: object
+          additionalProperties: true
+          description: Decrypted intake payload (server encrypts it at rest).
+        riskFlag: { type: boolean }
+        safetyPlanConfirmed: { type: boolean }
+        submittedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, providerUserId, status, riskFlag, safetyPlanConfirmed, createdAt, updatedAt]
+
+    IntakeInput:
+      type: object
+      properties:
+        patientId: { type: integer }
+        status: { type: string, enum: [draft, submitted] }
+        data: { type: object, additionalProperties: true }
+        riskFlag: { type: boolean }
+        safetyPlanConfirmed: { type: boolean }
+      required: [data]
+
+    Consent:
+      type: object
+      properties:
+        id: { type: integer }
+        patientId: { type: integer }
+        type: { type: string }
+        documentVersion: { type: ["string", "null"] }
+        signedAt: { type: ["string", "null"], format: date-time }
+        revokedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+      required: [id, patientId, type, createdAt]
+
+    ConsentInput:
+      type: object
+      description: A patient e-signing consent. The typed signature name is stored encrypted.
+      properties:
+        consentToken: { type: string, minLength: 1 }
+        signerName: { type: string, minLength: 1 }
+        documentVersion: { type: string }
+      required: [consentToken, signerName]
+
+    BatchImport:
+      type: object
+      properties:
+        id: { type: integer }
+        filename: { type: ["string", "null"] }
+        source: { type: string }
+        totalRows: { type: integer }
+        acceptedRows: { type: integer }
+        rejectedRows: { type: integer }
+        report:
+          type: ["array", "null"]
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              ok: { type: boolean }
+              reason: { type: string }
+            required: [row, ok]
+        createdAt: { type: string, format: date-time }
+      required: [id, source, totalRows, acceptedRows, rejectedRows, createdAt]
+
+    Referral:
+      type: object
+      properties:
+        id: { type: integer }
+        patientId: { type: integer }
+        fromProviderUserId: { type: integer }
+        toProviderUserId: { type: integer }
+        status: { type: string, enum: [pending, accepted, declined] }
+        summary: { type: ["string", "null"], description: "Decrypted intake summary." }
+        respondedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+      required: [id, patientId, fromProviderUserId, toProviderUserId, status, createdAt]
+
+    ReferralInput:
+      type: object
+      properties:
+        patientId: { type: integer }
+        toProviderUserId: { type: integer }
+        summary: { type: string }
+      required: [patientId, toProviderUserId]
+
+    ReferralMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        referralId: { type: integer }
+        senderUserId: { type: integer }
+        body: { type: string, description: "Decrypted message body." }
+        createdAt: { type: string, format: date-time }
+      required: [id, referralId, senderUserId, body, createdAt]
+
+    ReferralMessageInput:
+      type: object
+      properties:
+        body: { type: string, minLength: 1 }
+      required: [body]
+
+    IntegrationConnection:
+      type: object
+      properties:
+        id: { type: integer }
+        system: { type: string }
+        kind: { type: string, enum: [fhir, csv_preset, vendor_api] }
+        status: { type: string, enum: [connected, disconnected, pending] }
+        scopes: { type: ["string", "null"] }
+        fhirBaseUrl: { type: ["string", "null"] }
+        connectedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, system, kind, status, createdAt, updatedAt]
+
     HealthStatus:
       type: object
       properties:

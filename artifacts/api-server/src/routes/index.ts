@@ -15,6 +15,7 @@ import feedbackRouter from "./feedback";
 import storageRouter from "./storage";
 import voiceRouter from "./voice";
 import careRouter from "./care";
+import professionalRouter from "./professional";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(feedbackRouter);
 router.use(storageRouter);
 router.use("/voice", voiceRouter);
 router.use("/care", careRouter);
+router.use("/professional", professionalRouter);
 
 export default router;

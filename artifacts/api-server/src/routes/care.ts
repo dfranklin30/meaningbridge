@@ -1,15 +1,10 @@
-import { Router, type IRouter, type Request } from "express";
+import { Router, type IRouter } from "express";
 import { randomBytes } from "node:crypto";
 import { eq, and, or, desc, isNull } from "drizzle-orm";
-import {
-  db,
-  careRelationshipsTable,
-  auditLogTable,
-  usersTable,
-  type CareRelationship,
-} from "@workspace/db";
+import { db, careRelationshipsTable, usersTable, type CareRelationship } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireProfessional } from "../middlewares/requireProfessional";
+import { logAudit as audit } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -22,32 +17,6 @@ const router: IRouter = Router();
  */
 
 // ---- helpers ---------------------------------------------------------------
-
-function clientIp(req: Request): string | null {
-  const fwd = req.headers["x-forwarded-for"];
-  if (typeof fwd === "string" && fwd.length > 0) return fwd.split(",")[0]!.trim();
-  return req.ip ?? null;
-}
-
-async function audit(
-  req: Request,
-  action: string,
-  opts: { subjectUserId?: number | null; relationshipId?: number | null; detail?: string } = {},
-): Promise<void> {
-  try {
-    await db.insert(auditLogTable).values({
-      actorUserId: req.userId ?? null,
-      action,
-      subjectUserId: opts.subjectUserId ?? null,
-      relationshipId: opts.relationshipId ?? null,
-      detail: opts.detail ?? null,
-      ip: clientIp(req),
-    });
-  } catch (err) {
-    // Audit must never break the request, but we want to know if it fails.
-    req.log.error({ err }, "audit log write failed");
-  }
-}
 
 function newInviteCode(): string {
   // URL-safe, ~11 chars, ample entropy. Uppercased for readability when typed.

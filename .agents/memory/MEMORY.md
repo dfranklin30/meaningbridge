@@ -1,2 +1,2 @@
-- [Companion SSE contract](companion-sse.md) — chat stream emits delta|crisis|done|error frames; the client must reset streaming/thinking state on error, not just done.
-- [Continuing-bonds voice mode](continuing-bonds-voice.md) — opt-in first-person "as the deceased" mode is a real feature; conversationType is a free string, so new modes need no codegen.
+- [drizzle-kit push interactive rename](drizzle-push-interactive-rename.md) — push's create-vs-rename TTY prompt ignores piped stdin; apply renames via psql then re-push.
+- [PHI / professional foundation](phi-professional-foundation.md) — PHI = AES-GCM `Enc` columns, app-managed key env var (not secret), tokens hashed, access only via provider_patient_links.

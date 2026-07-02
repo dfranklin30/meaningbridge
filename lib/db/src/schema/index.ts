@@ -16,3 +16,7 @@ export * from "./notifyOptIns";
 export * from "./sandboxFeedback";
 export * from "./screenerResults";
 export * from "./care";
+export * from "./providers";
+export * from "./patients";
+export * from "./referrals";
+export * from "./integrations";

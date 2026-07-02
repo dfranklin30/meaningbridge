@@ -1162,3 +1162,24 @@ export const AddDeceasedPhotoBody = zod.object({
 export const DeleteDeceasedPhotoParams = zod.object({
   photoId: zod.coerce.number(),
 });
+
+/**
+ * @summary Reference data for the professional portal (credentials, specialties, EHR systems, consent version)
+ */
+export const GetProfessionalMetaResponse = zod
+  .object({
+    credentials: zod.array(zod.string()),
+    specialtyTags: zod.array(zod.string()),
+    causeOfLossCategories: zod.array(zod.string()),
+    integrationSystems: zod.array(
+      zod.object({
+        id: zod.string(),
+        label: zod.string(),
+        kind: zod.enum(["fhir", "csv_preset", "vendor_api"]),
+      }),
+    ),
+    consentDocumentVersion: zod.string(),
+  })
+  .describe(
+    "Static reference data shared by the provider onboarding, intake, and integrations UIs.",
+  );

@@ -5,6 +5,304 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+export type IntegrationSystemOptionKind =
+  (typeof IntegrationSystemOptionKind)[keyof typeof IntegrationSystemOptionKind];
+
+export const IntegrationSystemOptionKind = {
+  fhir: "fhir",
+  csv_preset: "csv_preset",
+  vendor_api: "vendor_api",
+} as const;
+
+export interface IntegrationSystemOption {
+  id: string;
+  label: string;
+  kind: IntegrationSystemOptionKind;
+}
+
+/**
+ * Static reference data shared by the provider onboarding, intake, and integrations UIs.
+ */
+export interface ProfessionalMeta {
+  credentials: string[];
+  specialtyTags: string[];
+  causeOfLossCategories: string[];
+  integrationSystems: IntegrationSystemOption[];
+  consentDocumentVersion: string;
+}
+
+export type ProviderVerificationStatus =
+  (typeof ProviderVerificationStatus)[keyof typeof ProviderVerificationStatus];
+
+export const ProviderVerificationStatus = {
+  pending: "pending",
+  verified: "verified",
+  rejected: "rejected",
+} as const;
+
+export interface Provider {
+  id: number;
+  userId: number;
+  /** @nullable */
+  fullName?: string | null;
+  /** @nullable */
+  credential?: string | null;
+  /** @nullable */
+  licenseNumber?: string | null;
+  /** @nullable */
+  licenseState?: string | null;
+  /** @nullable */
+  npi?: string | null;
+  /** @nullable */
+  practiceName?: string | null;
+  /** @nullable */
+  practiceAddress?: string | null;
+  verificationStatus: ProviderVerificationStatus;
+  /** @nullable */
+  verifiedAt?: string | null;
+  directoryOptIn: boolean;
+  specialtyTags: string[];
+  statesLicensed: string[];
+  telehealth: boolean;
+  acceptingReferrals: boolean;
+  /** @nullable */
+  bio?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Provider profile fields a clinician submits at onboarding (verification is server-controlled).
+ */
+export interface ProviderInput {
+  /** @minLength 1 */
+  fullName: string;
+  credential?: string;
+  licenseNumber?: string;
+  licenseState?: string;
+  npi?: string;
+  practiceName?: string;
+  practiceAddress?: string;
+  directoryOptIn?: boolean;
+  specialtyTags?: string[];
+  statesLicensed?: string[];
+  telehealth?: boolean;
+  acceptingReferrals?: boolean;
+  bio?: string;
+}
+
+export type PatientSummaryStatus =
+  (typeof PatientSummaryStatus)[keyof typeof PatientSummaryStatus];
+
+export const PatientSummaryStatus = {
+  draft: "draft",
+  invited: "invited",
+  consented: "consented",
+  active: "active",
+  revoked: "revoked",
+  inactive: "inactive",
+} as const;
+
+/**
+ * Minimum-necessary view of a patient shown to a provider — decrypted identity plus engagement metadata, never conversation content.
+ */
+export interface PatientSummary {
+  id: number;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  pronouns?: string | null;
+  status: PatientSummaryStatus;
+  isDemoSample: boolean;
+  sessionCount: number;
+  /** @nullable */
+  lastActiveAt?: string | null;
+  createdAt: string;
+}
+
+/**
+ * Identifying PHI for a patient. Encrypted at rest server-side.
+ */
+export interface PatientInput {
+  /** @minLength 1 */
+  firstName: string;
+  lastName?: string;
+  /** ISO date (YYYY-MM-DD) */
+  dob?: string;
+  email?: string;
+  phone?: string;
+  pronouns?: string;
+}
+
+export type IntakeStatus = (typeof IntakeStatus)[keyof typeof IntakeStatus];
+
+export const IntakeStatus = {
+  draft: "draft",
+  submitted: "submitted",
+} as const;
+
+/**
+ * Decrypted intake payload (server encrypts it at rest).
+ */
+export type IntakeData = { [key: string]: unknown };
+
+export interface Intake {
+  id: number;
+  providerUserId: number;
+  /** @nullable */
+  patientId?: number | null;
+  status: IntakeStatus;
+  /** Decrypted intake payload (server encrypts it at rest). */
+  data?: IntakeData;
+  riskFlag: boolean;
+  safetyPlanConfirmed: boolean;
+  /** @nullable */
+  submittedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type IntakeInputStatus =
+  (typeof IntakeInputStatus)[keyof typeof IntakeInputStatus];
+
+export const IntakeInputStatus = {
+  draft: "draft",
+  submitted: "submitted",
+} as const;
+
+export type IntakeInputData = { [key: string]: unknown };
+
+export interface IntakeInput {
+  patientId?: number;
+  status?: IntakeInputStatus;
+  data: IntakeInputData;
+  riskFlag?: boolean;
+  safetyPlanConfirmed?: boolean;
+}
+
+export interface Consent {
+  id: number;
+  patientId: number;
+  type: string;
+  /** @nullable */
+  documentVersion?: string | null;
+  /** @nullable */
+  signedAt?: string | null;
+  /** @nullable */
+  revokedAt?: string | null;
+  createdAt: string;
+}
+
+/**
+ * A patient e-signing consent. The typed signature name is stored encrypted.
+ */
+export interface ConsentInput {
+  /** @minLength 1 */
+  consentToken: string;
+  /** @minLength 1 */
+  signerName: string;
+  documentVersion?: string;
+}
+
+export type BatchImportReportItem = {
+  row: number;
+  ok: boolean;
+  reason?: string;
+};
+
+export interface BatchImport {
+  id: number;
+  /** @nullable */
+  filename?: string | null;
+  source: string;
+  totalRows: number;
+  acceptedRows: number;
+  rejectedRows: number;
+  /** @nullable */
+  report?: BatchImportReportItem[] | null;
+  createdAt: string;
+}
+
+export type ReferralStatus =
+  (typeof ReferralStatus)[keyof typeof ReferralStatus];
+
+export const ReferralStatus = {
+  pending: "pending",
+  accepted: "accepted",
+  declined: "declined",
+} as const;
+
+export interface Referral {
+  id: number;
+  patientId: number;
+  fromProviderUserId: number;
+  toProviderUserId: number;
+  status: ReferralStatus;
+  /**
+   * Decrypted intake summary.
+   * @nullable
+   */
+  summary?: string | null;
+  /** @nullable */
+  respondedAt?: string | null;
+  createdAt: string;
+}
+
+export interface ReferralInput {
+  patientId: number;
+  toProviderUserId: number;
+  summary?: string;
+}
+
+export interface ReferralMessage {
+  id: number;
+  referralId: number;
+  senderUserId: number;
+  /** Decrypted message body. */
+  body: string;
+  createdAt: string;
+}
+
+export interface ReferralMessageInput {
+  /** @minLength 1 */
+  body: string;
+}
+
+export type IntegrationConnectionKind =
+  (typeof IntegrationConnectionKind)[keyof typeof IntegrationConnectionKind];
+
+export const IntegrationConnectionKind = {
+  fhir: "fhir",
+  csv_preset: "csv_preset",
+  vendor_api: "vendor_api",
+} as const;
+
+export type IntegrationConnectionStatus =
+  (typeof IntegrationConnectionStatus)[keyof typeof IntegrationConnectionStatus];
+
+export const IntegrationConnectionStatus = {
+  connected: "connected",
+  disconnected: "disconnected",
+  pending: "pending",
+} as const;
+
+export interface IntegrationConnection {
+  id: number;
+  system: string;
+  kind: IntegrationConnectionKind;
+  status: IntegrationConnectionStatus;
+  /** @nullable */
+  scopes?: string | null;
+  /** @nullable */
+  fhirBaseUrl?: string | null;
+  /** @nullable */
+  connectedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface HealthStatus {
   status: string;
 }

@@ -50,6 +50,7 @@ import type {
   NotifyOptInResult,
   Practice,
   PracticeInput,
+  ProfessionalMeta,
   Profile,
   ProfileInput,
   SafetyEvent,
@@ -4289,3 +4290,78 @@ export const useDeleteDeceasedPhoto = <
 > => {
   return useMutation(getDeleteDeceasedPhotoMutationOptions(options));
 };
+
+/**
+ * @summary Reference data for the professional portal (credentials, specialties, EHR systems, consent version)
+ */
+export const getGetProfessionalMetaUrl = () => {
+  return `/api/professional/meta`;
+};
+
+export const getProfessionalMeta = async (
+  options?: RequestInit,
+): Promise<ProfessionalMeta> => {
+  return customFetch<ProfessionalMeta>(getGetProfessionalMetaUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProfessionalMetaQueryKey = () => {
+  return [`/api/professional/meta`] as const;
+};
+
+export const getGetProfessionalMetaQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProfessionalMeta>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getProfessionalMeta>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetProfessionalMetaQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getProfessionalMeta>>
+  > = ({ signal }) => getProfessionalMeta({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProfessionalMeta>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProfessionalMetaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProfessionalMeta>>
+>;
+export type GetProfessionalMetaQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Reference data for the professional portal (credentials, specialties, EHR systems, consent version)
+ */
+
+export function useGetProfessionalMeta<
+  TData = Awaited<ReturnType<typeof getProfessionalMeta>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getProfessionalMeta>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProfessionalMetaQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

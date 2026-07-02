@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
 
 /**
  * Application-layer encryption for patient PHI (name, DOB, contact info,
@@ -10,15 +10,29 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
  * so the version is self-describing and a single string round-trips through a
  * plain text column.
  *
- * The 32-byte key comes from the `PHI_ENCRYPTION_KEY` env var (base64, hex, or
- * raw utf-8). It is read lazily and validated on first use so the process can
- * boot in environments that never touch PHI, but any attempt to encrypt or
- * decrypt without a valid key fails loudly — never silently stores plain text.
+ * The 32-byte AES key comes from the `PHI_ENCRYPTION_KEY` env var. If that value
+ * already decodes to exactly 32 bytes (base64 or hex — e.g. `openssl rand -base64
+ * 32`), it is used directly. Otherwise it is treated as a passphrase and a
+ * 32-byte key is derived from it with scrypt, so a human-supplied secret of any
+ * length still yields a valid, deterministic key. It is read lazily and cached on
+ * first use so the process can boot in environments that never touch PHI, but any
+ * attempt to encrypt or decrypt without a key set fails loudly — never silently
+ * stores plain text.
+ *
+ * Note: with the derived-passphrase path, key strength tracks the entropy of the
+ * supplied secret, so a long, random passphrase is strongly preferred. The
+ * derivation salt is a fixed application constant (deterministic across restarts);
+ * changing `PHI_ENCRYPTION_KEY` after PHI has been written makes existing
+ * ciphertext unreadable, so treat the value as permanent for a given dataset.
  */
 
 const VERSION = "v1";
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
+
+// Fixed, non-secret salt for passphrase derivation. The secret is the passphrase,
+// not the salt; a constant salt keeps the derived key stable across restarts.
+const KDF_SALT = "meaningbridge:phi:v1";
 
 let cachedKey: Buffer | null = null;
 
@@ -31,33 +45,24 @@ function loadKey(): Buffer {
     );
   }
   const value = raw.trim();
-  let key: Buffer | null = null;
 
-  // Prefer base64, then hex, then raw utf-8 — accept whichever yields 32 bytes.
-  const candidates: Array<() => Buffer> = [
-    () => Buffer.from(value, "base64"),
-    () => Buffer.from(value, "hex"),
-    () => Buffer.from(value, "utf-8"),
-  ];
-  for (const make of candidates) {
+  // Fast path: a value that already decodes to exactly 32 bytes is used directly
+  // as the AES-256 key (base64 or hex, e.g. `openssl rand -base64 32`).
+  for (const encoding of ["base64", "hex"] as const) {
     try {
-      const buf = make();
+      const buf = Buffer.from(value, encoding);
       if (buf.length === 32) {
-        key = buf;
-        break;
+        cachedKey = buf;
+        return cachedKey;
       }
     } catch {
       // try the next encoding
     }
   }
 
-  if (!key) {
-    throw new Error(
-      "PHI_ENCRYPTION_KEY must decode to exactly 32 bytes (accepts base64, hex, or raw utf-8).",
-    );
-  }
-  cachedKey = key;
-  return key;
+  // Otherwise treat the value as a passphrase and derive a 32-byte key.
+  cachedKey = scryptSync(value, KDF_SALT, 32);
+  return cachedKey;
 }
 
 /** True when a usable key is configured (for startup diagnostics). */

@@ -1,1 +1,2 @@
 - [Public consent-token security](consent-token-security.md) — patient e-sign bearer token in URL path: redact from logs, single-use (clear hash on sign), server-owned intake state machine.
+- [Provider 2FA gate concurrency](two-factor-gate-concurrency.md) — useTwoFactorGate must queue ALL blocked requests; single-slot state deadlocks parallel guarded fetches (Promise.all hangs).

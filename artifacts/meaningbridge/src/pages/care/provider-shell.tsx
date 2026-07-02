@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useClerk } from "@clerk/react";
@@ -347,23 +347,23 @@ export function TwoFactorChallenge({ onSuccess, onClose }: { onSuccess: () => vo
  * original ApiError so callers can fall back to a notice.
  */
 export function useTwoFactorGate() {
-  const [state, setState] = useState<{ retry: () => void; cancel: () => void } | null>(null);
+  const [challenging, setChallenging] = useState(false);
+  // Multiple guarded requests can hit the challenge at once (e.g. a page that
+  // loads several resources in parallel after an idle timeout). We queue every
+  // blocked request and, on a single challenge, retry or cancel them all — a
+  // single-slot state would otherwise strand all but the last request.
+  const waitersRef = useRef<{ retry: () => void; cancel: () => void }[]>([]);
 
   const guard = useCallback(<T,>(fn: () => Promise<T>): Promise<T> => {
     const attempt = (): Promise<T> =>
       fn().catch((e) => {
         if (e instanceof ApiError && e.status === 403 && e.code === "two_factor_challenge_required") {
           return new Promise<T>((resolve, reject) => {
-            setState({
-              retry: () => {
-                setState(null);
-                attempt().then(resolve, reject);
-              },
-              cancel: () => {
-                setState(null);
-                reject(e);
-              },
+            waitersRef.current.push({
+              retry: () => attempt().then(resolve, reject),
+              cancel: () => reject(e),
             });
+            setChallenging(true);
           });
         }
         throw e;
@@ -371,8 +371,15 @@ export function useTwoFactorGate() {
     return attempt();
   }, []);
 
-  const challengeElement = state ? (
-    <TwoFactorChallenge onSuccess={state.retry} onClose={state.cancel} />
+  const resolveAll = useCallback((key: "retry" | "cancel") => {
+    const waiters = waitersRef.current;
+    waitersRef.current = [];
+    setChallenging(false);
+    waiters.forEach((w) => w[key]());
+  }, []);
+
+  const challengeElement = challenging ? (
+    <TwoFactorChallenge onSuccess={() => resolveAll("retry")} onClose={() => resolveAll("cancel")} />
   ) : null;
 
   return { guard, challengeElement };

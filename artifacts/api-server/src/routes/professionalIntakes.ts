@@ -5,11 +5,12 @@ import { db, intakesTable, patientsTable, providersTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireProfessional } from "../middlewares/requireProfessional";
 import { logAudit as audit } from "../lib/audit";
-import { encryptPhi, encryptPhiJson, decryptPhiJson } from "../lib/phi";
-import { getPatientForProvider, linkProviderToPatient } from "../lib/patientAccess";
+import { encryptPhiJson, decryptPhiJson } from "../lib/phi";
+import { getPatientForProvider } from "../lib/patientAccess";
 import { generateConsentToken } from "../lib/consentToken";
 import { sendConsentInvite } from "../lib/consentInvite";
 import { appOrigin } from "../lib/appUrl";
+import { enrollInvitedPatient } from "../lib/patientEnrollment";
 import { toIntakeView, parseId } from "../lib/professionalViews";
 
 /** Narrow an unknown intake-blob value to a trimmed non-empty string, or null. */
@@ -280,35 +281,46 @@ router.post("/intakes/:id/submit", requireAuth, requireProfessional, async (req,
     return;
   }
 
-  // Create the patient record from the intake if one is not already linked, and
-  // grant the submitting provider owner access.
+  const [provider] = await db
+    .select({ fullName: providersTable.fullName })
+    .from(providersTable)
+    .where(eq(providersTable.userId, req.userId!))
+    .limit(1);
+  const providerName = provider?.fullName ?? null;
+  const origin = appOrigin(req);
+
+  // Create the patient record from the intake if one is not already linked. The
+  // shared enrollment helper (also used by the bulk importer) creates the
+  // PHI-encrypted patient, grants owner access, mints a consent token, moves the
+  // patient to "invited", and dispatches the invite fire-and-forget.
   let patientId = existing.patientId;
   if (!patientId) {
-    const [patient] = await db
-      .insert(patientsTable)
-      .values({
-        ownerProviderUserId: req.userId!,
-        status: "draft",
-        firstNameEnc: encryptPhi(firstName),
-        lastNameEnc: encryptPhi(optString(data.identity.lastName)),
-        dobEnc: encryptPhi(optString(data.identity.dob)),
-        emailEnc: encryptPhi(email),
-        phoneEnc: encryptPhi(optString(data.identity.phone)),
-        pronouns: optString(data.identity.pronouns),
-      })
-      .returning();
-    patientId = patient!.id;
-    await linkProviderToPatient(req.userId!, patientId, "owner");
+    const enrolled = await enrollInvitedPatient({
+      providerUserId: req.userId!,
+      firstName,
+      lastName: optString(data.identity.lastName),
+      dob: optString(data.identity.dob),
+      email,
+      phone: optString(data.identity.phone),
+      pronouns: optString(data.identity.pronouns),
+      providerName,
+      origin,
+      log: req.log,
+    });
+    patientId = enrolled.patientId;
     await audit(req, "patient.create", { detail: `patient ${patientId} via intake ${id}` });
+  } else {
+    // Already-linked patient: re-mint the token, move to "invited", re-send the
+    // invite so the patient can (re)sign consent.
+    const { token, hash } = generateConsentToken();
+    await db
+      .update(patientsTable)
+      .set({ status: "invited", consentTokenHash: hash })
+      .where(eq(patientsTable.id, patientId));
+    void sendConsentInvite({ to: email, firstName, providerName, token, origin }).catch((err) => {
+      req.log.error({ err }, "consent invite dispatch failed");
+    });
   }
-
-  // Mint a single-use consent token; store only its hash. The patient's status
-  // becomes "invited" until they e-sign via the emailed link.
-  const { token, hash } = generateConsentToken();
-  await db
-    .update(patientsTable)
-    .set({ status: "invited", consentTokenHash: hash })
-    .where(eq(patientsTable.id, patientId));
 
   const [row] = await db
     .update(intakesTable)
@@ -317,25 +329,6 @@ router.post("/intakes/:id/submit", requireAuth, requireProfessional, async (req,
     .returning();
 
   await audit(req, "intake.submit", { detail: `intake ${id} patient ${patientId}` });
-
-  // Fire-and-forget consent invite. The response must never wait on SMTP.
-  if (email) {
-    const [provider] = await db
-      .select({ fullName: providersTable.fullName })
-      .from(providersTable)
-      .where(eq(providersTable.userId, req.userId!))
-      .limit(1);
-    const origin = appOrigin(req);
-    void sendConsentInvite({
-      to: email,
-      firstName,
-      providerName: provider?.fullName ?? null,
-      token,
-      origin,
-    }).catch((err) => {
-      req.log.error({ err }, "consent invite dispatch failed");
-    });
-  }
 
   res.json(toIntakeView(row!));
 });

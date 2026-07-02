@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useSearch } from "wouter";
 import {
   Plus,
+  Upload,
   CalendarClock,
   MessageSquare,
   FileText,
@@ -146,9 +147,17 @@ export default function ProviderPatients() {
             conversations with the companion.
           </p>
         </div>
-        <Link href="/care/intake" className="btn-primary inline-flex items-center gap-1.5">
-          <Plus className="w-4 h-4" /> Enroll a patient
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/care/import"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm hover:border-foreground transition-colors"
+          >
+            <Upload className="w-4 h-4" /> Bulk upload
+          </Link>
+          <Link href="/care/intake" className="btn-primary inline-flex items-center gap-1.5">
+            <Plus className="w-4 h-4" /> Enroll a patient
+          </Link>
+        </div>
       </div>
 
       {justEnrolled && (

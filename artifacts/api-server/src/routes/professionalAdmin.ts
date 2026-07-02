@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, ilike, lte, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 import { db, providersTable, usersTable, auditLogTable, patientsTable } from "@workspace/db";
@@ -153,10 +153,17 @@ router.get("/admin/audit", requireAuth, requireAdmin, async (req, res) => {
   res.json({ rows, total, limit: q.limit, offset: q.offset });
 });
 
+// Rows are streamed to the client in stable, keyset-paginated chunks (by
+// ascending id) so the full immutable audit trail is always exported — never a
+// silently truncated slice. Keyset (id > cursor) rather than OFFSET keeps the
+// page stable even while new entries append concurrently.
+const EXPORT_CHUNK = 1000;
+
 router.get("/admin/audit/export", requireAuth, requireAdmin, async (req, res) => {
   const q = auditQuery.parse(req.query);
-  const rows = await auditSelect(q).limit(10000);
-  await audit(req, "admin.audit.export", { detail: `${rows.length} entries` });
+  const actor = alias(usersTable, "audit_actor");
+  const subject = alias(usersTable, "audit_subject");
+  const filter = auditWhere(q);
 
   const header = [
     "id",
@@ -174,31 +181,66 @@ router.get("/admin/audit/export", requireAuth, requireAdmin, async (req, res) =>
     const s = v == null ? "" : String(v);
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const lines = [
-    header.join(","),
-    ...rows.map((r) =>
-      [
-        r.id,
-        r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
-        r.action,
-        r.actorUserId,
-        r.actorEmail,
-        r.subjectUserId,
-        r.subjectEmail,
-        r.relationshipId,
-        r.ip,
-        r.detail,
-      ]
-        .map(esc)
-        .join(","),
-    ),
-  ];
+
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader(
     "Content-Disposition",
     `attachment; filename="meaningbridge-audit-${new Date().toISOString().slice(0, 10)}.csv"`,
   );
-  res.send(lines.join("\n"));
+  res.write(header.join(",") + "\n");
+
+  let cursor = 0;
+  let exported = 0;
+  for (;;) {
+    const conds = [gt(auditLogTable.id, cursor)];
+    if (filter) conds.push(filter);
+    const rows = await db
+      .select({
+        id: auditLogTable.id,
+        action: auditLogTable.action,
+        actorUserId: auditLogTable.actorUserId,
+        actorEmail: actor.email,
+        subjectUserId: auditLogTable.subjectUserId,
+        subjectEmail: subject.email,
+        relationshipId: auditLogTable.relationshipId,
+        detail: auditLogTable.detail,
+        ip: auditLogTable.ip,
+        createdAt: auditLogTable.createdAt,
+      })
+      .from(auditLogTable)
+      .leftJoin(actor, eq(auditLogTable.actorUserId, actor.id))
+      .leftJoin(subject, eq(auditLogTable.subjectUserId, subject.id))
+      .where(and(...conds))
+      .orderBy(asc(auditLogTable.id))
+      .limit(EXPORT_CHUNK);
+
+    if (rows.length === 0) break;
+    const chunk = rows
+      .map((r) =>
+        [
+          r.id,
+          r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
+          r.action,
+          r.actorUserId,
+          r.actorEmail,
+          r.subjectUserId,
+          r.subjectEmail,
+          r.relationshipId,
+          r.ip,
+          r.detail,
+        ]
+          .map(esc)
+          .join(","),
+      )
+      .join("\n");
+    res.write(chunk + "\n");
+    exported += rows.length;
+    cursor = rows[rows.length - 1]!.id;
+    if (rows.length < EXPORT_CHUNK) break;
+  }
+
+  await audit(req, "admin.audit.export", { detail: `${exported} entries` });
+  res.end();
 });
 
 /**

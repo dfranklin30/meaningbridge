@@ -222,7 +222,7 @@ export default function CompanionSession() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto space-y-6 pb-4 pr-2">
-        {session.messages?.length === 0 && !isStreaming && !isThinking && (
+        {!session.messages?.length && !isStreaming && !isThinking && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}

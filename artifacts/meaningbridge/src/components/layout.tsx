@@ -53,7 +53,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh] bg-background flex flex-col font-sans text-foreground selection:bg-primary/20">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
         <div className="container max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/app">
+          <Link href="/app" aria-label="Return to home" title="Return to home">
             <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
               <Logo variant="lockup" size={36} />
             </div>

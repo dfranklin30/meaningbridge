@@ -129,7 +129,12 @@ export function ProviderShell({ me, children }: { me: Me; children: ReactNode })
     <div className="min-h-[100dvh] bg-background font-sans text-foreground flex flex-col">
       <header className="border-b border-border/60 bg-card/40 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/care/account" className="flex items-center">
+          <Link
+            href="/care/account"
+            className="flex items-center opacity-90 hover:opacity-100 transition-opacity"
+            aria-label="Return to home"
+            title="Return to home"
+          >
             <Logo variant="lockup" size={32} />
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">

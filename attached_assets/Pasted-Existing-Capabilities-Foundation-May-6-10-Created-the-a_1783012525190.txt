@@ -1,0 +1,66 @@
+Existing Capabilities: 
+Foundation (May 6–10)
+Created the app and its first data foundation
+Added the ability to create and edit a profile of the loved one who died
+Public presence & brand (May 23–25)
+Launched the public "coming soon" landing page with a waitlist signup
+Added the MeaningBridge logo and a refreshed color scheme
+New fonts (Playfair Display + DM Sans) for a warm, considered feel
+Added a gallery of imagery on the landing page, then swapped to a calmer photorealistic look with an animated background
+Added the Portland Institute and Dr. Neimeyer attribution across key pages
+Built the Pricing page (subscription tiers) and the Caregiver portal preview
+Introduced the grief self-assessment and personalized support system
+Added a dedicated crisis-support section for veterans and service members
+Set up email notifications when someone joins the waitlist, with the logo embedded and personalized copy
+Companion & practices (May 25–July 1)
+Added AI companion modes for journaling and guided practices
+Added the continuing-bonds conversation style and server-side safety screening on every message
+Built the breathing / paced-practice experience, including:
+breath rhythms tuned per practice
+an optional soft chime and gentle haptic cue at each breath phase
+a visible breathing counter that remembers your preference across devices
+a no-code practice editor to manage practices and rhythms
+clear messaging when the breath sound can't play (reduced-motion)
+Improved journal saving with better error handling and feedback
+Added a playable in-app preview and a feedback experience
+
+
+
+
+
+
+Accounts & privacy 
+
+
+
+
+(June 8)
+Added personal accounts with secure sign-in, user roles, and full data isolation between users
+Added voice-to-text and private, per-user photo uploads for the loved one's profile
+UX polish and terminology refinements; more prominent navigation
+Secure clinician–client connections with granular consent controls
+Professional / clinician portal (June 27–July 2)
+Built the professional (clinician) portal: accounts, verification, and a directory
+A privacy-safe data foundation for the portal (no exposed sensitive health data)
+Patient intake, emailed consent with public e-signature, and a real provider dashboard
+Bulk patient upload via spreadsheet (CSV/XLSX)
+EHR/FHIR integration groundwork for connecting to health-record systems
+Added a way for people to switch between the grieving experience and the professional experience
+An "imagined voice" feature and improved chat reliability
+HIPAA controls, admin oversight, and session-security hardening
+A startup check that confirms the data-encryption key is configured correctly
+Reflections — the most recent update (July 2)
+The two self-reflection inventories (GMRI and IDWL) I with their result visualizations, dashboard snapshots, and reflective-only safeguards
+
+Dual roles & the always-on companion (July 2)
+One account can now be both a grieving person and a professional at the same time, with a switcher in the top corner to move between the two spaces whenever you like — no second login and nothing is ever lost when you switch
+The role picker at sign-up now lets new members choose one or both experiences up front
+Added an always-on companion in the corner of every screen that understands where you are:
+a warm product guide on the public and signed-out pages, to answer questions about MeaningBridge and how to begin
+your grief companion inside the app, carrying the same gentle safety support and remembering your conversation
+general portal help for clinicians inside the professional area — kept completely separate from any client information
+Made the in-app conversations more reliable, so a reply can no longer be quietly cut off or lost partway through
+
+Scheduling reliability (July 2)
+Clinicians are now told right away if their chosen Google Calendar can no longer receive sessions — for example if access was removed or the calendar was deleted — with a calm, plain-language explanation
+The client still receives their appointment email either way, so a calendar problem never quietly drops a session

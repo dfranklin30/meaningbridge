@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "j8nA6R4dviR3AhxNUnYoR"
@@ -48,3 +47,9 @@ id = "BBfBjEYZjfmR7RRaGgh29"
 uri = "file://artifacts/meaningbridge/src/assets/photo-companion.png"
 type = "image"
 title = "photo-companion"
+
+[[outputs]]
+id = "4WfJkrHgffQejIjYCzOMo"
+uri = "file://attached_assets/Pasted-Existing-Capabilities-Foundation-May-6-10-Created-the-a_1783012525190.txt"
+type = "text"
+title = "MeaningBridge Capabilities (updated)"

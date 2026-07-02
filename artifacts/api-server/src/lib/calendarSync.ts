@@ -1,12 +1,20 @@
 /**
- * Calendar-sync seam.
+ * Calendar-sync seam, backed by the Replit-managed Google Calendar connector.
  *
- * Today this is a deliberate no-op stub: appointments work fully over email
- * regardless of whether a calendar is connected. When the Google Calendar
- * integration is wired at the platform level, replace the bodies below to
- * create / delete events on the connected account. The rest of the app calls
- * ONLY these functions, so no other code changes when calendar goes live.
+ * The rest of the app calls ONLY these functions, so the appointment flow does
+ * not change whether or not a calendar is connected. When no Google Calendar
+ * account is connected, `isCalendarConnected()` returns false and callers fall
+ * back to email-only scheduling. Once the connector is authorized, the same code
+ * creates and deletes real events on the connected account — no other changes.
+ *
+ * The connector access token is fetched fresh on every call (tokens expire and
+ * must never be cached), using the Replit connector proxy.
  */
+
+import { logger } from "./logger";
+
+const CONNECTOR_NAME = "google-calendar";
+const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 
 export interface CalendarEventInput {
   calendarId: string;
@@ -19,11 +27,48 @@ export interface CalendarEventInput {
 }
 
 /**
- * Whether a Google Calendar account is connected at the platform level. False
- * until the integration is set up; callers fall back to email-only scheduling.
+ * Fetch a live Google Calendar access token from the Replit connector proxy.
+ * Returns null when the connector is not configured/authorized in this
+ * environment, so callers can degrade to email-only scheduling.
+ */
+async function getAccessToken(): Promise<string | null> {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  if (!hostname) return null;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? `repl ${process.env.REPL_IDENTITY}`
+    : process.env.WEB_REPL_RENEWAL
+      ? `depl ${process.env.WEB_REPL_RENEWAL}`
+      : null;
+  if (!xReplitToken) return null;
+
+  try {
+    const res = await fetch(
+      `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=${CONNECTOR_NAME}`,
+      { headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      items?: Array<{
+        settings?: {
+          access_token?: string;
+          oauth?: { credentials?: { access_token?: string } };
+        };
+      }>;
+    };
+    const settings = data.items?.[0]?.settings;
+    return settings?.access_token ?? settings?.oauth?.credentials?.access_token ?? null;
+  } catch (err) {
+    logger.warn({ err: err instanceof Error ? err.message : String(err) }, "calendar token fetch failed");
+    return null;
+  }
+}
+
+/**
+ * Whether a Google Calendar account is connected. False until the integration
+ * is authorized; callers fall back to email-only scheduling.
  */
 export async function isCalendarConnected(): Promise<boolean> {
-  return false;
+  return (await getAccessToken()) !== null;
 }
 
 /**
@@ -31,15 +76,49 @@ export async function isCalendarConnected(): Promise<boolean> {
  * the created event id, or null when calendar is not connected (email-only).
  */
 export async function syncAppointmentToCalendar(
-  _input: CalendarEventInput,
+  input: CalendarEventInput,
 ): Promise<{ eventId: string | null }> {
-  return { eventId: null };
+  const token = await getAccessToken();
+  if (!token) return { eventId: null };
+
+  const body: Record<string, unknown> = {
+    summary: input.title,
+    start: { dateTime: input.startsAt.toISOString() },
+    end: { dateTime: input.endsAt.toISOString() },
+  };
+  if (input.description) body.description = input.description;
+  if (input.location) body.location = input.location;
+  if (input.attendeeEmail) body.attendees = [{ email: input.attendeeEmail }];
+
+  const res = await fetch(
+    `${CALENDAR_API}/calendars/${encodeURIComponent(input.calendarId)}/events`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Google Calendar create failed: ${res.status} ${await res.text()}`);
+  }
+  const event = (await res.json()) as { id?: string };
+  return { eventId: event.id ?? null };
 }
 
-/** Remove a previously mirrored event. No-op until Google Calendar is connected. */
+/** Remove a previously mirrored event. No-op when calendar is not connected. */
 export async function removeAppointmentFromCalendar(
-  _calendarId: string,
-  _eventId: string,
+  calendarId: string,
+  eventId: string,
 ): Promise<void> {
-  // Seam: live delete lands with the Google Calendar integration.
+  const token = await getAccessToken();
+  if (!token) return;
+
+  const res = await fetch(
+    `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+  );
+  // 410 Gone means it was already deleted — treat as success.
+  if (!res.ok && res.status !== 404 && res.status !== 410) {
+    throw new Error(`Google Calendar delete failed: ${res.status} ${await res.text()}`);
+  }
 }

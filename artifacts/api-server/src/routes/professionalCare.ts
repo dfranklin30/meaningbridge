@@ -13,6 +13,7 @@ import {
   UpdateProviderCalendarBody,
 } from "@workspace/api-zod";
 import { getPatientForProvider } from "../lib/patientAccess";
+import { isOutreachAllowedStatus } from "../lib/outreachConsent";
 import { parseId } from "../lib/professionalViews";
 import { logAudit as audit } from "../lib/audit";
 import { decryptPhi } from "../lib/phi";
@@ -169,6 +170,13 @@ router.post("/patients/:id/appointments", async (req, res) => {
   const patient = await getPatientForProvider(req.userId!, id);
   if (!patient) {
     res.status(404).json({ error: "Not found" });
+    return;
+  }
+  // Consent floor: a session may only be proposed to a consented/active patient.
+  if (!isOutreachAllowedStatus(patient.status)) {
+    res.status(409).json({
+      error: "This patient has not completed consent yet, so a session cannot be scheduled.",
+    });
     return;
   }
   if (parsed.data.endsAt <= parsed.data.startsAt) {

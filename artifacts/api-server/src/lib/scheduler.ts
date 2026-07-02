@@ -12,6 +12,7 @@ import { logger } from "./logger";
 import { deliverOutreach } from "./outreachChannel";
 import { appOriginStatic } from "./appUrl";
 import { decryptPhi } from "./phi";
+import { isOutreachAllowedStatus, isUserOutreachAllowed } from "./outreachConsent";
 
 /**
  * In-process outreach scheduler. Runs a lightweight tick on an interval and
@@ -77,6 +78,8 @@ async function runCheckins(now: Date): Promise<void> {
       const elapsedDays = (now.getTime() - pref.lastCheckinAt.getTime()) / DAY_MS;
       if (elapsedDays < pref.cadenceDays) continue;
     }
+    // Consent floor: never message a user whose clinical enrollment has ended.
+    if (!(await isUserOutreachAllowed(pref.userId))) continue;
 
     const dedupeKey = `checkin:${pref.userId}:${localDateKey(pref.timezone, now)}`;
     if (!(await claim(pref.userId, "checkin", dedupeKey, pref.channel))) continue;
@@ -137,6 +140,8 @@ async function runTaskReminders(now: Date): Promise<void> {
     if (!pref || pref.paused || !pref.taskRemindersEnabled) continue;
     const hour = localHour(pref.timezone, now);
     if (inQuietHours(hour, pref.quietStartHour, pref.quietEndHour)) continue;
+    // Consent floor: never message a user whose clinical enrollment has ended.
+    if (!(await isUserOutreachAllowed(task.userId))) continue;
 
     const dedupeKey = `task_reminder:${task.id}`;
     if (!(await claim(task.userId, "task_reminder", dedupeKey, pref.channel))) continue;
@@ -183,18 +188,25 @@ async function runAppointmentReminders(now: Date): Promise<void> {
   for (const appt of appts) {
     if (appt.lastReminderAt) continue;
     const [patient] = await db
-      .select({ emailEnc: patientsTable.emailEnc, firstNameEnc: patientsTable.firstNameEnc })
+      .select({
+        emailEnc: patientsTable.emailEnc,
+        firstNameEnc: patientsTable.firstNameEnc,
+        status: patientsTable.status,
+      })
       .from(patientsTable)
       .where(eq(patientsTable.id, appt.patientId))
       .limit(1);
-    const email = decryptPhi(patient?.emailEnc);
+    // Consent floor: no reminder once the patient has withdrawn/closed consent,
+    // even for a session that was confirmed earlier.
+    if (!patient || !isOutreachAllowedStatus(patient.status)) continue;
+    const email = decryptPhi(patient.emailEnc);
     const dedupeKey = `appointment_reminder:${appt.id}`;
     if (!(await claim(appt.providerUserId, "appointment_reminder", dedupeKey, "email"))) continue;
     if (!email) {
       await markLog(dedupeKey, "skipped", "no patient email");
       continue;
     }
-    const firstName = decryptPhi(patient?.firstNameEnc);
+    const firstName = decryptPhi(patient.firstNameEnc);
     const message = appointmentReminderEmail(firstName, appt.title, appt.startsAt, appt.location);
     const result = await deliverOutreach({ channel: "email", to: email, ...message });
     if (result.delivered) {

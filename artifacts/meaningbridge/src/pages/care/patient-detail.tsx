@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useRoute } from "wouter";
+import { motion } from "framer-motion";
 import {
   ArrowLeft,
   ShieldAlert,
@@ -192,10 +193,12 @@ function AssistantPanel({
   const [answer, setAnswer] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAsked, setHasAsked] = useState(false);
 
   const ask = async () => {
     const q = question.trim();
     if (!q || busy) return;
+    setHasAsked(true);
     setBusy(true);
     setError(null);
     setAnswer(null);
@@ -230,6 +233,20 @@ function AssistantPanel({
           </p>
         </div>
       </div>
+
+      {!hasAsked && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="rounded-lg border border-border/70 bg-background px-4 py-3 text-sm leading-relaxed text-muted-foreground"
+        >
+          Hello. I can summarize how this patient has been engaging — sessions, journaling,
+          check-ins, and any safety signals — and help you find a time to meet. I work only from
+          metadata, so I never see what your patient has written or said. What would you like to
+          know?
+        </motion.div>
+      )}
 
       <div className="flex items-start gap-2">
         <textarea

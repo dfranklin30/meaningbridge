@@ -21,6 +21,20 @@ const CONVERSATION_LABELS: Record<string, string> = {
   meaning: "making meaning",
 };
 
+// The companion's opening words, shown as its first message whenever a new
+// (empty) session is opened. Calm and mode-aware — never a form or a checklist.
+function introMessage(mode: string, conversationType?: string | null): string {
+  const focus = conversationType ? CONVERSATION_LABELS[conversationType] : null;
+  if (mode === "continuing-bonds") {
+    return `Hello. I am here as a companion in remembering the person you are holding in your heart${
+      focus ? `, and we can give this time to ${focus}` : ""
+    }. There is no right way to do this, and nothing you need to prepare. When you are ready, you might begin by telling me a little about them — or we can simply sit together for a while.`;
+  }
+  return `Hello. I am here to sit with you as you make sense of what this loss has meant${
+    focus ? `, with a gentle focus on ${focus}` : ""
+  }. We can move as slowly as you need. Whenever you feel ready, share whatever is present for you, and we will find our way through it together.`;
+}
+
 export default function CompanionSession() {
   const { sessionId } = useParams();
   const id = parseInt(sessionId || "0");
@@ -208,12 +222,19 @@ export default function CompanionSession() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-y-auto space-y-6 pb-4 pr-2">
-        {session.messages?.length === 0 && (
-          <div className="h-full flex items-center justify-center text-center">
-            <p className="text-muted-foreground max-w-sm text-sm">
-              I am here to listen. You can share whatever is on your mind, or we can just sit together in the quiet.
-            </p>
-          </div>
+        {session.messages?.length === 0 && !isStreaming && !isThinking && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex justify-start"
+          >
+            <div className="max-w-[80%] rounded-2xl px-5 py-4 bg-card border border-border text-foreground">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                {introMessage(session.mode, session.conversationType)}
+              </div>
+            </div>
+          </motion.div>
         )}
         
         {session.messages?.map((msg, i) => (

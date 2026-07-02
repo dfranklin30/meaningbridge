@@ -109,9 +109,14 @@ router.post("/:token", async (req, res) => {
     }
   }
 
+  // Single-use: invalidate the bearer token in the same write that resolves the
+  // appointment, so a leaked/forwarded link can neither replay the response nor
+  // keep reading the appointment via GET. The SPA already holds the resolved
+  // view returned below; a later visit to the (now-dead) link 404s by design —
+  // the same single-use rule the consent link follows.
   const [updated] = await db
     .update(appointmentsTable)
-    .set({ status: nextStatus, googleEventId, updatedAt: new Date() })
+    .set({ status: nextStatus, googleEventId, confirmTokenHash: null, updatedAt: new Date() })
     .where(eq(appointmentsTable.id, appt.id))
     .returning();
   res.json(await publicView(updated!));

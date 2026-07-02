@@ -54,8 +54,11 @@ import ProviderOnboarding from "@/pages/care/onboarding";
 import ProviderSecurity from "@/pages/care/security";
 import ProviderDirectory from "@/pages/care/directory";
 import ProviderReferrals from "@/pages/care/referrals";
+import ProviderPatients from "@/pages/care/patients";
+import ProviderIntake from "@/pages/care/intake";
 import AdminProviders from "@/pages/admin/providers";
 import { ProviderShell, type Me } from "@/pages/care/provider-shell";
+import ConsentPage from "@/pages/consent";
 import NotFound from "@/pages/not-found";
 
 // REQUIRED — copy verbatim. Resolves the key from window.location.hostname so the
@@ -311,6 +314,9 @@ function ProviderPortalRoutes() {
         <Route path="/care/security" component={ProviderSecurity} />
         <Route path="/care/directory" component={ProviderDirectory} />
         <Route path="/care/referrals">{() => <ProviderReferrals me={shellMe} />}</Route>
+        <Route path="/care/patients" component={ProviderPatients} />
+        <Route path="/care/intake" component={ProviderIntake} />
+        <Route path="/care/intake/:id" component={ProviderIntake} />
         <Route path="/admin/providers" component={AdminProviders} />
         <Route path="/care/crisis" component={Crisis} />
         <Route>
@@ -393,6 +399,7 @@ function AppRouterSwitch() {
       <Route path="/present" component={PresentPage} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/caregiver" component={Caregiver} />
+      <Route path="/consent/:token" component={ConsentPage} />
       <Route path="/sandbox" component={Sandbox} />
       <Route path="/care/invite" component={CareInvite} />
       <Route path="/care/account" component={ProfessionalPortalGate} />
@@ -400,6 +407,9 @@ function AppRouterSwitch() {
       <Route path="/care/security" component={ProfessionalPortalGate} />
       <Route path="/care/directory" component={ProfessionalPortalGate} />
       <Route path="/care/referrals" component={ProfessionalPortalGate} />
+      <Route path="/care/patients" component={ProfessionalPortalGate} />
+      <Route path="/care/intake" component={ProfessionalPortalGate} />
+      <Route path="/care/intake/:id" component={ProfessionalPortalGate} />
       <Route path="/care/crisis" component={ProfessionalPortalGate} />
       <Route path="/admin/providers" component={ProfessionalPortalGate} />
       <Route path="/select-role" component={SelectRoleGate} />

@@ -114,6 +114,40 @@ router.patch("/patients/:id", requireAuth, requireProfessional, async (req, res)
   res.json(toPatientSummary(row!));
 });
 
+/**
+ * Move a consented patient to "active". This is the final step of the
+ * Invited -> Consented -> Active lifecycle; the patient e-signs consent via the
+ * public link (status becomes "consented"), then the provider activates them.
+ */
+router.post("/patients/:id/activate", requireAuth, requireProfessional, async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const patient = await getPatientForProvider(req.userId!, id);
+  if (!patient) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  if (patient.status !== "consented") {
+    res.status(409).json({
+      error: "This client has not completed consent yet.",
+      code: "not_consented",
+    });
+    return;
+  }
+
+  const [row] = await db
+    .update(patientsTable)
+    .set({ status: "active" })
+    .where(eq(patientsTable.id, id))
+    .returning();
+
+  await audit(req, "patient.update", { detail: `patient ${id} activated` });
+  res.json(toPatientSummary(row!));
+});
+
 router.delete("/patients/:id", requireAuth, requireProfessional, async (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) {

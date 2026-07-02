@@ -8,19 +8,17 @@ import {
   ArrowRight,
   ShieldAlert,
   CheckCircle2,
-  Circle,
   MessageSquare,
   CalendarClock,
-  PenLine,
   Activity,
   LogOut,
-  ChevronDown,
-  Info,
   HeartHandshake,
+  ClipboardList,
+  MailCheck,
+  UserCheck,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DemoPatientCard } from "@/pages/care/demo-sample";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -58,10 +56,10 @@ function CaregiverAccountNav() {
       </Show>
       <Show when="signed-in">
         <Link
-          href="/care/invite"
+          href="/care/account"
           className="px-4 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
         >
-          Invite a client
+          Open your portal
         </Link>
         <Link href="/pricing" className="hover:text-foreground transition-colors">
           Plans
@@ -92,195 +90,18 @@ function CaregiverAccountNav() {
 }
 
 /**
- * Caregiver portal preview — all data on this page is sample data,
- * displayed for visual exploration of the look-and-feel only. No PHI.
+ * Public marketing page for the professional (clinician) portal. It explains how
+ * enrollment, consent, and the between-session read work, and offers an explicit,
+ * clearly-labeled fictional sample. No real patient data is ever shown here; the
+ * live roster lives behind verification at /care/patients.
  */
-
-type Tier = "universal" | "targeted" | "clinical";
-type ConsentState = "active" | "pending" | "private";
-
-interface MockPatient {
-  id: string;
-  firstName: string;
-  lastInitial: string;
-  age: number;
-  lossSummary: string;
-  monthsSinceLoss: number;
-  tier: Tier;
-  lastActivity: string;
-  consent: ConsentState;
-  safetyFlags14d: number;
-  engagement: number; // 0-1
-  recent: { kind: "session" | "journal" | "checkin"; when: string; detail: string }[];
-  summary: string;
-  excerpt?: string;
-}
-
-const TIER_META: Record<Tier, { label: string; tone: string; desc: string }> = {
-  universal: {
-    label: "Grief Literacy",
-    tone: "bg-muted text-muted-foreground",
-    desc: "Adaptive grief. Most people here need understanding and normalization, not treatment. The companion keeps things light and unhurried.",
-  },
-  targeted: {
-    label: "Enhanced Support",
-    tone: "bg-primary/10 text-primary",
-    desc: "Some elevated difficulty. The companion adds structured prompts and check-ins, and gently nudges toward human support when rough patches persist.",
-  },
-  clinical: {
-    label: "Specialist Support",
-    tone: "bg-destructive/10 text-destructive",
-    desc: "Marked impairment. The companion consistently and warmly encourages live therapy and surfaces the referral path — it does not attempt to deliver treatment.",
-  },
-};
-
-const CONSENT_META: Record<ConsentState, { label: string; icon: typeof CheckCircle2 }> = {
-  active: { label: "Consent active", icon: CheckCircle2 },
-  pending: { label: "Consent pending", icon: Circle },
-  private: { label: "Private", icon: ShieldAlert },
-};
-
-const PATIENTS: MockPatient[] = [
-  {
-    id: "p1",
-    firstName: "Maya",
-    lastInitial: "R",
-    age: 47,
-    lossSummary: "partner",
-    monthsSinceLoss: 8,
-    tier: "clinical",
-    lastActivity: "2 hours ago",
-    consent: "active",
-    safetyFlags14d: 0,
-    engagement: 0.92,
-    recent: [
-      { kind: "session", when: "2 hours ago", detail: "Companion conversation, 24 minutes" },
-      { kind: "journal", when: "yesterday", detail: "An imagined letter to David" },
-      { kind: "checkin", when: "3 days ago", detail: "Sleep low, meaning steady" },
-    ],
-    summary:
-      "Maya has been sitting with the difference between missing David and looking for him. She named, for the first time, that some days she wants the missing to be the relationship now. She is asking, gently, whether that counts.",
-    excerpt:
-      "I keep setting two cups down in the morning. I do not think I am ready to stop, and I am starting to wonder if I have to.",
-  },
-  {
-    id: "p2",
-    firstName: "James",
-    lastInitial: "K",
-    age: 62,
-    lossSummary: "adult child",
-    monthsSinceLoss: 14,
-    tier: "clinical",
-    lastActivity: "yesterday",
-    consent: "active",
-    safetyFlags14d: 2,
-    engagement: 0.71,
-    recent: [
-      { kind: "checkin", when: "yesterday", detail: "Withdrawal flag, functioning low" },
-      { kind: "session", when: "4 days ago", detail: "Companion conversation, 11 minutes" },
-    ],
-    summary:
-      "James is pulling back from his sister and from work. He spoke about feeling that he should be further along. Two structured safety signals in the past week — the companion paused and surfaced the crisis page; he engaged.",
-    excerpt:
-      "Everyone keeps saying it gets easier. I nod. I do not want them to worry, so I have stopped saying much at all.",
-  },
-  {
-    id: "p3",
-    firstName: "Sarah",
-    lastInitial: "M",
-    age: 34,
-    lossSummary: "mother",
-    monthsSinceLoss: 4,
-    tier: "targeted",
-    lastActivity: "2 days ago",
-    consent: "active",
-    safetyFlags14d: 0,
-    engagement: 0.55,
-    recent: [
-      { kind: "journal", when: "2 days ago", detail: "Three things I want her to know" },
-      { kind: "session", when: "5 days ago", detail: "Companion conversation, 18 minutes" },
-    ],
-    summary:
-      "Sarah is in the middle of arranging her mother's papers and discovering letters she never knew about. She asked the companion how to tell whether she is delaying the harder grief.",
-    excerpt:
-      "I found a whole version of her I never met. I do not know whether reading these is keeping her close or keeping me stuck.",
-  },
-  {
-    id: "p4",
-    firstName: "Andre",
-    lastInitial: "P",
-    age: 51,
-    lossSummary: "brother (sudden)",
-    monthsSinceLoss: 2,
-    tier: "targeted",
-    lastActivity: "3 days ago",
-    consent: "pending",
-    safetyFlags14d: 1,
-    engagement: 0.43,
-    recent: [
-      { kind: "session", when: "3 days ago", detail: "Companion conversation, 9 minutes" },
-    ],
-    summary: "Consent for shared summaries is pending. Activity counts visible only.",
-  },
-  {
-    id: "p5",
-    firstName: "Lin",
-    lastInitial: "T",
-    age: 29,
-    lossSummary: "grandparent",
-    monthsSinceLoss: 11,
-    tier: "universal",
-    lastActivity: "a week ago",
-    consent: "active",
-    safetyFlags14d: 0,
-    engagement: 0.34,
-    recent: [{ kind: "checkin", when: "a week ago", detail: "Steady" }],
-    summary:
-      "Lin checks in lightly, mostly to keep the relationship in motion. No concerns flagged.",
-  },
-  {
-    id: "p6",
-    firstName: "Devon",
-    lastInitial: "S",
-    age: 41,
-    lossSummary: "spouse",
-    monthsSinceLoss: 6,
-    tier: "clinical",
-    lastActivity: "4 hours ago",
-    consent: "active",
-    safetyFlags14d: 0,
-    engagement: 0.88,
-    recent: [
-      { kind: "session", when: "4 hours ago", detail: "Companion conversation, 31 minutes" },
-      { kind: "journal", when: "this morning", detail: "On the smell of his coffee" },
-    ],
-    summary:
-      "Devon has been working with the continuing-bonds practice and asked whether it would be appropriate to bring the letters into next session.",
-    excerpt:
-      "The mornings are still the hardest. But writing to him has started to feel less like losing him and more like keeping the conversation going.",
-  },
-];
-
-function ActivityIcon({ kind }: { kind: "session" | "journal" | "checkin" }) {
-  const cls = "w-3.5 h-3.5 text-muted-foreground shrink-0";
-  if (kind === "session") return <MessageSquare className={cls} />;
-  if (kind === "journal") return <PenLine className={cls} />;
-  return <CalendarClock className={cls} />;
-}
-
 export default function Caregiver() {
-  const [selectedId, setSelectedId] = useState<string>(PATIENTS[0].id);
-  const selected = PATIENTS.find((p) => p.id === selectedId)!;
-
-  const totalFlags = PATIENTS.reduce((s, p) => s + p.safetyFlags14d, 0);
-  const avgEngagement = Math.round(
-    (PATIENTS.reduce((s, p) => s + p.engagement, 0) / PATIENTS.length) * 100,
-  );
+  const [showSample, setShowSample] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
-        <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/">
             <div className="cursor-pointer opacity-90 hover:opacity-100 transition-opacity">
               <Logo variant="lockup" size={40} />
@@ -292,236 +113,84 @@ export default function Caregiver() {
         </div>
       </header>
 
-      <main className="container max-w-7xl mx-auto px-4 py-12 md:py-16 space-y-12">
+      <main className="container max-w-6xl mx-auto px-4 py-12 md:py-16 space-y-16">
         <motion.section
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="space-y-4 max-w-3xl"
+          className="space-y-5 max-w-3xl"
         >
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            Professional portal — preview with sample data
+            For clinicians
           </p>
-          <h1 className="text-3xl md:text-4xl font-serif leading-tight">
-            See how the people in your care are doing.
+          <h1 className="text-3xl md:text-5xl font-serif leading-tight">
+            Hold the space between sessions.
           </h1>
-          <p className="text-base text-muted-foreground leading-relaxed">
-            With each person&apos;s logged consent, MeaningBridge gives you a quiet, honest read
-            on their grief between sessions — engagement, the shape of their writing, any safety
-            signals — so you can step in when it matters. You stay in the lead.
+          <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
+            MeaningBridge gives the people in your care a gentle companion for grief between
+            appointments. You enroll them, they consent by email, and you see engagement — never the
+            words they write. It is an adjunct to your care, not a replacement for it.
           </p>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Show when="signed-in">
+              <Link href="/care/patients" className="btn-primary inline-flex items-center gap-2">
+                Go to your patients <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </Show>
+            <Show when="signed-out">
+              <Link
+                href="/notify?src=caregiver-preview"
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                Join the professional waitlist <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </Show>
+            <button
+              type="button"
+              onClick={() => setShowSample((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm hover:border-foreground transition-colors"
+            >
+              {showSample ? "Hide the sample" : "See a sample patient"}
+            </button>
+          </div>
         </motion.section>
 
-        <section className="grid sm:grid-cols-3 gap-4">
-          <StatCard label="People in your care" value={String(PATIENTS.length)} hint="active in the past 14 days" />
-          <StatCard
-            label="Safety signals"
-            value={String(totalFlags)}
-            hint="across the past 14 days"
-            accent={totalFlags > 0}
-            info={
-              <>
-                A safety signal is logged when a validated screener or the companion detects language
-                suggesting risk. The companion pauses normal flow and surfaces crisis resources.
-                When a person&apos;s consent is active, you are notified within minutes so a human
-                can reach out. Signals reflect what asks for a person, not what looks dramatic.
-              </>
-            }
-          />
-          <StatCard label="Average engagement" value={`${avgEngagement}%`} hint="sessions and journal" />
-        </section>
-
-        <section className="grid lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-3 rounded-xl border border-border bg-card overflow-hidden">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-medium text-foreground">Your roster</h2>
-              <span className="text-xs text-muted-foreground">Sorted by recent activity</span>
-            </div>
-            <div className="divide-y divide-border/60">
-              {PATIENTS.map((p) => {
-                const isSelected = p.id === selectedId;
-                const tier = TIER_META[p.tier];
-                const ConsentIcon = CONSENT_META[p.consent].icon;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedId(p.id)}
-                    className={`w-full text-left px-5 py-4 grid grid-cols-12 items-center gap-3 hover:bg-muted/30 transition-colors ${
-                      isSelected ? "bg-muted/40" : ""
-                    }`}
-                  >
-                    <div className="col-span-4 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {p.firstName} {p.lastInitial}.
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {p.lossSummary} · {p.monthsSinceLoss} mo
-                      </p>
-                    </div>
-                    <div className="col-span-3">
-                      <span className={`inline-block text-[10px] uppercase tracking-wider px-2 py-1 rounded ${tier.tone}`}>
-                        {tier.label}
-                      </span>
-                    </div>
-                    <div className="col-span-2 text-xs text-muted-foreground truncate">
-                      {p.lastActivity}
-                    </div>
-                    <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
-                      <ConsentIcon
-                        className={`w-3.5 h-3.5 ${p.consent === "active" ? "text-primary/70" : ""}`}
-                      />
-                      <span className="truncate">{CONSENT_META[p.consent].label.replace("Consent ", "")}</span>
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      {p.safetyFlags14d > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-destructive">
-                          <ShieldAlert className="w-3.5 h-3.5" />
-                          {p.safetyFlags14d}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <motion.aside
-            key={selected.id}
+        {showSample && (
+          <motion.section
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="lg:col-span-2 rounded-xl border border-border bg-card p-6 space-y-6"
+            className="space-y-3"
           >
-            <div className="space-y-1">
-              <h2 className="text-xl font-serif">
-                {selected.firstName} {selected.lastInitial}., {selected.age}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {selected.lossSummary} · {selected.monthsSinceLoss} months since loss
-              </p>
-              <div className="flex items-center gap-2 pt-2">
-                <HoverCard openDelay={100}>
-                  <HoverCardTrigger asChild>
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded ${TIER_META[selected.tier].tone}`}
-                    >
-                      {TIER_META[selected.tier].label}
-                      <Info className="w-3 h-3 opacity-70" />
-                    </button>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-72 text-xs leading-relaxed text-muted-foreground">
-                    {TIER_META[selected.tier].desc}
-                  </HoverCardContent>
-                </HoverCard>
-                <span className="text-xs text-muted-foreground">
-                  · {CONSENT_META[selected.consent].label}
-                </span>
-              </div>
-            </div>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              A fictional example
+            </p>
+            <DemoPatientCard />
+          </motion.section>
+        )}
 
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Recent activity
-              </p>
-              <ul className="space-y-2">
-                {selected.recent.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
-                    <ActivityIcon kind={r.kind} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-foreground/90">{r.detail}</p>
-                      <p className="text-xs text-muted-foreground">{r.when}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Engagement (14 days)
-              </p>
-              <div className="space-y-1">
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary/70 rounded-full transition-all"
-                    style={{ width: `${selected.engagement * 100}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {Math.round(selected.engagement * 100)}% of typical pace
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Safety
-              </p>
-              {selected.safetyFlags14d === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No safety signals in the past 14 days.
-                </p>
-              ) : (
-                <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/5 border border-destructive/20">
-                  <ShieldAlert className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                  <p className="text-sm text-foreground/90">
-                    {selected.safetyFlags14d} structured signal
-                    {selected.safetyFlags14d > 1 ? "s" : ""} in the past 14 days. The companion
-                    paused normal flow and surfaced crisis resources.
-                  </p>
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                {selected.consent === "active"
-                  ? "Notification protocol: with consent active, a structured safety signal alerts you within minutes so a person can reach out. The companion always surfaces crisis resources regardless of consent."
-                  : "Until consent is active, safety signals are counted but no notification is sent to you. The companion still surfaces crisis resources directly to the person."}
-              </p>
-            </div>
-
-            {selected.consent === "active" ? (
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Briefing for your next session
-                </p>
-                <p className="text-sm text-foreground/90 italic leading-relaxed border-l-2 border-border pl-3">
-                  {selected.summary}
-                </p>
-                {selected.excerpt && (
-                  <Collapsible>
-                    <CollapsibleTrigger className="group flex items-center gap-1.5 text-xs text-primary hover:underline">
-                      <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
-                      Read an excerpt they chose to share
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pt-2">
-                      <p className="text-sm text-foreground/80 italic leading-relaxed border-l-2 border-primary/30 pl-3">
-                        &ldquo;{selected.excerpt}&rdquo;
-                      </p>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-md bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
-                Session briefing is private until {selected.firstName} grants consent. You can
-                request access from this profile.
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-2">
-              <button className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-md bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors">
-                <CalendarClock className="w-4 h-4" />
-                Request consult
-              </button>
-              <button className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-md border border-border text-sm hover:border-foreground transition-colors">
-                <MessageSquare className="w-4 h-4" />
-                Send a note
-              </button>
-            </div>
-          </motion.aside>
+        <section className="space-y-8">
+          <h2 className="font-serif text-2xl">How it works</h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Step
+              icon={ClipboardList}
+              n="1"
+              title="Enroll from a short intake"
+              body="A guided form captures identity, the loss, clinical context, and goals. Your details are auto-filled from your verified account. Everything saves as an encrypted draft as you go."
+            />
+            <Step
+              icon={MailCheck}
+              n="2"
+              title="Consent comes from the patient"
+              body="On submit, the patient receives a secure link to review a plain-language consent and add their signature. Nothing activates until they sign — consent is the floor."
+            />
+            <Step
+              icon={UserCheck}
+              n="3"
+              title="Activate and stay informed"
+              body="Once consent is on file, you activate their space. Between sessions you see engagement and safety signals — a quiet, honest read that helps you step in when it matters."
+            />
+          </div>
         </section>
 
         <motion.section
@@ -536,39 +205,53 @@ export default function Caregiver() {
               Why professionals join
             </p>
             <h3 className="text-xl font-serif leading-snug">
-              MeaningBridge holds the space between sessions — so you can hold the space inside
-              them.
+              MeaningBridge holds the space between sessions — so you can hold the space inside them.
             </h3>
           </div>
           <div className="md:col-span-2 grid sm:grid-cols-2 gap-6">
             <Pillar icon={Activity} title="Continuity of care">
-              Read what shifted since you last met, written by them, never by us.
+              A read on how someone is doing since you last met — engagement and rhythm, never their
+              private words.
             </Pillar>
             <Pillar icon={ShieldAlert} title="Safety, surfaced gently">
               Validated screeners flag what asks for a human, not what looks dramatic.
             </Pillar>
             <Pillar icon={CheckCircle2} title="Consent is the floor">
-              Nothing reaches you without their logged consent. Nothing.
+              Nothing activates, and nothing reaches you, without the patient&apos;s signed consent.
             </Pillar>
             <Pillar icon={CalendarClock} title="Light on your week">
-              No new EHR. A roster, a briefing, a tap to consult.
+              No new EHR to learn. A short intake, an emailed consent, a calm roster.
             </Pillar>
           </div>
         </motion.section>
 
-        <section className="text-center pb-8">
-          <Link
-            href="/notify?src=caregiver-preview"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Join the professional waitlist
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+        <section className="text-center pb-8 space-y-4">
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+            MeaningBridge is an adjunct to professional care. It does not provide therapy or respond
+            to emergencies.
+          </p>
+          <Show when="signed-out">
+            <Link
+              href="/notify?src=caregiver-preview"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Join the professional waitlist
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </Show>
+          <Show when="signed-in">
+            <Link
+              href="/care/patients"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Go to your patients
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </Show>
         </section>
       </main>
 
       <footer className="border-t border-border py-10 text-center text-xs text-muted-foreground space-y-1">
-        <p>Preview — sample data shown for demonstration. No real patient information.</p>
         <p>MeaningBridge — Brought to you by Dr. Robert Neimeyer</p>
         <p>
           <a
@@ -585,46 +268,27 @@ export default function Caregiver() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  hint,
-  accent,
-  info,
+function Step({
+  icon: Icon,
+  n,
+  title,
+  body,
 }: {
-  label: string;
-  value: string;
-  hint: string;
-  accent?: boolean;
-  info?: React.ReactNode;
+  icon: typeof CheckCircle2;
+  n: string;
+  title: string;
+  body: string;
 }) {
   return (
-    <div
-      className={`rounded-xl border bg-card p-5 ${
-        accent ? "border-destructive/30" : "border-border"
-      }`}
-    >
-      <div className="flex items-center gap-1.5">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-        {info && (
-          <HoverCard openDelay={100}>
-            <HoverCardTrigger asChild>
-              <button
-                type="button"
-                className="text-muted-foreground/70 hover:text-foreground transition-colors"
-                aria-label={`About ${label}`}
-              >
-                <Info className="w-3.5 h-3.5" />
-              </button>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-72 text-xs leading-relaxed text-muted-foreground">
-              {info}
-            </HoverCardContent>
-          </HoverCard>
-        )}
+    <div className="rounded-xl border border-border bg-card p-6 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-primary">
+          <Icon className="w-4 h-4" />
+        </div>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Step {n}</span>
       </div>
-      <p className={`mt-2 text-3xl font-serif ${accent ? "text-destructive" : ""}`}>{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      <h3 className="font-serif text-lg">{title}</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
     </div>
   );
 }

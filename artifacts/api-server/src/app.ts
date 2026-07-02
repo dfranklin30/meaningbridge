@@ -19,10 +19,13 @@ app.use(
     logger,
     serializers: {
       req(req) {
+        // Strip the query string, then redact bearer consent tokens that ride
+        // in the path (e.g. /api/consent/<token>) so they never land in logs.
+        const path = req.url?.split("?")[0];
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: path?.replace(/(\/api\/consent\/)[^/]+/, "$1[redacted]"),
         };
       },
       res(res) {

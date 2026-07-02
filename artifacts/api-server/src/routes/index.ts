@@ -16,6 +16,7 @@ import storageRouter from "./storage";
 import voiceRouter from "./voice";
 import careRouter from "./care";
 import professionalRouter from "./professional";
+import consentRouter from "./consent";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(storageRouter);
 router.use("/voice", voiceRouter);
 router.use("/care", careRouter);
 router.use("/professional", professionalRouter);
+router.use("/consent", consentRouter);
 
 export default router;

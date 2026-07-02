@@ -1,1 +1,1 @@
-- [Replit-managed Clerk limitations](clerk-managed-limitations.md) — no native MFA/orgs/SMS; MeaningBridge does app-level TOTP + signed idle cookie, PHI 403 gate codes.
+- [Public consent-token security](consent-token-security.md) — patient e-sign bearer token in URL path: redact from logs, single-use (clear hash on sign), server-owned intake state machine.

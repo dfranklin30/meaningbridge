@@ -33,7 +33,9 @@ export default function Settings() {
     consentJournal: false,
     consentContinuingBonds: false,
     safetyScreeningConsent: true,
-    clinicianMonitoringConsent: false
+    clinicianMonitoringConsent: false,
+    breathCueEnabled: false,
+    breathCounterVisible: true
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +53,9 @@ export default function Settings() {
         consentJournal: profile.consentJournal,
         consentContinuingBonds: profile.consentContinuingBonds,
         safetyScreeningConsent: profile.safetyScreeningConsent,
-        clinicianMonitoringConsent: profile.clinicianMonitoringConsent
+        clinicianMonitoringConsent: profile.clinicianMonitoringConsent,
+        breathCueEnabled: profile.breathCueEnabled,
+        breathCounterVisible: profile.breathCounterVisible
       });
     }
   }, [profile]);
@@ -126,6 +130,39 @@ export default function Settings() {
             />
             <span className="text-sm font-medium">I am currently working with a therapist</span>
           </label>
+        </section>
+
+        <section className="space-y-6">
+          <h2 className="text-xl font-serif border-b border-border/50 pb-2">Breath Practices</h2>
+          <p className="text-sm text-muted-foreground">Set your calm defaults for the breath pacer. You can still adjust these inside any practice.</p>
+
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 p-4 border border-border rounded-md cursor-pointer hover:bg-secondary/10 transition-colors">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded text-primary focus:ring-primary mt-1"
+                checked={formData.breathCueEnabled}
+                onChange={e => setFormData(d => ({ ...d, breathCueEnabled: e.target.checked }))}
+              />
+              <div>
+                <span className="text-sm font-medium block">Gentle breath sound</span>
+                <span className="text-xs text-muted-foreground block mt-1">Play a soft chime at each breath. Off by default, so there is never a surprise sound.</span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-4 border border-border rounded-md cursor-pointer hover:bg-secondary/10 transition-colors">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded text-primary focus:ring-primary mt-1"
+                checked={formData.breathCounterVisible}
+                onChange={e => setFormData(d => ({ ...d, breathCounterVisible: e.target.checked }))}
+              />
+              <div>
+                <span className="text-sm font-medium block">Show the breath counter</span>
+                <span className="text-xs text-muted-foreground block mt-1">Display the visual counter and circle as you breathe. Turn it off to rest with your eyes closed.</span>
+              </div>
+            </label>
+          </div>
         </section>
 
         <section className="space-y-6">

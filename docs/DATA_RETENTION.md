@@ -37,8 +37,13 @@ retained or deleted. It is intentionally short and operational.
      show active patients only);
   2. record `consents.revoked_at`;
   3. **purge the encrypted PHI** on the patient row (first/last name, DOB, email,
-     phone set to null) — this is the honored deletion;
+     phone set to null) **and on the linked intake record** (`intakes.data_enc`,
+     which duplicates the identity fields) — this is the honored deletion;
   4. clear both the sign and withdrawal token hashes (single-use).
+
+  Provider-facing intake endpoints additionally exclude any intake whose linked
+  patient is `revoked`/`inactive`, so a withdrawn patient's intake disappears
+  from the clinician's view even before the blob is read.
 - The non-PHI shell (id, timestamps, status) and the audit trail are retained so
   the compliance record of "consent given, then withdrawn" stays intact.
 - To return, the patient must be re-invited by their clinician (a fresh consent

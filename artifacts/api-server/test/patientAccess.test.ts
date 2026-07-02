@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
-import { db, pool, usersTable, patientsTable, providerPatientLinksTable } from "@workspace/db";
+import { db, pool, usersTable, patientsTable, providerPatientLinksTable, intakesTable } from "@workspace/db";
 import {
   accessiblePatientIds,
   getPatientForProvider,
@@ -9,6 +9,7 @@ import {
   listPatientsForProvider,
   providerCanAccessPatient,
 } from "../src/lib/patientAccess";
+import { purgeIntakePhiForPatient } from "../src/lib/phiPurge";
 
 /**
  * Provider-isolation ("minimum necessary") integration test. Runs against the
@@ -43,6 +44,7 @@ describe("patientAccess provider isolation", () => {
   });
 
   afterAll(async () => {
+    await db.delete(intakesTable).where(eq(intakesTable.patientId, patientId));
     await db.delete(providerPatientLinksTable).where(eq(providerPatientLinksTable.patientId, patientId));
     await db.delete(patientsTable).where(eq(patientsTable.id, patientId));
     await db.delete(usersTable).where(eq(usersTable.id, providerA));
@@ -74,5 +76,29 @@ describe("patientAccess provider isolation", () => {
     expect(await getPatientForProvider(providerA, patientId)).toBeNull();
     expect(await accessiblePatientIds(providerA)).not.toContain(patientId);
     expect((await listPatientsForProvider(providerA)).map((p) => p.id)).not.toContain(patientId);
+  });
+
+  it("purges the duplicated PHI held in the patient's intake blob on withdrawal", async () => {
+    const [intake] = await db
+      .insert(intakesTable)
+      .values({
+        providerUserId: providerA,
+        patientId,
+        status: "submitted",
+        dataEnc: "ciphertext-placeholder",
+      })
+      .returning();
+
+    const cleared = await purgeIntakePhiForPatient(patientId);
+    expect(cleared).toBeGreaterThanOrEqual(1);
+
+    const [after] = await db
+      .select({ dataEnc: intakesTable.dataEnc, status: intakesTable.status })
+      .from(intakesTable)
+      .where(eq(intakesTable.id, intake!.id))
+      .limit(1);
+    expect(after?.dataEnc).toBeNull();
+    // Non-PHI shell is retained for the audit record.
+    expect(after?.status).toBe("submitted");
   });
 });

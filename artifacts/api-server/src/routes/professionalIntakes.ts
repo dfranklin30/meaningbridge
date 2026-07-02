@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull, notInArray, or } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db, intakesTable, patientsTable, providersTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -91,21 +91,39 @@ const intakeInput = z.object({
   safetyPlanConfirmed: z.boolean().optional(),
 });
 
-/** Load an intake owned by the current provider, or null. */
+// Closed patient statuses that end provider visibility (mirrors patientAccess).
+// Once a patient withdraws consent (status "revoked"), their intake — which
+// duplicates identity PHI — must disappear from the provider too. Unlinked
+// drafts (patientId null) have no patient and remain visible to their author.
+const HIDDEN_PATIENT_STATUSES = ["revoked", "inactive"] as const;
+const intakePatientVisible = or(
+  isNull(intakesTable.patientId),
+  notInArray(patientsTable.status, [...HIDDEN_PATIENT_STATUSES]),
+);
+
+/** Load an intake owned by the current provider and still visible, or null. */
 async function ownedIntake(providerUserId: number, id: number) {
   const [row] = await db
-    .select()
+    .select(getTableColumns(intakesTable))
     .from(intakesTable)
-    .where(and(eq(intakesTable.id, id), eq(intakesTable.providerUserId, providerUserId)))
+    .leftJoin(patientsTable, eq(patientsTable.id, intakesTable.patientId))
+    .where(
+      and(
+        eq(intakesTable.id, id),
+        eq(intakesTable.providerUserId, providerUserId),
+        intakePatientVisible,
+      ),
+    )
     .limit(1);
   return row ?? null;
 }
 
 router.get("/intakes", requireAuth, requireProfessional, async (req, res) => {
   const rows = await db
-    .select()
+    .select(getTableColumns(intakesTable))
     .from(intakesTable)
-    .where(eq(intakesTable.providerUserId, req.userId!))
+    .leftJoin(patientsTable, eq(patientsTable.id, intakesTable.patientId))
+    .where(and(eq(intakesTable.providerUserId, req.userId!), intakePatientVisible))
     .orderBy(desc(intakesTable.updatedAt));
 
   await audit(req, "intake.list", { detail: `${rows.length} intakes` });

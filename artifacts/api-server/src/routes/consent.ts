@@ -6,6 +6,7 @@ import { logAudit as audit, clientIp } from "../lib/audit";
 import { encryptPhi, decryptPhi } from "../lib/phi";
 import { hashConsentToken, generateConsentToken } from "../lib/consentToken";
 import { CONSENT_DOCUMENT_VERSION } from "../lib/professionalMeta";
+import { purgeIntakePhiForPatient } from "../lib/phiPurge";
 
 const router: IRouter = Router();
 
@@ -95,6 +96,9 @@ router.post("/withdraw/:token", async (req, res) => {
       phoneEnc: null,
     })
     .where(eq(patientsTable.id, patient.id));
+  // The intake blob holds a duplicate copy of the identity PHI — purge it too,
+  // otherwise the owning provider could still read it from the intake record.
+  await purgeIntakePhiForPatient(patient.id);
   await db
     .update(consentsTable)
     .set({ revokedAt: now })

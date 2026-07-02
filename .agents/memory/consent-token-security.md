@@ -71,6 +71,17 @@ rather than deleting the link so the relationship's compliance record survives;
 a whitelist of `active` would wrongly hide legitimate draft/invited/consented
 intake states.
 
+## PHI is duplicated in the intake blob — purge it too
+Patient identity PHI lives in TWO places: the `patients.*Enc` columns AND the
+encrypted intake payload (`intakes.dataEnc`, under `data.identity`). Any
+deletion/withdrawal that nulls the patient row MUST also purge the intake copy
+(`lib/phiPurge.ts` purgeIntakePhiForPatient) or a provider can still read the
+identity via `/professional/intakes/:id`. **How to apply:** whenever you add a
+new store that copies patient PHI, wire it into the withdrawal purge and into the
+revoked/inactive visibility filter (professionalIntakes mirrors patientAccess's
+HIDDEN_STATUSES). **Why:** grep for every place `data.identity` / PHI is written,
+not just the canonical patient row.
+
 ## Known gaps (deferred, see follow-ups)
 - Submit + e-sign are not wrapped in a DB transaction/lock, so concurrency can
   race duplicate consent rows before the status guard trips.

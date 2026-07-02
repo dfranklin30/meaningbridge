@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Show, useClerk } from "@clerk/react";
+import { Show, useAuth, useClerk } from "@clerk/react";
 import { useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -97,6 +97,18 @@ function CaregiverAccountNav() {
  */
 export default function Caregiver() {
   const [showSample, setShowSample] = useState(false);
+  const { isSignedIn } = useAuth();
+
+  // The How-it-works cards are real entry points. Signed-in clinicians go
+  // straight into the step (each destination handles its own verification / 2FA
+  // gate); signed-out visitors are routed to the professional waitlist. The
+  // consent stage is always a no-token preview of what the patient receives.
+  const enroll = isSignedIn
+    ? { href: "/care/intake", action: "Start an intake" }
+    : { href: "/notify?src=caregiver-enroll", action: "Join to enroll patients" };
+  const roster = isSignedIn
+    ? { href: "/care/patients", action: "Open your roster" }
+    : { href: "/notify?src=caregiver-roster", action: "Join to see your roster" };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -177,18 +189,24 @@ export default function Caregiver() {
               n="1"
               title="Enroll from a short intake"
               body="A guided form captures identity, the loss, clinical context, and goals. Your details are auto-filled from your verified account. Everything saves as an encrypted draft as you go."
+              href={enroll.href}
+              action={enroll.action}
             />
             <Step
               icon={MailCheck}
               n="2"
               title="Consent comes from the patient"
               body="On submit, the patient receives a secure link to review a plain-language consent and add their signature. Nothing activates until they sign — consent is the floor."
+              href="/consent/preview"
+              action="Preview the consent screen"
             />
             <Step
               icon={UserCheck}
               n="3"
               title="Activate and stay informed"
               body="Once consent is on file, you activate their space. Between sessions you see engagement and safety signals — a quiet, honest read that helps you step in when it matters."
+              href={roster.href}
+              action={roster.action}
             />
           </div>
         </section>
@@ -273,23 +291,32 @@ function Step({
   n,
   title,
   body,
+  href,
+  action,
 }: {
   icon: typeof CheckCircle2;
   n: string;
   title: string;
   body: string;
+  href: string;
+  action: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-6 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-primary">
-          <Icon className="w-4 h-4" />
+    <Link href={href}>
+      <div className="group h-full cursor-pointer rounded-xl border border-border bg-card p-6 space-y-3 transition-colors hover:border-foreground/40 hover:bg-secondary/10">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-primary">
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Step {n}</span>
         </div>
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">Step {n}</span>
+        <h3 className="font-serif text-lg">{title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
+        <span className="inline-flex items-center gap-1.5 pt-1 text-sm text-primary transition-all group-hover:gap-2.5">
+          {action} <ArrowRight className="w-3.5 h-3.5" />
+        </span>
       </div>
-      <h3 className="font-serif text-lg">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
-    </div>
+    </Link>
   );
 }
 

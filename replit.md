@@ -58,7 +58,8 @@ Public (no onboarding gate, no app chrome):
 - `/notify` — public signup form (writes to `notify_opt_ins`). Reads `?src=<label>` for attribution; defaults to `qr`.
 - `/present` — full-screen QR for keynote projection.
 - `/pricing` — subscription tiers mapped to the GIS tiers (Companion / Enhanced / Specialist). Visual prototype, no Stripe wiring; CTAs route to `/onboarding` or `/notify?src=pricing-*`.
-- `/caregiver` — caregiver (therapist) portal preview with sample data. Roster, tier badges, consent indicator, per-patient briefing, safety counts. Clearly labeled "preview with sample data" — no PHI, no real data wired.
+- `/caregiver` — caregiver (therapist) portal preview with sample data. Roster, tier badges, consent indicator, per-patient briefing, safety counts. Clearly labeled "preview with sample data" — no PHI, no real data wired. The three "How it works" stage cards are live entry points: signed-in clinicians go to `/care/intake` (stage 1) and `/care/patients` (stage 3) — each destination self-gates on clinician verification/2FA; signed-out visitors route to `/notify?src=caregiver-*`. Stage 2 always opens `/consent/preview`.
+- `/consent/:token` — patient consent screen. The sentinel token `preview` (`/consent/preview`) renders a no-network preview: sample info, a "nothing here is saved" banner with a link back to `/caregiver`, and a client-only success state on submit (no API GET/POST). `/consent/withdraw/:token` is registered before `/consent/:token` so it is not shadowed.
 
 The /pricing and /caregiver routes are in the public-routes set in `layout.tsx` so they bypass the onboarding gate, and link to each other plus `/notify` for waitlists.
 

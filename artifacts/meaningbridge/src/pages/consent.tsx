@@ -16,6 +16,19 @@ interface ConsentInfo {
   closed: boolean;
 }
 
+// Sample content shown on the /consent/preview link from the clinician page, so
+// a professional can see exactly what a patient receives — without any real
+// invitation token, and without saving anything.
+const PREVIEW_INFO: ConsentInfo = {
+  firstName: "Sam",
+  providerName: "Dr. Robert Neimeyer",
+  practiceName: "Portland Institute",
+  documentVersion: "1.0",
+  status: "invited",
+  alreadySigned: false,
+  closed: false,
+};
+
 type View =
   | { kind: "loading" }
   | { kind: "invalid"; message: string }
@@ -24,9 +37,17 @@ type View =
   | { kind: "form"; info: ConsentInfo }
   | { kind: "success"; info: ConsentInfo };
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, preview = false }: { children: React.ReactNode; preview?: boolean }) {
   return (
     <div className="min-h-[100dvh] bg-background font-sans text-foreground flex flex-col">
+      {preview && (
+        <div className="bg-accent/60 border-b border-border/60 px-4 py-2 text-center text-xs text-muted-foreground">
+          Preview of the patient consent screen — nothing here is saved.{" "}
+          <Link href="/caregiver" className="text-foreground underline">
+            Back to the clinician page
+          </Link>
+        </div>
+      )}
       <header className="border-b border-border/60">
         <div className="max-w-2xl mx-auto px-6 h-16 flex items-center justify-between">
           <Logo variant="lockup" size={32} />
@@ -57,6 +78,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 export default function ConsentPage() {
   const [, params] = useRoute("/consent/:token");
   const token = params?.token ?? "";
+  const isPreview = token === "preview";
   const [view, setView] = useState<View>({ kind: "loading" });
   const [signerName, setSignerName] = useState("");
   const [agree, setAgree] = useState(false);
@@ -65,6 +87,10 @@ export default function ConsentPage() {
   const [withdrawToken, setWithdrawToken] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isPreview) {
+      setView({ kind: "form", info: PREVIEW_INFO });
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -97,6 +123,10 @@ export default function ConsentPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (view.kind !== "form") return;
+    if (isPreview) {
+      setView({ kind: "success", info: view.info });
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -143,7 +173,7 @@ export default function ConsentPage() {
   if (view.kind === "signed" || view.kind === "success") {
     const first = view.info.firstName;
     return (
-      <Shell>
+      <Shell preview={isPreview}>
         <div className="rounded-xl border border-border bg-card p-8 text-center space-y-4 max-w-lg mx-auto">
           <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-primary mx-auto">
             <Check className="w-5 h-5" />
@@ -175,7 +205,7 @@ export default function ConsentPage() {
 
   const info = view.info;
   return (
-    <Shell>
+    <Shell preview={isPreview}>
       <div className="space-y-8">
         <div className="space-y-2">
           <h1 className="font-serif text-3xl">

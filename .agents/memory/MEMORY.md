@@ -4,3 +4,4 @@
 - [Provider portal data-access](provider-portal-data-access.md) — clinician pages use a manual api()+2FA guard helper (not generated hooks) and stay metadata-only; seeker pages use generated react-query hooks.
 - [Outreach consent floor](outreach-consent-floor.md) — all proactive sends/scheduling gate on patient status (consented/active), not on preference flags; scheduler bypasses the provider-visibility choke point so it must check itself.
 - [Google Calendar connector proxy](google-calendar-connector-proxy.md) — SDK proxy forwards to googleapis host root; Calendar paths need the /calendar/v3 prefix or you get an HTML 404 that looks like "not connected".
+- [Frontend test harness](frontend-test-harness.md) — meaningbridge has Vitest+RTL+jsdom with its OWN vitest.config (app vite.config throws without PORT/BASE_PATH); mock generated hooks + wrap in QueryClientProvider.

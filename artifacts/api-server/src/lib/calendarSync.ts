@@ -1,20 +1,30 @@
 /**
  * Calendar-sync seam, backed by the Replit-managed Google Calendar connector.
  *
- * The rest of the app calls ONLY these functions, so the appointment flow does
- * not change whether or not a calendar is connected. When no Google Calendar
- * account is connected, `isCalendarConnected()` returns false and callers fall
- * back to email-only scheduling. Once the connector is authorized, the same code
- * creates and deletes real events on the connected account — no other changes.
+ * Integration: Google Calendar connector via `@replit/connectors-sdk`. The rest
+ * of the app calls ONLY these functions, so the appointment flow does not change
+ * whether or not a calendar is connected. When no Google Calendar account is
+ * connected, `isCalendarConnected()` returns false and callers fall back to
+ * email-only scheduling. Once the connector is authorized, the same code creates
+ * and deletes real events on the connected account — no other changes.
  *
- * The connector access token is fetched fresh on every call (tokens expire and
- * must never be cached), using the Replit connector proxy.
+ * The SDK's `proxy()` injects a fresh OAuth token on every call (identity is
+ * resolved and tokens refreshed per request), so nothing here is cached — the
+ * `ReplitConnectors` instance holds no credentials of its own.
  */
+
+import { ReplitConnectors } from "@replit/connectors-sdk";
 
 import { logger } from "./logger";
 
 const CONNECTOR_NAME = "google-calendar";
-const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
+// The connector proxy forwards to the googleapis host root, so Calendar API
+// paths must carry the full `/calendar/v3` prefix.
+const CALENDAR_API = "/calendar/v3";
+
+// Cheap to construct and holds no cached credentials (tokens are fetched fresh
+// on every proxy call), so a single module-level instance is safe.
+const connectors = new ReplitConnectors();
 
 export interface CalendarEventInput {
   calendarId: string;
@@ -27,48 +37,23 @@ export interface CalendarEventInput {
 }
 
 /**
- * Fetch a live Google Calendar access token from the Replit connector proxy.
- * Returns null when the connector is not configured/authorized in this
- * environment, so callers can degrade to email-only scheduling.
- */
-async function getAccessToken(): Promise<string | null> {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  if (!hostname) return null;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? `repl ${process.env.REPL_IDENTITY}`
-    : process.env.WEB_REPL_RENEWAL
-      ? `depl ${process.env.WEB_REPL_RENEWAL}`
-      : null;
-  if (!xReplitToken) return null;
-
-  try {
-    const res = await fetch(
-      `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=${CONNECTOR_NAME}`,
-      { headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken } },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      items?: Array<{
-        settings?: {
-          access_token?: string;
-          oauth?: { credentials?: { access_token?: string } };
-        };
-      }>;
-    };
-    const settings = data.items?.[0]?.settings;
-    return settings?.access_token ?? settings?.oauth?.credentials?.access_token ?? null;
-  } catch (err) {
-    logger.warn({ err: err instanceof Error ? err.message : String(err) }, "calendar token fetch failed");
-    return null;
-  }
-}
-
-/**
  * Whether a Google Calendar account is connected. False until the integration
- * is authorized; callers fall back to email-only scheduling.
+ * is authorized (or when the connector proxy is unreachable); callers fall back
+ * to email-only scheduling.
  */
 export async function isCalendarConnected(): Promise<boolean> {
-  return (await getAccessToken()) !== null;
+  try {
+    const connections = await connectors.listConnections({
+      connector_names: CONNECTOR_NAME,
+    });
+    return connections.length > 0;
+  } catch (err) {
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err) },
+      "calendar connection check failed",
+    );
+    return false;
+  }
 }
 
 /**
@@ -78,9 +63,6 @@ export async function isCalendarConnected(): Promise<boolean> {
 export async function syncAppointmentToCalendar(
   input: CalendarEventInput,
 ): Promise<{ eventId: string | null }> {
-  const token = await getAccessToken();
-  if (!token) return { eventId: null };
-
   const body: Record<string, unknown> = {
     summary: input.title,
     start: { dateTime: input.startsAt.toISOString() },
@@ -90,13 +72,10 @@ export async function syncAppointmentToCalendar(
   if (input.location) body.location = input.location;
   if (input.attendeeEmail) body.attendees = [{ email: input.attendeeEmail }];
 
-  const res = await fetch(
+  const res = await connectors.proxy(
+    CONNECTOR_NAME,
     `${CALENDAR_API}/calendars/${encodeURIComponent(input.calendarId)}/events`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
+    { method: "POST", body },
   );
   if (!res.ok) {
     throw new Error(`Google Calendar create failed: ${res.status} ${await res.text()}`);
@@ -105,19 +84,17 @@ export async function syncAppointmentToCalendar(
   return { eventId: event.id ?? null };
 }
 
-/** Remove a previously mirrored event. No-op when calendar is not connected. */
+/** Remove a previously mirrored event. */
 export async function removeAppointmentFromCalendar(
   calendarId: string,
   eventId: string,
 ): Promise<void> {
-  const token = await getAccessToken();
-  if (!token) return;
-
-  const res = await fetch(
+  const res = await connectors.proxy(
+    CONNECTOR_NAME,
     `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
-    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+    { method: "DELETE" },
   );
-  // 410 Gone means it was already deleted — treat as success.
+  // 404/410 mean it was already deleted — treat as success.
   if (!res.ok && res.status !== 404 && res.status !== 410) {
     throw new Error(`Google Calendar delete failed: ${res.status} ${await res.text()}`);
   }

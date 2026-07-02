@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 import { db, providersTable, usersTable, auditLogTable, patientsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { requireTwoFactor } from "../middlewares/requireTwoFactor";
 import { logAudit as audit } from "../lib/audit";
 import { toProviderView, parseId } from "../lib/professionalViews";
 
@@ -141,7 +142,7 @@ function auditSelect(q: z.infer<typeof auditQuery>) {
     .orderBy(desc(auditLogTable.createdAt));
 }
 
-router.get("/admin/audit", requireAuth, requireAdmin, async (req, res) => {
+router.get("/admin/audit", requireAuth, requireAdmin, requireTwoFactor, async (req, res) => {
   const q = auditQuery.parse(req.query);
   const rows = await auditSelect(q).limit(q.limit).offset(q.offset);
   const [totals] = await db
@@ -159,7 +160,7 @@ router.get("/admin/audit", requireAuth, requireAdmin, async (req, res) => {
 // page stable even while new entries append concurrently.
 const EXPORT_CHUNK = 1000;
 
-router.get("/admin/audit/export", requireAuth, requireAdmin, async (req, res) => {
+router.get("/admin/audit/export", requireAuth, requireAdmin, requireTwoFactor, async (req, res) => {
   const q = auditQuery.parse(req.query);
   const actor = alias(usersTable, "audit_actor");
   const subject = alias(usersTable, "audit_subject");
@@ -248,7 +249,7 @@ router.get("/admin/audit/export", requireAuth, requireAdmin, async (req, res) =>
  * never names, dates of birth, or any patient identifier — so the oversight
  * dashboard can show scale without exposing PHI (HIPAA "minimum necessary").
  */
-router.get("/admin/metrics", requireAuth, requireAdmin, async (req, res) => {
+router.get("/admin/metrics", requireAuth, requireAdmin, requireTwoFactor, async (req, res) => {
   const n = sql<number>`count(*)::int`;
   const [users] = await db.select({ n }).from(usersTable);
   const [seekers] = await db.select({ n }).from(usersTable).where(eq(usersTable.role, "seeker"));

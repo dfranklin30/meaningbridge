@@ -82,6 +82,16 @@ revoked/inactive visibility filter (professionalIntakes mirrors patientAccess's
 HIDDEN_STATUSES). **Why:** grep for every place `data.identity` / PHI is written,
 not just the canonical patient row.
 
+## Admin oversight routes need the 2FA gate too
+The admin audit/export/metrics endpoints are mounted with the account-management
+routers (before `phiGate`), so they do NOT inherit `requireTwoFactor`. They read
+audit trails and aggregate PHI-scale counts, so each admin oversight route must
+list `requireTwoFactor` inline after `requireAdmin`. **Why:** `requireTwoFactor`
+only needs `req.userId` + an enrolled `provider_security` row, so it works for
+admins without requiring `requireProfessional`/`requireVerifiedProvider` (which
+would wrongly lock out non-provider admins). **How to apply:** any new
+`/admin/*` route that touches PHI or audit data gets requireTwoFactor inline.
+
 ## Known gaps (deferred, see follow-ups)
 - Submit + e-sign are not wrapped in a DB transaction/lock, so concurrency can
   race duplicate consent rows before the status guard trips.

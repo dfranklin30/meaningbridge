@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Redirect, useLocation } from "wouter";
 import { motion } from "framer-motion";
-import { Loader2, HeartHandshake, Users } from "lucide-react";
+import { Loader2, HeartHandshake, Users, Check } from "lucide-react";
 import {
   useGetMe,
   useUpdateMe,
@@ -23,7 +23,7 @@ export default function SelectRole() {
   const queryClient = useQueryClient();
   const { data: me, isLoading } = useGetMe();
   const updateMe = useUpdateMe();
-  const [choosing, setChoosing] = useState<Role | null>(null);
+  const [selected, setSelected] = useState<Set<Role>>(new Set());
 
   if (isLoading) {
     return (
@@ -33,31 +33,45 @@ export default function SelectRole() {
     );
   }
 
-  if (me?.role === "professional") {
-    return <Redirect to="/caregiver" />;
-  }
-  if (me?.role === "seeker") {
-    return <Redirect to="/app" />;
+  // Already set up — send them into whichever space is active.
+  if (me?.isSeeker || me?.isProfessional) {
+    const target =
+      me.activeSpace ?? (me.isProfessional && !me.isSeeker ? "professional" : "seeker");
+    return <Redirect to={target === "professional" ? "/care/account" : "/app"} />;
   }
 
-  const choose = (role: Role) => {
-    if (updateMe.isPending) return;
-    setChoosing(role);
+  const toggle = (role: Role) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) next.delete(role);
+      else next.add(role);
+      return next;
+    });
+  };
+
+  const proceed = () => {
+    if (updateMe.isPending || selected.size === 0) return;
+    const roles = Array.from(selected);
+    // Default the active space to the grief experience when both are chosen.
+    const activeSpace: Role = selected.has("seeker") ? "seeker" : "professional";
     updateMe.mutate(
-      { data: { role } },
+      { data: { roles, activeSpace } },
       {
-        onSuccess: async () => {
-          await queryClient.invalidateQueries({
-            queryKey: getGetMeQueryKey(),
-          });
-          setLocation(role === "professional" ? "/caregiver" : "/app");
-        },
-        onError: () => {
-          setChoosing(null);
+        onSuccess: async (updated) => {
+          queryClient.setQueryData(getGetMeQueryKey(), updated);
+          await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+          setLocation(activeSpace === "professional" ? "/care/account" : "/app");
         },
       },
     );
   };
+
+  const cardCls = (role: Role) =>
+    `group relative text-left rounded-2xl border p-6 transition-colors disabled:opacity-60 ${
+      selected.has(role)
+        ? "border-primary bg-accent/50"
+        : "border-border bg-card hover:border-primary/50 hover:bg-accent/40"
+    }`;
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center px-4 py-16 font-sans text-foreground">
@@ -68,18 +82,24 @@ export default function SelectRole() {
             How will you be using MeaningBridge
           </h1>
           <p className="text-muted-foreground max-w-md">
-            Choose the experience that fits you. You can reach out to us later if
-            this changes.
+            Choose the experience that fits you. You can select both, and you can
+            switch between them at any time.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <button
             type="button"
-            onClick={() => choose("seeker")}
+            onClick={() => toggle("seeker")}
             disabled={updateMe.isPending}
-            className="group text-left rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/50 hover:bg-accent/40 disabled:opacity-60"
+            aria-pressed={selected.has("seeker")}
+            className={cardCls("seeker")}
           >
+            {selected.has("seeker") && (
+              <span className="absolute top-4 right-4 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <Check className="w-3.5 h-3.5" />
+              </span>
+            )}
             <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-primary mb-4">
               <HeartHandshake className="w-5 h-5" />
             </div>
@@ -88,20 +108,20 @@ export default function SelectRole() {
               A private space to remember someone you love, reflect through
               journaling, and find gentle support.
             </p>
-            {choosing === "seeker" && updateMe.isPending && (
-              <span className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Preparing your space
-              </span>
-            )}
           </button>
 
           <button
             type="button"
-            onClick={() => choose("professional")}
+            onClick={() => toggle("professional")}
             disabled={updateMe.isPending}
-            className="group text-left rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/50 hover:bg-accent/40 disabled:opacity-60"
+            aria-pressed={selected.has("professional")}
+            className={cardCls("professional")}
           >
+            {selected.has("professional") && (
+              <span className="absolute top-4 right-4 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <Check className="w-3.5 h-3.5" />
+              </span>
+            )}
             <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-primary mb-4">
               <Users className="w-5 h-5" />
             </div>
@@ -110,12 +130,18 @@ export default function SelectRole() {
               Support those in your care with a clinician portal designed around
               the work of grief and meaning.
             </p>
-            {choosing === "professional" && updateMe.isPending && (
-              <span className="mt-4 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Preparing your portal
-              </span>
-            )}
+          </button>
+        </div>
+
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={proceed}
+            disabled={updateMe.isPending || selected.size === 0}
+            className="inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-6 py-2.5 text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {updateMe.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+            Continue
           </button>
         </div>
       </motion.div>

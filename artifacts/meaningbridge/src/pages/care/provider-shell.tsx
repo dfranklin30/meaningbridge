@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useClerk } from "@clerk/react";
 import { Loader2, LogOut, ShieldAlert, LifeBuoy } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { PortalSwitcher } from "@/components/portal-switcher";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const API = basePath + "/api";
@@ -36,6 +37,9 @@ export interface Me {
   email: string | null;
   firstName: string | null;
   role: "seeker" | "professional" | null;
+  isSeeker: boolean;
+  isProfessional: boolean;
+  activeSpace: "seeker" | "professional" | null;
   isAdmin?: boolean;
 }
 
@@ -154,6 +158,9 @@ export function ProviderShell({ me, children }: { me: Me; children: ReactNode })
             })}
           </nav>
           <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
+              <PortalSwitcher current="professional" />
+            </div>
             <Link
               href="/care/crisis"
               className="flex items-center gap-1.5 text-xs text-destructive opacity-80 hover:opacity-100 transition-opacity"

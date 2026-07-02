@@ -6,13 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Legacy mirror of activeSpace (null = not yet chosen)
- * @nullable
- */
-export type MeRole = (typeof MeRole)[keyof typeof MeRole] | null;
+export type UpdateMeInputActiveSpace =
+  (typeof UpdateMeInputActiveSpace)[keyof typeof UpdateMeInputActiveSpace];
 
-export const MeRole = {
+export const UpdateMeInputActiveSpace = {
   seeker: "seeker",
   professional: "professional",
 } as const;

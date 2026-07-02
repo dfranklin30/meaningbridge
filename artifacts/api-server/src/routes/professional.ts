@@ -4,6 +4,9 @@ import { requireProfessional } from "../middlewares/requireProfessional";
 import { requireVerifiedProvider } from "../middlewares/requireVerifiedProvider";
 import { requireTwoFactor } from "../middlewares/requireTwoFactor";
 import { professionalMeta } from "../lib/professionalMeta";
+import { SendProviderGeneralAssistantMessageBody } from "@workspace/api-zod";
+import { providerGeneralAssistantSystemPrompt } from "../lib/prompts";
+import { streamStatelessChat } from "../lib/streamChat";
 import providersRouter from "./professionalProviders";
 import securityRouter from "./professionalSecurity";
 import directoryRouter from "./professionalDirectory";
@@ -33,6 +36,28 @@ const router: IRouter = Router();
 router.get("/meta", requireAuth, requireProfessional, (_req, res) => {
   res.json(professionalMeta());
 });
+
+/**
+ * General portal help for the always-on corner bubble. Gated on being a
+ * verified-account-independent professional (auth + capability) but deliberately
+ * NOT behind the PHI gate: its system prompt has no patient data and refuses
+ * patient-specific questions, so it never needs verification or 2FA to answer
+ * "how does the portal work" questions. Mounted BEFORE the phiGate routers.
+ */
+router.post(
+  "/general-assistant",
+  requireAuth,
+  requireProfessional,
+  async (req, res) => {
+    const body = SendProviderGeneralAssistantMessageBody.parse(req.body);
+    await streamStatelessChat({
+      res,
+      system: providerGeneralAssistantSystemPrompt(),
+      messages: body.messages,
+      log: req.log,
+    });
+  },
+);
 
 // Account-management routers: reachable before verification / 2FA so a provider
 // can onboard, enroll a second factor, and (once verified) browse the directory.

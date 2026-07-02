@@ -384,6 +384,40 @@ paths:
           content:
             text/event-stream: {}
 
+  /concierge/message:
+    post:
+      operationId: sendConciergeMessage
+      tags: [concierge]
+      summary: Public product concierge — stream a reply (SSE, no auth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConciergeMessageInput"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream: {}
+
+  /professional/general-assistant:
+    post:
+      operationId: sendProviderGeneralAssistantMessage
+      tags: [professional]
+      summary: Clinician portal help — stream a reply (SSE, no patient data)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderGeneralAssistantInput"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream: {}
+
   /journal:
     get:
       operationId: listJournalEntries
@@ -2841,16 +2875,56 @@ components:
         role:
           type: ["string", "null"]
           enum: ["seeker", "professional", null]
-          description: "Account role (null = not yet chosen)"
+          description: "Legacy mirror of activeSpace (null = not yet chosen)"
+        isSeeker: { type: boolean, description: "Account can use the grief-support (seeker) space." }
+        isProfessional: { type: boolean, description: "Account can use the clinician (professional) portal." }
+        activeSpace:
+          type: ["string", "null"]
+          enum: ["seeker", "professional", null]
+          description: "Which portal is currently active (null = none chosen yet)."
         isAdmin: { type: boolean, description: "Platform-admin flag (oversight surfaces)." }
-      required: [id, role]
+      required: [id, role, isSeeker, isProfessional]
     UpdateMeInput:
       type: object
+      description: >-
+        Grant capabilities (roles) and/or switch the active portal. `role` is a
+        legacy single-capability shortcut; prefer `roles` + `activeSpace`.
       properties:
         role:
           type: string
           enum: ["seeker", "professional"]
+        roles:
+          type: array
+          items:
+            type: string
+            enum: ["seeker", "professional"]
+          description: "Full capability set to grant (at least one)."
+        activeSpace:
+          type: string
+          enum: ["seeker", "professional"]
         firstName: { type: ["string", "null"] }
+    ChatTurn:
+      type: object
+      properties:
+        role: { type: string, enum: ["user", "assistant"] }
+        content: { type: string }
+      required: [role, content]
+    ConciergeMessageInput:
+      type: object
+      description: Public product-concierge turn (unauthenticated, ephemeral).
+      properties:
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/ChatTurn" }
+      required: [messages]
+    ProviderGeneralAssistantInput:
+      type: object
+      description: General portal/practice help for a clinician (no patient data).
+      properties:
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/ChatTurn" }
+      required: [messages]
 
     GisSubmission:
       type: object

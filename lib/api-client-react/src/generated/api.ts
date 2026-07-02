@@ -43,6 +43,7 @@ import type {
   CompanionTask,
   CompanionTaskInput,
   CompanionTaskUpdate,
+  ConciergeMessageInput,
   Consent,
   ConsentInput,
   CrisisResource,
@@ -96,6 +97,7 @@ import type {
   ProviderCalendar,
   ProviderCalendarInput,
   ProviderDecisionInput,
+  ProviderGeneralAssistantInput,
   ProviderInput,
   Referral,
   ReferralInput,
@@ -1764,6 +1766,182 @@ export const useSendChatMessage = <
   TContext
 > => {
   return useMutation(getSendChatMessageMutationOptions(options));
+};
+
+/**
+ * @summary Public product concierge — stream a reply (SSE, no auth)
+ */
+export const getSendConciergeMessageUrl = () => {
+  return `/api/concierge/message`;
+};
+
+export const sendConciergeMessage = async (
+  conciergeMessageInput: ConciergeMessageInput,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getSendConciergeMessageUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(conciergeMessageInput),
+  });
+};
+
+export const getSendConciergeMessageMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendConciergeMessage>>,
+    TError,
+    { data: BodyType<ConciergeMessageInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendConciergeMessage>>,
+  TError,
+  { data: BodyType<ConciergeMessageInput> },
+  TContext
+> => {
+  const mutationKey = ["sendConciergeMessage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendConciergeMessage>>,
+    { data: BodyType<ConciergeMessageInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendConciergeMessage(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendConciergeMessageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendConciergeMessage>>
+>;
+export type SendConciergeMessageMutationBody = BodyType<ConciergeMessageInput>;
+export type SendConciergeMessageMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Public product concierge — stream a reply (SSE, no auth)
+ */
+export const useSendConciergeMessage = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendConciergeMessage>>,
+    TError,
+    { data: BodyType<ConciergeMessageInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendConciergeMessage>>,
+  TError,
+  { data: BodyType<ConciergeMessageInput> },
+  TContext
+> => {
+  return useMutation(getSendConciergeMessageMutationOptions(options));
+};
+
+/**
+ * @summary Clinician portal help — stream a reply (SSE, no patient data)
+ */
+export const getSendProviderGeneralAssistantMessageUrl = () => {
+  return `/api/professional/general-assistant`;
+};
+
+export const sendProviderGeneralAssistantMessage = async (
+  providerGeneralAssistantInput: ProviderGeneralAssistantInput,
+  options?: RequestInit,
+): Promise<unknown> => {
+  return customFetch<unknown>(getSendProviderGeneralAssistantMessageUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(providerGeneralAssistantInput),
+  });
+};
+
+export const getSendProviderGeneralAssistantMessageMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendProviderGeneralAssistantMessage>>,
+    TError,
+    { data: BodyType<ProviderGeneralAssistantInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendProviderGeneralAssistantMessage>>,
+  TError,
+  { data: BodyType<ProviderGeneralAssistantInput> },
+  TContext
+> => {
+  const mutationKey = ["sendProviderGeneralAssistantMessage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendProviderGeneralAssistantMessage>>,
+    { data: BodyType<ProviderGeneralAssistantInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendProviderGeneralAssistantMessage(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendProviderGeneralAssistantMessageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendProviderGeneralAssistantMessage>>
+>;
+export type SendProviderGeneralAssistantMessageMutationBody =
+  BodyType<ProviderGeneralAssistantInput>;
+export type SendProviderGeneralAssistantMessageMutationError =
+  ErrorType<unknown>;
+
+/**
+ * @summary Clinician portal help — stream a reply (SSE, no patient data)
+ */
+export const useSendProviderGeneralAssistantMessage = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendProviderGeneralAssistantMessage>>,
+    TError,
+    { data: BodyType<ProviderGeneralAssistantInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendProviderGeneralAssistantMessage>>,
+  TError,
+  { data: BodyType<ProviderGeneralAssistantInput> },
+  TContext
+> => {
+  return useMutation(
+    getSendProviderGeneralAssistantMessageMutationOptions(options),
+  );
 };
 
 export const getListJournalEntriesUrl = () => {

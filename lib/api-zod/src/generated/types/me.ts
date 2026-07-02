@@ -5,6 +5,7 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { MeActiveSpace } from "./meActiveSpace";
 import type { MeRole } from "./meRole";
 
 export interface Me {
@@ -14,10 +15,19 @@ export interface Me {
   /** @nullable */
   firstName?: string | null;
   /**
-   * Account role (null = not yet chosen)
+   * Legacy mirror of activeSpace (null = not yet chosen)
    * @nullable
    */
   role: MeRole;
+  /** Account can use the grief-support (seeker) space. */
+  isSeeker: boolean;
+  /** Account can use the clinician (professional) portal. */
+  isProfessional: boolean;
+  /**
+   * Which portal is currently active (null = none chosen yet).
+   * @nullable
+   */
+  activeSpace?: MeActiveSpace;
   /** Platform-admin flag (oversight surfaces). */
   isAdmin?: boolean;
 }

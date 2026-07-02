@@ -6,3 +6,5 @@
 - [Google Calendar connector proxy](google-calendar-connector-proxy.md) — SDK proxy forwards to googleapis host root; Calendar paths need the /calendar/v3 prefix or you get an HTML 404 that looks like "not connected".
 - [Frontend test harness](frontend-test-harness.md) — meaningbridge has Vitest+RTL+jsdom with its OWN vitest.config (app vite.config throws without PORT/BASE_PATH); mock generated hooks + wrap in QueryClientProvider.
 - [Outreach delivery channels](outreach-delivery-channels.md) — email + SMS use env-var creds (not Replit connectors) with graceful degradation; new channels must log-and-skip on missing config, never crash or fake a send.
+- [Companion bubble personas](companion-bubble-personas.md) — corner chat persona is route+capability based; provider persona MUST stay PHI-free (separate stateless endpoint); reset transcript on persona switch.
+- [Dual-role accounts](dual-role-accounts.md) — users carry additive isSeeker/isProfessional + activeSpace; legacy `role` is an additive grant (never revokes); routing/gating keys off capabilities, not `role`.

@@ -928,12 +928,25 @@ export interface ProfileInput {
 }
 
 /**
- * Account role (null = not yet chosen)
+ * Legacy mirror of activeSpace (null = not yet chosen)
  * @nullable
  */
 export type MeRole = (typeof MeRole)[keyof typeof MeRole] | null;
 
 export const MeRole = {
+  seeker: "seeker",
+  professional: "professional",
+} as const;
+
+/**
+ * Which portal is currently active (null = none chosen yet).
+ * @nullable
+ */
+export type MeActiveSpace =
+  | (typeof MeActiveSpace)[keyof typeof MeActiveSpace]
+  | null;
+
+export const MeActiveSpace = {
   seeker: "seeker",
   professional: "professional",
 } as const;
@@ -945,10 +958,19 @@ export interface Me {
   /** @nullable */
   firstName?: string | null;
   /**
-   * Account role (null = not yet chosen)
+   * Legacy mirror of activeSpace (null = not yet chosen)
    * @nullable
    */
   role: MeRole;
+  /** Account can use the grief-support (seeker) space. */
+  isSeeker: boolean;
+  /** Account can use the clinician (professional) portal. */
+  isProfessional: boolean;
+  /**
+   * Which portal is currently active (null = none chosen yet).
+   * @nullable
+   */
+  activeSpace?: MeActiveSpace;
   /** Platform-admin flag (oversight surfaces). */
   isAdmin?: boolean;
 }
@@ -961,10 +983,58 @@ export const UpdateMeInputRole = {
   professional: "professional",
 } as const;
 
+export type UpdateMeInputRolesItem =
+  (typeof UpdateMeInputRolesItem)[keyof typeof UpdateMeInputRolesItem];
+
+export const UpdateMeInputRolesItem = {
+  seeker: "seeker",
+  professional: "professional",
+} as const;
+
+export type UpdateMeInputActiveSpace =
+  (typeof UpdateMeInputActiveSpace)[keyof typeof UpdateMeInputActiveSpace];
+
+export const UpdateMeInputActiveSpace = {
+  seeker: "seeker",
+  professional: "professional",
+} as const;
+
+/**
+ * Grant capabilities (roles) and/or switch the active portal. `role` is a legacy single-capability shortcut; prefer `roles` + `activeSpace`.
+ */
 export interface UpdateMeInput {
   role?: UpdateMeInputRole;
+  /** Full capability set to grant (at least one). */
+  roles?: UpdateMeInputRolesItem[];
+  activeSpace?: UpdateMeInputActiveSpace;
   /** @nullable */
   firstName?: string | null;
+}
+
+export type ChatTurnRole = (typeof ChatTurnRole)[keyof typeof ChatTurnRole];
+
+export const ChatTurnRole = {
+  user: "user",
+  assistant: "assistant",
+} as const;
+
+export interface ChatTurn {
+  role: ChatTurnRole;
+  content: string;
+}
+
+/**
+ * Public product-concierge turn (unauthenticated, ephemeral).
+ */
+export interface ConciergeMessageInput {
+  messages: ChatTurn[];
+}
+
+/**
+ * General portal/practice help for a clinician (no patient data).
+ */
+export interface ProviderGeneralAssistantInput {
+  messages: ChatTurn[];
 }
 
 /**

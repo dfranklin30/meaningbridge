@@ -23,6 +23,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
+import { CompanionBubble } from "@/components/companion-bubble";
 
 import Landing from "@/pages/landing";
 import NotifyPage from "@/pages/notify";
@@ -212,11 +213,12 @@ function PortalRedirect() {
     return <AccountErrorState />;
   }
 
-  if (!me.role) {
+  if (!me.isSeeker && !me.isProfessional) {
     return <Redirect to="/select-role" />;
   }
 
-  if (me.role === "professional") {
+  const target = me.activeSpace ?? (me.isProfessional && !me.isSeeker ? "professional" : "seeker");
+  if (target === "professional") {
     return <Redirect to="/care/account" />;
   }
 
@@ -281,11 +283,13 @@ function SeekerAppGate() {
     return <AccountErrorState />;
   }
 
-  if (!me.role) {
+  if (!me.isSeeker && !me.isProfessional) {
     return <Redirect to="/select-role" />;
   }
 
-  if (me.role === "professional") {
+  // A professional-only account that lands in the seeker app is sent to its
+  // portal. Dual accounts (also seekers) stay here and use the switcher.
+  if (!me.isSeeker) {
     return <Redirect to="/care/account" />;
   }
 
@@ -303,10 +307,10 @@ function ProviderPortalRoutes() {
   if (isError || !me) {
     return <AccountErrorState />;
   }
-  if (!me.role) {
+  if (!me.isSeeker && !me.isProfessional) {
     return <Redirect to="/select-role" />;
   }
-  if (me.role !== "professional" && !me.isAdmin) {
+  if (!me.isProfessional && !me.isAdmin) {
     return <Redirect to="/app" />;
   }
 
@@ -315,6 +319,9 @@ function ProviderPortalRoutes() {
     email: me.email ?? null,
     firstName: me.firstName ?? null,
     role: me.role,
+    isSeeker: me.isSeeker,
+    isProfessional: me.isProfessional,
+    activeSpace: me.activeSpace ?? null,
     isAdmin: me.isAdmin,
   };
 
@@ -471,6 +478,7 @@ function ClerkProviderWithRoutes() {
         <ClerkQueryClientCacheInvalidator />
         <TooltipProvider>
           <AppRouterSwitch />
+          <CompanionBubble />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

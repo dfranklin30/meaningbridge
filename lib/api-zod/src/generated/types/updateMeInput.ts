@@ -5,10 +5,18 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateMeInputActiveSpace } from "./updateMeInputActiveSpace";
 import type { UpdateMeInputRole } from "./updateMeInputRole";
+import type { UpdateMeInputRolesItem } from "./updateMeInputRolesItem";
 
+/**
+ * Grant capabilities (roles) and/or switch the active portal. `role` is a legacy single-capability shortcut; prefer `roles` + `activeSpace`.
+ */
 export interface UpdateMeInput {
   role?: UpdateMeInputRole;
+  /** Full capability set to grant (at least one). */
+  roles?: UpdateMeInputRolesItem[];
+  activeSpace?: UpdateMeInputActiveSpace;
   /** @nullable */
   firstName?: string | null;
 }

@@ -19,6 +19,7 @@ import professionalRouter from "./professional";
 import consentRouter from "./consent";
 import companionRouter from "./companion";
 import appointmentsRouter from "./appointments";
+import conciergeRouter from "./concierge";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use("/professional", professionalRouter);
 router.use("/consent", consentRouter);
 router.use("/companion", companionRouter);
 router.use("/appointments", appointmentsRouter);
+router.use("/concierge", conciergeRouter);
 
 export default router;

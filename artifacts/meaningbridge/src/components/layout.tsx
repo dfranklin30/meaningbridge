@@ -5,6 +5,7 @@ import { useClerk } from "@clerk/react";
 import { Loader2, HeartHandshake, LogOut, Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/logo";
+import { PortalSwitcher } from "@/components/portal-switcher";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -70,6 +71,9 @@ export function Layout({ children }: { children: ReactNode }) {
           </nav>
           
           <div className="flex items-center gap-4">
+            <div className="hidden sm:block">
+              <PortalSwitcher current="seeker" />
+            </div>
             <Link href="/crisis" className="flex items-center gap-1.5 text-xs text-destructive opacity-80 hover:opacity-100 transition-opacity">
               <HeartHandshake className="w-3.5 h-3.5" />
               <span>Crisis Support</span>

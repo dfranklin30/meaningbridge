@@ -7,9 +7,11 @@ import { z } from "zod/v4";
  * mirror keyed by the Clerk user id, created just-in-time on first
  * authenticated request.
  *
- * `role` is null until the person chooses one after sign-up:
- *   - "seeker"       — someone seeking grief support (the full companion app)
- *   - "professional" — a therapist / counselor / grief specialist (caregiver portal)
+ * Capabilities are additive: an account may be a seeker, a professional, or
+ * BOTH. `isSeeker` / `isProfessional` are the source of truth for what an
+ * account can do; `activeSpace` records which portal the person is currently
+ * looking at (the header switcher flips it). `role` is kept as a legacy mirror
+ * of `activeSpace` for older reads and is null until a capability is chosen.
  */
 export const usersTable = pgTable(
   "users",
@@ -18,7 +20,12 @@ export const usersTable = pgTable(
     clerkUserId: text("clerk_user_id").notNull(),
     email: text("email"),
     firstName: text("first_name"),
-    role: text("role"), // null | "seeker" | "professional"
+    role: text("role"), // legacy mirror of activeSpace: null | "seeker" | "professional"
+    // Additive capabilities — an account can hold both at once.
+    isSeeker: boolean("is_seeker").notNull().default(false),
+    isProfessional: boolean("is_professional").notNull().default(false),
+    // Which portal is currently active: null | "seeker" | "professional".
+    activeSpace: text("active_space"),
     // Platform administrator, orthogonal to `role`. Admins verify providers and
     // access the audit/PHI oversight surfaces. Never self-service; set out of band.
     isAdmin: boolean("is_admin").notNull().default(false),

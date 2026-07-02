@@ -7,12 +7,14 @@
  */
 
 /**
- * Legacy mirror of activeSpace (null = not yet chosen)
+ * Which portal is currently active (null = none chosen yet).
  * @nullable
  */
-export type MeRole = (typeof MeRole)[keyof typeof MeRole] | null;
+export type MeActiveSpace =
+  | (typeof MeActiveSpace)[keyof typeof MeActiveSpace]
+  | null;
 
-export const MeRole = {
+export const MeActiveSpace = {
   seeker: "seeker",
   professional: "professional",
 } as const;

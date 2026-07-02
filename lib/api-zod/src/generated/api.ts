@@ -21,7 +21,21 @@ export const GetMeResponse = zod.object({
       zod.literal(null),
     ])
     .nullable()
-    .describe("Account role (null = not yet chosen)"),
+    .describe("Legacy mirror of activeSpace (null = not yet chosen)"),
+  isSeeker: zod
+    .boolean()
+    .describe("Account can use the grief-support (seeker) space."),
+  isProfessional: zod
+    .boolean()
+    .describe("Account can use the clinician (professional) portal."),
+  activeSpace: zod
+    .union([
+      zod.literal("seeker"),
+      zod.literal("professional"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe("Which portal is currently active (null = none chosen yet)."),
   isAdmin: zod
     .boolean()
     .optional()
@@ -31,10 +45,19 @@ export const GetMeResponse = zod.object({
 /**
  * @summary Set the account role and/or display name (used after sign-up)
  */
-export const UpdateMeBody = zod.object({
-  role: zod.enum(["seeker", "professional"]).optional(),
-  firstName: zod.string().nullish(),
-});
+export const UpdateMeBody = zod
+  .object({
+    role: zod.enum(["seeker", "professional"]).optional(),
+    roles: zod
+      .array(zod.enum(["seeker", "professional"]))
+      .optional()
+      .describe("Full capability set to grant (at least one)."),
+    activeSpace: zod.enum(["seeker", "professional"]).optional(),
+    firstName: zod.string().nullish(),
+  })
+  .describe(
+    "Grant capabilities (roles) and\/or switch the active portal. `role` is a legacy single-capability shortcut; prefer `roles` + `activeSpace`.",
+  );
 
 export const UpdateMeResponse = zod.object({
   id: zod.number(),
@@ -47,7 +70,21 @@ export const UpdateMeResponse = zod.object({
       zod.literal(null),
     ])
     .nullable()
-    .describe("Account role (null = not yet chosen)"),
+    .describe("Legacy mirror of activeSpace (null = not yet chosen)"),
+  isSeeker: zod
+    .boolean()
+    .describe("Account can use the grief-support (seeker) space."),
+  isProfessional: zod
+    .boolean()
+    .describe("Account can use the clinician (professional) portal."),
+  activeSpace: zod
+    .union([
+      zod.literal("seeker"),
+      zod.literal("professional"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe("Which portal is currently active (null = none chosen yet)."),
   isAdmin: zod
     .boolean()
     .optional()
@@ -369,6 +406,34 @@ export const SendChatMessageParams = zod.object({
 export const SendChatMessageBody = zod.object({
   content: zod.string().min(1),
 });
+
+/**
+ * @summary Public product concierge — stream a reply (SSE, no auth)
+ */
+export const SendConciergeMessageBody = zod
+  .object({
+    messages: zod.array(
+      zod.object({
+        role: zod.enum(["user", "assistant"]),
+        content: zod.string(),
+      }),
+    ),
+  })
+  .describe("Public product-concierge turn (unauthenticated, ephemeral).");
+
+/**
+ * @summary Clinician portal help — stream a reply (SSE, no patient data)
+ */
+export const SendProviderGeneralAssistantMessageBody = zod
+  .object({
+    messages: zod.array(
+      zod.object({
+        role: zod.enum(["user", "assistant"]),
+        content: zod.string(),
+      }),
+    ),
+  })
+  .describe("General portal\/practice help for a clinician (no patient data).");
 
 export const ListJournalEntriesResponseItem = zod.object({
   id: zod.number(),

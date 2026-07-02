@@ -23,6 +23,7 @@ import { generateAppointmentToken } from "../lib/appointmentToken";
 import { sendAppointmentInvite } from "../lib/appointmentInvite";
 import {
   isCalendarConnected,
+  listCalendars,
   removeAppointmentFromCalendar,
   syncAppointmentToCalendar,
 } from "../lib/calendarSync";
@@ -277,6 +278,19 @@ router.post("/appointments/:id/cancel", async (req, res) => {
 router.get("/calendar", async (req, res) => {
   const calendar = await getOrCreateCalendar(req.userId!);
   res.json(toCalendarView(calendar, await isCalendarConnected()));
+});
+
+router.get("/calendar/list", async (req, res) => {
+  if (!(await isCalendarConnected())) {
+    res.json([]);
+    return;
+  }
+  try {
+    res.json(await listCalendars());
+  } catch (err) {
+    req.log.warn({ err }, "listing google calendars failed");
+    res.json([]);
+  }
 });
 
 router.put("/calendar", async (req, res) => {

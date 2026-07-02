@@ -24,6 +24,7 @@ export * from "./batchImport";
 export * from "./batchImportInput";
 export * from "./batchImportInputReportItem";
 export * from "./batchImportReportItem";
+export * from "./calendarChoice";
 export * from "./chatMessageInput";
 export * from "./chatMessageRecord";
 export * from "./chatSession";

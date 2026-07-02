@@ -2460,6 +2460,18 @@ export const UpdateProviderCalendarResponse = zod.object({
 });
 
 /**
+ * @summary The Google calendars the connected account can write to, for choosing a sync target.
+ */
+export const ListProviderCalendarsResponseItem = zod.object({
+  id: zod.string(),
+  summary: zod.string(),
+  primary: zod.boolean(),
+});
+export const ListProviderCalendarsResponse = zod.array(
+  ListProviderCalendarsResponseItem,
+);
+
+/**
  * @summary Public, token-gated view of a proposed appointment for the patient to confirm or decline.
  */
 export const GetAppointmentByTokenParams = zod.object({

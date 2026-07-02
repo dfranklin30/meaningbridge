@@ -36,6 +36,12 @@ export interface CalendarEventInput {
   attendeeEmail?: string | null;
 }
 
+export interface CalendarChoice {
+  id: string;
+  summary: string;
+  primary: boolean;
+}
+
 /**
  * Whether a Google Calendar account is connected. False until the integration
  * is authorized (or when the connector proxy is unreachable); callers fall back
@@ -54,6 +60,35 @@ export async function isCalendarConnected(): Promise<boolean> {
     );
     return false;
   }
+}
+
+/**
+ * List the calendars the connected Google account can write to, so a provider
+ * can route MeaningBridge sessions to a work calendar instead of "primary".
+ * Only calendars with owner/writer access are returned (you can't create events
+ * on a read-only calendar). Returns an empty array when nothing is connected.
+ */
+export async function listCalendars(): Promise<CalendarChoice[]> {
+  const res = await connectors.proxy(
+    CONNECTOR_NAME,
+    `${CALENDAR_API}/users/me/calendarList?minAccessRole=writer`,
+    { method: "GET" },
+  );
+  if (!res.ok) {
+    throw new Error(`Google Calendar list failed: ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as {
+    items?: Array<{ id?: string; summary?: string; summaryOverride?: string; primary?: boolean }>;
+  };
+  return (data.items ?? [])
+    .filter((c): c is { id: string; summary?: string; summaryOverride?: string; primary?: boolean } =>
+      typeof c.id === "string" && c.id.length > 0,
+    )
+    .map((c) => ({
+      id: c.id,
+      summary: c.summaryOverride || c.summary || c.id,
+      primary: c.primary === true,
+    }));
 }
 
 /**

@@ -30,6 +30,7 @@ import type {
   AppointmentRespondInput,
   BatchImport,
   BatchImportInput,
+  CalendarChoice,
   ChatMessageInput,
   ChatSession,
   ChatSessionInput,
@@ -9008,6 +9009,81 @@ export const useUpdateProviderCalendar = <
 > => {
   return useMutation(getUpdateProviderCalendarMutationOptions(options));
 };
+
+/**
+ * @summary The Google calendars the connected account can write to, for choosing a sync target.
+ */
+export const getListProviderCalendarsUrl = () => {
+  return `/api/professional/calendar/list`;
+};
+
+export const listProviderCalendars = async (
+  options?: RequestInit,
+): Promise<CalendarChoice[]> => {
+  return customFetch<CalendarChoice[]>(getListProviderCalendarsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProviderCalendarsQueryKey = () => {
+  return [`/api/professional/calendar/list`] as const;
+};
+
+export const getListProviderCalendarsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProviderCalendars>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listProviderCalendars>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListProviderCalendarsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listProviderCalendars>>
+  > = ({ signal }) => listProviderCalendars({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProviderCalendars>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProviderCalendarsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProviderCalendars>>
+>;
+export type ListProviderCalendarsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary The Google calendars the connected account can write to, for choosing a sync target.
+ */
+
+export function useListProviderCalendars<
+  TData = Awaited<ReturnType<typeof listProviderCalendars>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listProviderCalendars>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProviderCalendarsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Public, token-gated view of a proposed appointment for the patient to confirm or decline.

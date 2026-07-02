@@ -2029,6 +2029,20 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ProviderCalendar" }
 
+  /professional/calendar/list:
+    get:
+      operationId: listProviderCalendars
+      tags: [professional]
+      summary: The Google calendars the connected account can write to, for choosing a sync target.
+      responses:
+        "200":
+          description: Available writable calendars (empty when not connected)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CalendarChoice" }
+
   /appointments/{token}:
     get:
       operationId: getAppointmentByToken
@@ -2263,6 +2277,14 @@ components:
       properties:
         calendarId: { type: string }
         syncEnabled: { type: boolean }
+
+    CalendarChoice:
+      type: object
+      properties:
+        id: { type: string }
+        summary: { type: string }
+        primary: { type: boolean }
+      required: [id, summary, primary]
 
     ProfessionalMeta:
       type: object

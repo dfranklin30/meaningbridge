@@ -299,6 +299,12 @@ export interface ProviderCalendarInput {
   syncEnabled?: boolean;
 }
 
+export interface CalendarChoice {
+  id: string;
+  summary: string;
+  primary: boolean;
+}
+
 export type IntegrationSystemOptionKind =
   (typeof IntegrationSystemOptionKind)[keyof typeof IntegrationSystemOptionKind];
 

@@ -21,6 +21,7 @@ import type {
   PatientEngagement,
   Appointment,
   ProviderCalendar,
+  CalendarChoice,
   ProviderAssistantReply,
 } from "@workspace/api-client-react";
 
@@ -68,6 +69,7 @@ export default function ProviderPatientDetail() {
   const [engagement, setEngagement] = useState<PatientEngagement | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [calendar, setCalendar] = useState<ProviderCalendar | null>(null);
+  const [calendarChoices, setCalendarChoices] = useState<CalendarChoice[]>([]);
 
   const load = useCallback(async () => {
     if (patientId === null || Number.isNaN(patientId)) {
@@ -87,6 +89,17 @@ export default function ProviderPatientDetail() {
       setEngagement(eng);
       setAppointments(appts);
       setCalendar(cal);
+      if (cal.connected) {
+        try {
+          setCalendarChoices(
+            await guard(() => api<CalendarChoice[]>("/professional/calendar/list")),
+          );
+        } catch {
+          setCalendarChoices([]);
+        }
+      } else {
+        setCalendarChoices([]);
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 403 && err.code) setPhiCode(err.code);
       else if (!(err instanceof ApiError && err.code === "two_factor_challenge_required"))
@@ -156,6 +169,7 @@ export default function ProviderPatientDetail() {
         patientId={patientId!}
         appointments={appointments}
         calendar={calendar}
+        calendarChoices={calendarChoices}
         guard={guard}
         onChanged={load}
         onPhi={setPhiCode}
@@ -249,6 +263,7 @@ function AppointmentsPanel({
   patientId,
   appointments,
   calendar,
+  calendarChoices,
   guard,
   onChanged,
   onPhi,
@@ -257,6 +272,7 @@ function AppointmentsPanel({
   patientId: number;
   appointments: Appointment[];
   calendar: ProviderCalendar | null;
+  calendarChoices: CalendarChoice[];
   guard: <T>(fn: () => Promise<T>) => Promise<T>;
   onChanged: () => Promise<void>;
   onPhi: (code: string) => void;
@@ -326,7 +342,7 @@ function AppointmentsPanel({
     }
   };
 
-  const toggleSync = async () => {
+  const saveCalendar = async (patch: { syncEnabled?: boolean; calendarId?: string }) => {
     if (!calendar || savingCal) return;
     setSavingCal(true);
     setError(null);
@@ -334,7 +350,7 @@ function AppointmentsPanel({
       const updated = await guard(() =>
         api<ProviderCalendar>("/professional/calendar", {
           method: "PUT",
-          body: JSON.stringify({ syncEnabled: !calendar.syncEnabled }),
+          body: JSON.stringify(patch),
         }),
       );
       onCalendar(updated);
@@ -374,23 +390,53 @@ function AppointmentsPanel({
       </div>
 
       {calendar && (
-        <label className="flex items-center gap-3 rounded-lg border border-border/70 bg-background px-4 py-3 text-sm">
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded text-primary focus:ring-primary"
-            checked={calendar.syncEnabled}
-            disabled={savingCal || !calendar.connected}
-            onChange={toggleSync}
-          />
-          <span className="flex-1">
-            <span className="font-medium block">Add confirmed appointments to Google Calendar</span>
-            <span className="text-xs text-muted-foreground">
-              {calendar.connected
-                ? "Confirmed times are written to your connected calendar."
-                : "Connect a Google Calendar account to enable this."}
+        <div className="rounded-lg border border-border/70 bg-background px-4 py-3 space-y-3">
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="w-4 h-4 rounded text-primary focus:ring-primary"
+              checked={calendar.syncEnabled}
+              disabled={savingCal || !calendar.connected}
+              onChange={() => void saveCalendar({ syncEnabled: !calendar.syncEnabled })}
+            />
+            <span className="flex-1">
+              <span className="font-medium block">
+                Add confirmed appointments to Google Calendar
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {calendar.connected
+                  ? "Confirmed times are written to your chosen calendar."
+                  : "Connect a Google Calendar account to enable this."}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+
+          {calendar.connected && calendar.syncEnabled && calendarChoices.length > 0 && (
+            <label className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-3">
+              <span className="text-muted-foreground sm:w-40 shrink-0">Sync to calendar</span>
+              <select
+                className="flex-1 rounded-md border border-border/70 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                value={
+                  calendarChoices.some((c) => c.id === calendar.calendarId)
+                    ? calendar.calendarId
+                    : "primary"
+                }
+                disabled={savingCal}
+                onChange={(e) => void saveCalendar({ calendarId: e.target.value })}
+              >
+                {!calendarChoices.some((c) => c.id === "primary") && (
+                  <option value="primary">Primary calendar</option>
+                )}
+                {calendarChoices.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.summary}
+                    {c.primary ? " (primary)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       )}
 
       {error && <ErrorBanner message={error} />}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import {
   Upload,
   Download,
@@ -33,6 +33,7 @@ interface ParseResponse {
   headers: string[];
   rows: Record<string, string>[];
   suggestedMapping: Record<string, string>;
+  preset: { system: string; label: string } | null;
 }
 
 interface RowReport {
@@ -69,9 +70,10 @@ type CanonicalKey = (typeof CANONICAL_KEYS)[number];
 type Step = "upload" | "map" | "review" | "done";
 
 /** Guarded multipart upload — mirrors the JSON `api` helper but for a File. */
-async function uploadFile<T>(path: string, file: File): Promise<T> {
+async function uploadFile<T>(path: string, file: File, fields?: Record<string, string>): Promise<T> {
   const form = new FormData();
   form.append("file", file);
+  for (const [k, v] of Object.entries(fields ?? {})) form.append(k, v);
   const res = await fetch(`${API}${path}`, {
     method: "POST",
     credentials: "include",
@@ -87,6 +89,7 @@ async function uploadFile<T>(path: string, file: File): Promise<T> {
 export default function ProviderImport() {
   const { guard, challengeElement } = useTwoFactorGate();
   const fileRef = useRef<HTMLInputElement>(null);
+  const preset = new URLSearchParams(useSearch()).get("preset");
 
   const [loading, setLoading] = useState(true);
   const [phiCode, setPhiCode] = useState<string | null>(null);
@@ -136,7 +139,13 @@ export default function ProviderImport() {
     setError(null);
     setBusy(true);
     try {
-      const res = await guard(() => uploadFile<ParseResponse>("/professional/batch-imports/parse", file));
+      const res = await guard(() =>
+        uploadFile<ParseResponse>(
+          "/professional/batch-imports/parse",
+          file,
+          preset ? { preset } : undefined,
+        ),
+      );
       setParsed(res);
       setMapping(res.suggestedMapping);
       setStep("map");
@@ -195,7 +204,12 @@ export default function ProviderImport() {
       const res = await guard(() =>
         api<CommitResponse>("/professional/batch-imports/commit", {
           method: "POST",
-          body: JSON.stringify({ filename: parsed.filename, source: parsed.source, rows }),
+          body: JSON.stringify({
+            filename: parsed.filename,
+            source: parsed.source,
+            preset: parsed.preset?.system,
+            rows,
+          }),
         }),
       );
       setCommitted(res);
@@ -240,6 +254,13 @@ export default function ProviderImport() {
       </div>
 
       {error && <ErrorBanner message={error} />}
+
+      {preset && step === "upload" && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+          Using an export preset. Upload your file exactly as exported and we will match its columns
+          for you.
+        </div>
+      )}
 
       {step === "upload" && (
         <section className="space-y-6">

@@ -141,14 +141,27 @@ function capRows(sheet: ParsedSheet): ParsedSheet {
   return sheet;
 }
 
-/** Suggest an initial header -> canonical-field mapping by fuzzy header match. */
-export function suggestMapping(headers: string[]): Record<string, string> {
+/**
+ * Suggest an initial header -> canonical-field mapping by fuzzy header match.
+ *
+ * `extraAliases` (from an EHR CSV export preset) augments — never replaces — the
+ * default aliases, so a known vendor export maps itself while a hand-edited file
+ * still matches on the built-in spellings.
+ */
+export function suggestMapping(
+  headers: string[],
+  extraAliases?: Partial<Record<keyof CanonicalRow, string[]>>,
+): Record<string, string> {
   const mapping: Record<string, string> = {};
   const used = new Set<string>();
   for (const field of BULK_FIELDS) {
+    const aliases = new Set([
+      ...field.aliases,
+      ...(extraAliases?.[field.key]?.map((a) => a.trim().toLowerCase()) ?? []),
+    ]);
     const match = headers.find((h) => {
       const lower = h.trim().toLowerCase();
-      return !used.has(h) && (lower === field.key.toLowerCase() || field.aliases.includes(lower));
+      return !used.has(h) && (lower === field.key.toLowerCase() || aliases.has(lower));
     });
     if (match) {
       mapping[field.key] = match;

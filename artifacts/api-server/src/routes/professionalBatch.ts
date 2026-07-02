@@ -19,6 +19,7 @@ import {
   validateRows,
   type CanonicalRow,
 } from "../lib/bulkImport";
+import { getCsvPreset } from "../lib/csvPresets";
 
 const router: IRouter = Router();
 
@@ -50,6 +51,9 @@ const rowsInput = z.object({
 const commitInput = z.object({
   filename: z.string().optional(),
   source: z.enum(["csv", "xlsx"]).default("csv"),
+  // When the upload came in through an EHR export preset, the run is tagged
+  // `ehr:<system>` so the import log records where the roster originated.
+  preset: z.string().max(64).optional(),
   rows: z.array(canonicalRowSchema).max(MAX_BULK_ROWS),
 });
 
@@ -85,15 +89,24 @@ router.post(
         res.status(400).json({ error: "That file has no data rows." });
         return;
       }
+      // An optional EHR export preset augments the column matcher so a known
+      // vendor export maps itself with no manual column matching.
+      const preset = getCsvPreset(
+        typeof req.body?.preset === "string" ? req.body.preset : undefined,
+      );
+
       // Do not record the provider-supplied filename verbatim — it can carry
       // patient identifiers. The row count is enough for the audit trail.
-      await audit(req, "batch.parse", { detail: `${rows.length} rows parsed` });
+      await audit(req, "batch.parse", {
+        detail: `${rows.length} rows parsed${preset ? ` (${preset.system} preset)` : ""}`,
+      });
       res.json({
         filename: req.file.originalname,
         source: /\.xlsx$/i.test(req.file.originalname) ? "xlsx" : "csv",
         headers,
         rows,
-        suggestedMapping: suggestMapping(headers),
+        suggestedMapping: suggestMapping(headers, preset?.aliases),
+        preset: preset ? { system: preset.system, label: preset.label } : null,
       });
     } catch (err) {
       if (err instanceof BulkImportError) {
@@ -127,7 +140,10 @@ router.post("/batch-imports/commit", requireAuth, requireProfessional, async (re
     res.status(400).json({ error: "Invalid import", details: parsed.error.issues });
     return;
   }
-  const { filename, source, rows } = parsed.data;
+  const { filename, source, preset, rows } = parsed.data;
+  const presetDef = getCsvPreset(preset);
+  // Tag the persisted run with its EHR origin when it came in via a preset.
+  const recordedSource = presetDef ? `ehr:${presetDef.system}` : source;
 
   // Re-validate server-side — the client preview is never the only guard.
   const result = validateRows(rows as CanonicalRow[]);
@@ -185,7 +201,7 @@ router.post("/batch-imports/commit", requireAuth, requireProfessional, async (re
     .values({
       providerUserId: req.userId!,
       filename: filename ?? null,
-      source,
+      source: recordedSource,
       totalRows: rows.length,
       acceptedRows: enrolledCount,
       rejectedRows: rejectedCount,

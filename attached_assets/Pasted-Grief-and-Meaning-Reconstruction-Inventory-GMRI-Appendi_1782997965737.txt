@@ -1,0 +1,52 @@
+Grief and Meaning Reconstruction Inventory (GMRI)
+
+Appendix 9.1 — Neimeyer
+
+Name: __ Date: __
+
+The following statements refer to thoughts, beliefs, feelings, and meanings some bereaved people experience following their loss. Please circle the number that rates the degree to which each of these experiences has been true for you in the past week, on a scale from 1 to 5:
+
+1 = Strongly disagree 2 = Disagree 3 = Neither agree nor disagree 4 = Agree 5 = Strongly agree
+
+#	Statement	Rating
+1	The time I spent with my loved one was a blessing	1 2 3 4 5
+2	I do not see any good that has come from this loss	1 2 3 4 5
+3	Since this loss, I'm more self-reflective	1 2 3 4 5
+4	I value family more	1 2 3 4 5
+5	I will see my loved one again	1 2 3 4 5
+6	Since this loss, I find myself more alone and isolated	1 2 3 4 5
+7	I've been able to make sense of this loss	1 2 3 4 5
+8	Since this loss, I'm a stronger person	1 2 3 4 5
+9	I can't understand this loss	1 2 3 4 5
+10	I was prepared for my loved one to die	1 2 3 4 5
+11	My loved one was a good person; he/she lived a good life	1 2 3 4 5
+12	I value and appreciate life more	1 2 3 4 5
+13	Since this loss, I've changed my lifestyle for the better	1 2 3 4 5
+14	Memories of my loved one bring me a sense of peace and solace	1 2 3 4 5
+15	This death brought my loved one peace	1 2 3 4 5
+16	I've lost my innocence	1 2 3 4 5
+17	This death ended my loved one's suffering	1 2 3 4 5
+18	I miss my loved one	1 2 3 4 5
+19	Since this loss, I make more effort to help others	1 2 3 4 5
+20	I feel empty and lost	1 2 3 4 5
+21	I cherish the memories of my loved one	1 2 3 4 5
+22	Since this loss, I value friendship and social support more	1 2 3 4 5
+23	My loved one was prepared to die	1 2 3 4 5
+24	Whenever I can, I seize the day. I live life to the fullest	1 2 3 4 5
+25	Since this loss, I'm a more responsible person	1 2 3 4 5
+26	I believe my loved one is in a better place	1 2 3 4 5
+27	I feel pain from regrets I have in regard to this loss	1 2 3 4 5
+28	I've come to understand that life is short and it gives us no guarantees	1 2 3 4 5
+29	Since this loss, I've pursued new avenues of knowledge and learning	1 2 3 4 5
+Scoring — Factors & Item Numbers
+
+Factor	Items
+1. Continuing bonds	1, 5, 11, 14, 18, 21, 26
+2. Personal growth	3, 8, 13, 19, 22, 25, 29
+3. Sense of peace	7, 10, 15, 17, 23
+4. Emptiness & meaninglessness*	2, 6, 9, 16, 20, 27
+5. Valuing life	4, 12, 24, 28
+* These items are reverse scored.
+
+Note: This scale is published in the public domain to encourage its use by interested clinicians and researchers. No formal permission is required for its duplication and use beyond citation of its source and authorship.
+kserwenj

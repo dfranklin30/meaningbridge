@@ -1,0 +1,64 @@
+Inventory of Daily Widowed Life (IDWL)
+
+Appendix 10.1
+
+Below is a list of activities, tasks, or issues that those who have lost a spouse or partner sometimes need to confront or do in their daily lives. For each item, please indicate how frequently you have done it during the past week.
+
+1 = Rarely or not at all 2 = Once in a while 3 = Fairly often 4 = Almost always
+
+#	Item	Rating
+1	Thinking about how much I miss my spouse/partner	1 2 3 4
+2	Thinking about the circumstances or events associated with my spouse/partner's death	1 2 3 4
+3	Yearning for my spouse/partner	1 2 3 4
+4	Looking at old photographs and other reminders of my spouse/partner	1 2 3 4
+5	Imagining how my spouse/partner would react to my behavior	1 2 3 4
+6	Imagining how my spouse/partner would react to the way I handled tasks or problems I faced	1 2 3 4
+7	Crying or feeling sad about the death of my spouse/partner	1 2 3 4
+8	Being preoccupied with my situation	1 2 3 4
+9	Engaging in fond or happy memories about my spouse/partner	1 2 3 4
+10	Feeling a bond with my spouse/partner	1 2 3 4
+11	Dealing with feeling lonely	1 2 3 4
+12	Visiting or doing things with others	1 2 3 4
+13	Finding ways to keep busy or occupied	1 2 3 4
+14	Dealing with financial matters	1 2 3 4
+15	Engaging in leisure activities (hobbies, recreation, physical activity, etc.)	1 2 3 4
+16	Attending to my own health-related needs	1 2 3 4
+17	Engaging in employment or volunteer work	1 2 3 4
+18	Watching TV, listening to music, listening to the radio, reading	1 2 3 4
+19	Attending to legal, insurance or property matters	1 2 3 4
+20	Attending to the maintenance of my household or automobile	1 2 3 4
+21	Focusing on other things besides grieving	1 2 3 4
+22	Learning to do new things	1 2 3 4
+Scoring Instructions
+
+LO (Loss-Oriented) Subscale Score = Sum of items 1–11
+RO (Restoration-Oriented) Subscale Score = Sum of items 12–22
+Oscillation balance = RO score minus LO score
+IDWL Companion Items
+
+Sometimes when people adjust to the loss of their spouse or partner they focus their attention on dealing with two different types of issues. One issue is dealing with their grief, emotions, and feelings; the other is dealing with new responsibilities and activities and/or having time away from grieving. Please answer the following related to how you have focused your attention on these two issues during the past week.
+
+C1. [Awareness] During the past week, to what extent have you focused your attention on dealing with your grief, emotions and feelings? (Circle a number)
+
+1 Very little — 2 — 3 — 4 — 5 A great deal
+
+C2. [Awareness] During the past week, to what extent have you focused your attention on dealing with new responsibilities and activities and/or having time away from grieving? (Circle a number)
+
+1 Very little — 2 — 3 — 4 — 5 A great deal
+
+C3. [Awareness] During the past week, to what extent have you gone back and forth in focusing your attention on dealing with both of these issues? (Check the most accurate response)
+
+☐ I have not gone back and forth because I have focused on only one issue. (If checked, skip the next two questions.)
+☐ Gone back and forth once or twice this past week.
+☐ Gone back and forth several times this week.
+☐ Gone back and forth a few times each day.
+☐ I have gone back and forth several times each day.
+C4. [Control] If you have given attention to dealing with both of these issues at least once this past week, were you able to go back and forth as you wanted to do so? (Circle a number)
+
+1 I have no control — 2 — 3 — 4 — 5 Yes, I have full control over this
+
+C5. [Intent] When I go back and forth between dealing with these two issues, I usually do it because I
+
+______________________________________________________________
+
+Note: This scale and its companion items are published in the public domain to encourage its use by interested clinicians and researchers. No formal permission is required for its duplication and use beyond citation of its source and authorship.

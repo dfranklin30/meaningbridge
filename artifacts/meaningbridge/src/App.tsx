@@ -57,6 +57,7 @@ import ProviderReferrals from "@/pages/care/referrals";
 import ProviderPatients from "@/pages/care/patients";
 import ProviderIntake from "@/pages/care/intake";
 import ProviderImport from "@/pages/care/import";
+import ProviderIntegrations from "@/pages/care/integrations";
 import AdminProviders from "@/pages/admin/providers";
 import { ProviderShell, type Me } from "@/pages/care/provider-shell";
 import ConsentPage from "@/pages/consent";
@@ -316,6 +317,7 @@ function ProviderPortalRoutes() {
         <Route path="/care/directory" component={ProviderDirectory} />
         <Route path="/care/referrals">{() => <ProviderReferrals me={shellMe} />}</Route>
         <Route path="/care/patients" component={ProviderPatients} />
+        <Route path="/care/integrations" component={ProviderIntegrations} />
         <Route path="/care/import" component={ProviderImport} />
         <Route path="/care/intake" component={ProviderIntake} />
         <Route path="/care/intake/:id" component={ProviderIntake} />
@@ -410,6 +412,7 @@ function AppRouterSwitch() {
       <Route path="/care/directory" component={ProfessionalPortalGate} />
       <Route path="/care/referrals" component={ProfessionalPortalGate} />
       <Route path="/care/patients" component={ProfessionalPortalGate} />
+      <Route path="/care/integrations" component={ProfessionalPortalGate} />
       <Route path="/care/import" component={ProfessionalPortalGate} />
       <Route path="/care/intake" component={ProfessionalPortalGate} />
       <Route path="/care/intake/:id" component={ProfessionalPortalGate} />

@@ -12,6 +12,7 @@ import patientsRouter from "./professionalPatients";
 import intakesRouter from "./professionalIntakes";
 import referralsRouter from "./professionalReferrals";
 import integrationsRouter from "./professionalIntegrations";
+import integrationsCallbackRouter from "./professionalIntegrationsCallback";
 import batchRouter from "./professionalBatch";
 
 const router: IRouter = Router();
@@ -38,6 +39,15 @@ router.use(providersRouter);
 router.use(securityRouter);
 router.use(directoryRouter);
 router.use(adminRouter);
+
+// The SMART-on-FHIR OAuth callback is a top-level browser redirect from the EHR
+// and so cannot satisfy the interactive two-factor gate below. It is mounted
+// BEFORE the phiGate routers (whose `router.use(phiGate, ...)` layers otherwise
+// run requireTwoFactor for every unmatched path) so this path is handled first.
+// It still requires a verified provider, and the single-use state row created at
+// authorize time (behind the full gate) binds the flow to the initiating provider.
+const providerGate = [requireAuth, requireProfessional, requireVerifiedProvider];
+router.use(providerGate, integrationsCallbackRouter);
 
 // PHI routers: gated behind admin verification AND an active second factor.
 // Applied at mount so no individual PHI route can forget the gate.

@@ -60,3 +60,39 @@ export const integrationConnectionsTable = pgTable(
 );
 
 export type IntegrationConnection = typeof integrationConnectionsTable.$inferSelect;
+
+/**
+ * Transient SMART-on-FHIR authorization state. One short-lived row per in-flight
+ * OAuth 2.0 authorization-code flow: it binds the opaque `state` (CSRF token) and
+ * the PKCE code-verifier to the initiating provider and the discovered endpoints,
+ * so the browser-redirect callback can be verified and completed even though it
+ * arrives as a top-level navigation. Rows are single-use — consumed and deleted
+ * on callback — and any left unclaimed are safe to prune by `createdAt`.
+ *
+ * The PKCE verifier is a secret and is encrypted at rest (`codeVerifierEnc`).
+ */
+export const integrationOAuthStatesTable = pgTable(
+  "integration_oauth_states",
+  {
+    id: serial("id").primaryKey(),
+    // Opaque, unguessable value echoed back on the callback (CSRF binding).
+    state: text("state").notNull(),
+    providerUserId: integer("provider_user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    system: text("system").notNull(),
+    // Encrypted PKCE code_verifier (never returned, matched on callback).
+    codeVerifierEnc: text("code_verifier_enc").notNull(),
+    fhirBaseUrl: text("fhir_base_url").notNull(),
+    tokenUrl: text("token_url").notNull(),
+    scope: text("scope").notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    stateUnique: uniqueIndex("integration_oauth_states_state_unique").on(t.state),
+    providerIdx: index("integration_oauth_states_provider_idx").on(t.providerUserId),
+  }),
+);
+
+export type IntegrationOAuthState = typeof integrationOAuthStatesTable.$inferSelect;

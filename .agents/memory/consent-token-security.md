@@ -60,6 +60,17 @@ There are TWO distinct consent surfaces; revoking one does not touch the other.
   trail are retained as the compliance record. Operational details live in
   `docs/DATA_RETENTION.md`.
 
+## Revocation must end visibility, not just clear PHI
+Setting a patient to `revoked` and nulling PHI is NOT enough — the retained
+`provider_patient_links` row still authorized the provider. All provider-facing
+access must ALSO filter out closed statuses. `lib/patientAccess.ts` is the single
+choke point: it hides `HIDDEN_STATUSES` (revoked, inactive) by joining
+`patientsTable` in every helper (accessiblePatientIds / providerCanAccessPatient
+/ getPatientForProvider / listPatientsForProvider). **Why:** we hide by status
+rather than deleting the link so the relationship's compliance record survives;
+a whitelist of `active` would wrongly hide legitimate draft/invited/consented
+intake states.
+
 ## Known gaps (deferred, see follow-ups)
 - Submit + e-sign are not wrapped in a DB transaction/lock, so concurrency can
   race duplicate consent rows before the status guard trips.

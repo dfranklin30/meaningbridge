@@ -64,4 +64,15 @@ describe("patientAccess provider isolation", () => {
     expect(await accessiblePatientIds(providerB)).not.toContain(patientId);
     expect((await listPatientsForProvider(providerB)).map((p) => p.id)).not.toContain(patientId);
   });
+
+  it("hides a revoked patient even from the owning provider", async () => {
+    // Simulate consent withdrawal: status -> revoked (PHI purge happens in the
+    // route). The link row is retained, but visibility must stop immediately.
+    await db.update(patientsTable).set({ status: "revoked" }).where(eq(patientsTable.id, patientId));
+
+    expect(await providerCanAccessPatient(providerA, patientId)).toBe(false);
+    expect(await getPatientForProvider(providerA, patientId)).toBeNull();
+    expect(await accessiblePatientIds(providerA)).not.toContain(patientId);
+    expect((await listPatientsForProvider(providerA)).map((p) => p.id)).not.toContain(patientId);
+  });
 });

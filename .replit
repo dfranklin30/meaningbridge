@@ -37,4 +37,3 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-PHI_ENCRYPTION_KEY = "G0ilm9rOMHvAmT0/ItkEXhyDF4FGEo80TGtYZEaqJ5g="

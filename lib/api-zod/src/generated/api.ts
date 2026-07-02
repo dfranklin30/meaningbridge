@@ -1183,3 +1183,485 @@ export const GetProfessionalMetaResponse = zod
   .describe(
     "Static reference data shared by the provider onboarding, intake, and integrations UIs.",
   );
+
+/**
+ * @summary Create the authenticated clinician's provider profile.
+ */
+
+export const CreateProviderProfileBody = zod
+  .object({
+    fullName: zod.string().min(1),
+    credential: zod.string().optional(),
+    licenseNumber: zod.string().optional(),
+    licenseState: zod.string().optional(),
+    npi: zod.string().optional(),
+    practiceName: zod.string().optional(),
+    practiceAddress: zod.string().optional(),
+    directoryOptIn: zod.boolean().optional(),
+    specialtyTags: zod.array(zod.string()).optional(),
+    statesLicensed: zod.array(zod.string()).optional(),
+    telehealth: zod.boolean().optional(),
+    acceptingReferrals: zod.boolean().optional(),
+    bio: zod.string().optional(),
+  })
+  .describe(
+    "Provider profile fields a clinician submits at onboarding (verification is server-controlled).",
+  );
+
+/**
+ * @summary The authenticated clinician's own provider profile.
+ */
+export const GetMyProviderProfileResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  fullName: zod.string().nullish(),
+  credential: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  licenseState: zod.string().nullish(),
+  npi: zod.string().nullish(),
+  practiceName: zod.string().nullish(),
+  practiceAddress: zod.string().nullish(),
+  verificationStatus: zod.enum(["pending", "verified", "rejected"]),
+  verifiedAt: zod.coerce.date().nullish(),
+  directoryOptIn: zod.boolean(),
+  specialtyTags: zod.array(zod.string()),
+  statesLicensed: zod.array(zod.string()),
+  telehealth: zod.boolean(),
+  acceptingReferrals: zod.boolean(),
+  bio: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+export const UpdateMyProviderProfileBody = zod
+  .object({
+    fullName: zod.string().min(1),
+    credential: zod.string().optional(),
+    licenseNumber: zod.string().optional(),
+    licenseState: zod.string().optional(),
+    npi: zod.string().optional(),
+    practiceName: zod.string().optional(),
+    practiceAddress: zod.string().optional(),
+    directoryOptIn: zod.boolean().optional(),
+    specialtyTags: zod.array(zod.string()).optional(),
+    statesLicensed: zod.array(zod.string()).optional(),
+    telehealth: zod.boolean().optional(),
+    acceptingReferrals: zod.boolean().optional(),
+    bio: zod.string().optional(),
+  })
+  .describe(
+    "Provider profile fields a clinician submits at onboarding (verification is server-controlled).",
+  );
+
+export const UpdateMyProviderProfileResponse = zod.object({
+  id: zod.number(),
+  userId: zod.number(),
+  fullName: zod.string().nullish(),
+  credential: zod.string().nullish(),
+  licenseNumber: zod.string().nullish(),
+  licenseState: zod.string().nullish(),
+  npi: zod.string().nullish(),
+  practiceName: zod.string().nullish(),
+  practiceAddress: zod.string().nullish(),
+  verificationStatus: zod.enum(["pending", "verified", "rejected"]),
+  verifiedAt: zod.coerce.date().nullish(),
+  directoryOptIn: zod.boolean(),
+  specialtyTags: zod.array(zod.string()),
+  statesLicensed: zod.array(zod.string()),
+  telehealth: zod.boolean(),
+  acceptingReferrals: zod.boolean(),
+  bio: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary All patients the authenticated provider is linked to.
+ */
+export const ListPatientsResponseItem = zod
+  .object({
+    id: zod.number(),
+    firstName: zod.string().nullish(),
+    lastName: zod.string().nullish(),
+    pronouns: zod.string().nullish(),
+    status: zod.enum([
+      "draft",
+      "invited",
+      "consented",
+      "active",
+      "revoked",
+      "inactive",
+    ]),
+    isDemoSample: zod.boolean(),
+    sessionCount: zod.number(),
+    lastActiveAt: zod.coerce.date().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .describe(
+    "Minimum-necessary view of a patient shown to a provider — decrypted identity plus engagement metadata, never conversation content.",
+  );
+export const ListPatientsResponse = zod.array(ListPatientsResponseItem);
+
+/**
+ * @summary Create a patient (PHI encrypted at rest) and link the provider as owner.
+ */
+
+export const CreatePatientBody = zod
+  .object({
+    firstName: zod.string().min(1),
+    lastName: zod.string().optional(),
+    dob: zod.string().optional().describe("ISO date (YYYY-MM-DD)"),
+    email: zod.string().email().optional(),
+    phone: zod.string().optional(),
+    pronouns: zod.string().optional(),
+  })
+  .describe("Identifying PHI for a patient. Encrypted at rest server-side.");
+
+export const GetPatientParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPatientResponse = zod
+  .object({
+    id: zod.number(),
+    firstName: zod.string().nullish(),
+    lastName: zod.string().nullish(),
+    pronouns: zod.string().nullish(),
+    status: zod.enum([
+      "draft",
+      "invited",
+      "consented",
+      "active",
+      "revoked",
+      "inactive",
+    ]),
+    isDemoSample: zod.boolean(),
+    sessionCount: zod.number(),
+    lastActiveAt: zod.coerce.date().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .describe(
+    "Minimum-necessary view of a patient shown to a provider — decrypted identity plus engagement metadata, never conversation content.",
+  );
+
+export const UpdatePatientParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdatePatientBody = zod
+  .object({
+    firstName: zod.string().min(1),
+    lastName: zod.string().optional(),
+    dob: zod.string().optional().describe("ISO date (YYYY-MM-DD)"),
+    email: zod.string().email().optional(),
+    phone: zod.string().optional(),
+    pronouns: zod.string().optional(),
+  })
+  .describe("Identifying PHI for a patient. Encrypted at rest server-side.");
+
+export const UpdatePatientResponse = zod
+  .object({
+    id: zod.number(),
+    firstName: zod.string().nullish(),
+    lastName: zod.string().nullish(),
+    pronouns: zod.string().nullish(),
+    status: zod.enum([
+      "draft",
+      "invited",
+      "consented",
+      "active",
+      "revoked",
+      "inactive",
+    ]),
+    isDemoSample: zod.boolean(),
+    sessionCount: zod.number(),
+    lastActiveAt: zod.coerce.date().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .describe(
+    "Minimum-necessary view of a patient shown to a provider — decrypted identity plus engagement metadata, never conversation content.",
+  );
+
+export const DeletePatientParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPatientConsentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPatientConsentsResponseItem = zod.object({
+  id: zod.number(),
+  patientId: zod.number(),
+  type: zod.string(),
+  documentVersion: zod.string().nullish(),
+  signedAt: zod.coerce.date().nullish(),
+  revokedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPatientConsentsResponse = zod.array(
+  ListPatientConsentsResponseItem,
+);
+
+export const RecordPatientConsentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RecordPatientConsentBody = zod
+  .object({
+    consentToken: zod.string().min(1),
+    signerName: zod.string().min(1),
+    documentVersion: zod.string().optional(),
+  })
+  .describe(
+    "A patient e-signing consent. The typed signature name is stored encrypted.",
+  );
+
+/**
+ * @summary Create an intake (draft or submitted). Payload encrypted at rest.
+ */
+export const CreateIntakeBody = zod.object({
+  patientId: zod.number().optional(),
+  status: zod.enum(["draft", "submitted"]).optional(),
+  data: zod.record(zod.string(), zod.unknown()),
+  riskFlag: zod.boolean().optional(),
+  safetyPlanConfirmed: zod.boolean().optional(),
+});
+
+export const GetIntakeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetIntakeResponse = zod.object({
+  id: zod.number(),
+  providerUserId: zod.number(),
+  patientId: zod.number().nullish(),
+  status: zod.enum(["draft", "submitted"]),
+  data: zod
+    .record(zod.string(), zod.unknown())
+    .optional()
+    .describe("Decrypted intake payload (server encrypts it at rest)."),
+  riskFlag: zod.boolean(),
+  safetyPlanConfirmed: zod.boolean(),
+  submittedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+export const UpdateIntakeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateIntakeBody = zod.object({
+  patientId: zod.number().optional(),
+  status: zod.enum(["draft", "submitted"]).optional(),
+  data: zod.record(zod.string(), zod.unknown()),
+  riskFlag: zod.boolean().optional(),
+  safetyPlanConfirmed: zod.boolean().optional(),
+});
+
+export const UpdateIntakeResponse = zod.object({
+  id: zod.number(),
+  providerUserId: zod.number(),
+  patientId: zod.number().nullish(),
+  status: zod.enum(["draft", "submitted"]),
+  data: zod
+    .record(zod.string(), zod.unknown())
+    .optional()
+    .describe("Decrypted intake payload (server encrypts it at rest)."),
+  riskFlag: zod.boolean(),
+  safetyPlanConfirmed: zod.boolean(),
+  submittedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+export const SubmitIntakeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitIntakeResponse = zod.object({
+  id: zod.number(),
+  providerUserId: zod.number(),
+  patientId: zod.number().nullish(),
+  status: zod.enum(["draft", "submitted"]),
+  data: zod
+    .record(zod.string(), zod.unknown())
+    .optional()
+    .describe("Decrypted intake payload (server encrypts it at rest)."),
+  riskFlag: zod.boolean(),
+  safetyPlanConfirmed: zod.boolean(),
+  submittedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Referrals the provider has sent or received.
+ */
+export const ListReferralsResponseItem = zod.object({
+  id: zod.number(),
+  patientId: zod.number(),
+  fromProviderUserId: zod.number(),
+  toProviderUserId: zod.number(),
+  status: zod.enum(["pending", "accepted", "declined"]),
+  summary: zod.string().nullish().describe("Decrypted intake summary."),
+  respondedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListReferralsResponse = zod.array(ListReferralsResponseItem);
+
+/**
+ * @summary Refer one of the provider's patients to a colleague.
+ */
+export const CreateReferralBody = zod.object({
+  patientId: zod.number(),
+  toProviderUserId: zod.number(),
+  summary: zod.string().optional(),
+});
+
+/**
+ * @summary Accept or decline a received referral. Accepting grants patient access.
+ */
+export const RespondToReferralParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const RespondToReferralBody = zod.object({
+  action: zod.enum(["accept", "decline"]),
+});
+
+export const RespondToReferralResponse = zod.object({
+  id: zod.number(),
+  patientId: zod.number(),
+  fromProviderUserId: zod.number(),
+  toProviderUserId: zod.number(),
+  status: zod.enum(["pending", "accepted", "declined"]),
+  summary: zod.string().nullish().describe("Decrypted intake summary."),
+  respondedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const ListReferralMessagesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListReferralMessagesResponseItem = zod.object({
+  id: zod.number(),
+  referralId: zod.number(),
+  senderUserId: zod.number(),
+  body: zod.string().describe("Decrypted message body."),
+  createdAt: zod.coerce.date(),
+});
+export const ListReferralMessagesResponse = zod.array(
+  ListReferralMessagesResponseItem,
+);
+
+export const SendReferralMessageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendReferralMessageBody = zod.object({
+  body: zod.string().min(1),
+});
+
+export const ListBatchImportsResponseItem = zod.object({
+  id: zod.number(),
+  filename: zod.string().nullish(),
+  source: zod.string(),
+  totalRows: zod.number(),
+  acceptedRows: zod.number(),
+  rejectedRows: zod.number(),
+  report: zod
+    .array(
+      zod.object({
+        row: zod.number(),
+        ok: zod.boolean(),
+        reason: zod.string().optional(),
+      }),
+    )
+    .nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListBatchImportsResponse = zod.array(ListBatchImportsResponseItem);
+
+/**
+ * @summary Record a bulk patient import run (accepted/rejected counts + report).
+ */
+
+export const CreateBatchImportBody = zod.object({
+  filename: zod.string().optional(),
+  source: zod.string().min(1),
+  totalRows: zod.number().optional(),
+  acceptedRows: zod.number().optional(),
+  rejectedRows: zod.number().optional(),
+  report: zod
+    .array(
+      zod.object({
+        row: zod.number(),
+        ok: zod.boolean(),
+        reason: zod.string().optional(),
+      }),
+    )
+    .optional(),
+});
+
+export const GetBatchImportParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetBatchImportResponse = zod.object({
+  id: zod.number(),
+  filename: zod.string().nullish(),
+  source: zod.string(),
+  totalRows: zod.number(),
+  acceptedRows: zod.number(),
+  rejectedRows: zod.number(),
+  report: zod
+    .array(
+      zod.object({
+        row: zod.number(),
+        ok: zod.boolean(),
+        reason: zod.string().optional(),
+      }),
+    )
+    .nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+export const ListIntegrationConnectionsResponseItem = zod.object({
+  id: zod.number(),
+  system: zod.string(),
+  kind: zod.enum(["fhir", "csv_preset", "vendor_api"]),
+  status: zod.enum(["connected", "disconnected", "pending"]),
+  scopes: zod.string().nullish(),
+  fhirBaseUrl: zod.string().nullish(),
+  connectedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListIntegrationConnectionsResponse = zod.array(
+  ListIntegrationConnectionsResponseItem,
+);
+
+/**
+ * @summary Create or update the provider's connection to an EHR/practice system.
+ */
+
+export const UpsertIntegrationConnectionBody = zod
+  .object({
+    system: zod.string().min(1),
+    kind: zod.enum(["fhir", "csv_preset", "vendor_api"]).optional(),
+    status: zod.enum(["connected", "disconnected", "pending"]).optional(),
+    scopes: zod.string().optional(),
+    fhirBaseUrl: zod.string().optional(),
+    accessToken: zod.string().optional(),
+    refreshToken: zod.string().optional(),
+  })
+  .describe(
+    "Fields to create\/update a provider's EHR\/practice-system connection. Tokens are encrypted at rest.",
+  );
+
+export const DeleteIntegrationConnectionParams = zod.object({
+  id: zod.coerce.number(),
+});

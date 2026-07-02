@@ -303,6 +303,66 @@ export interface IntegrationConnection {
   updatedAt: string;
 }
 
+export type IntegrationConnectionInputKind =
+  (typeof IntegrationConnectionInputKind)[keyof typeof IntegrationConnectionInputKind];
+
+export const IntegrationConnectionInputKind = {
+  fhir: "fhir",
+  csv_preset: "csv_preset",
+  vendor_api: "vendor_api",
+} as const;
+
+export type IntegrationConnectionInputStatus =
+  (typeof IntegrationConnectionInputStatus)[keyof typeof IntegrationConnectionInputStatus];
+
+export const IntegrationConnectionInputStatus = {
+  connected: "connected",
+  disconnected: "disconnected",
+  pending: "pending",
+} as const;
+
+/**
+ * Fields to create/update a provider's EHR/practice-system connection. Tokens are encrypted at rest.
+ */
+export interface IntegrationConnectionInput {
+  /** @minLength 1 */
+  system: string;
+  kind?: IntegrationConnectionInputKind;
+  status?: IntegrationConnectionInputStatus;
+  scopes?: string;
+  fhirBaseUrl?: string;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+export type ReferralRespondInputAction =
+  (typeof ReferralRespondInputAction)[keyof typeof ReferralRespondInputAction];
+
+export const ReferralRespondInputAction = {
+  accept: "accept",
+  decline: "decline",
+} as const;
+
+export interface ReferralRespondInput {
+  action: ReferralRespondInputAction;
+}
+
+export type BatchImportInputReportItem = {
+  row: number;
+  ok: boolean;
+  reason?: string;
+};
+
+export interface BatchImportInput {
+  filename?: string;
+  /** @minLength 1 */
+  source: string;
+  totalRows?: number;
+  acceptedRows?: number;
+  rejectedRows?: number;
+  report?: BatchImportInputReportItem[];
+}
+
 export interface HealthStatus {
   status: string;
 }

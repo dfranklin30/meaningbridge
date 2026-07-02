@@ -1,2 +1,2 @@
 - [drizzle-kit push interactive rename](drizzle-push-interactive-rename.md) — push's create-vs-rename TTY prompt ignores piped stdin; apply renames via psql then re-push.
-- [PHI / professional foundation](phi-professional-foundation.md) — PHI = AES-GCM `Enc` columns, app-managed key env var (not secret), tokens hashed, access only via provider_patient_links.
+- [PHI / professional foundation](phi-professional-foundation.md) — PHI = AES-GCM `Enc` columns; key is a runtime SECRET never in tracked config; tokens hashed; provider-scoped access + audit on every patient CRUD/PHI read.

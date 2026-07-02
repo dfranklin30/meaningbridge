@@ -986,6 +986,477 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProfessionalMeta"
 
+  /professional/providers:
+    post:
+      operationId: createProviderProfile
+      tags: [professional]
+      summary: Create the authenticated clinician's provider profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderInput" }
+      responses:
+        "201":
+          description: Created provider profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Provider" }
+        "409":
+          description: Profile already exists
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/providers/me:
+    get:
+      operationId: getMyProviderProfile
+      tags: [professional]
+      summary: The authenticated clinician's own provider profile.
+      responses:
+        "200":
+          description: Provider profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Provider" }
+        "404":
+          description: No profile yet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    patch:
+      operationId: updateMyProviderProfile
+      tags: [professional]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderInput" }
+      responses:
+        "200":
+          description: Updated provider profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Provider" }
+        "404":
+          description: No profile yet
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/patients:
+    get:
+      operationId: listPatients
+      tags: [professional]
+      summary: All patients the authenticated provider is linked to.
+      responses:
+        "200":
+          description: Patient summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PatientSummary" }
+    post:
+      operationId: createPatient
+      tags: [professional]
+      summary: Create a patient (PHI encrypted at rest) and link the provider as owner.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PatientInput" }
+      responses:
+        "201":
+          description: Created patient summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PatientSummary" }
+
+  /professional/patients/{id}:
+    get:
+      operationId: getPatient
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Patient summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PatientSummary" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    patch:
+      operationId: updatePatient
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PatientInput" }
+      responses:
+        "200":
+          description: Updated patient summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PatientSummary" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    delete:
+      operationId: deletePatient
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /professional/patients/{id}/consents:
+    get:
+      operationId: listPatientConsents
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Consent records
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Consent" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    post:
+      operationId: recordPatientConsent
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConsentInput" }
+      responses:
+        "201":
+          description: Recorded consent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Consent" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/intakes:
+    post:
+      operationId: createIntake
+      tags: [professional]
+      summary: Create an intake (draft or submitted). Payload encrypted at rest.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IntakeInput" }
+      responses:
+        "201":
+          description: Created intake
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Intake" }
+
+  /professional/intakes/{id}:
+    get:
+      operationId: getIntake
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Intake
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Intake" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    patch:
+      operationId: updateIntake
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IntakeInput" }
+      responses:
+        "200":
+          description: Updated intake
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Intake" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/intakes/{id}/submit:
+    post:
+      operationId: submitIntake
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Submitted intake
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Intake" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/referrals:
+    get:
+      operationId: listReferrals
+      tags: [professional]
+      summary: Referrals the provider has sent or received.
+      responses:
+        "200":
+          description: Referrals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Referral" }
+    post:
+      operationId: createReferral
+      tags: [professional]
+      summary: Refer one of the provider's patients to a colleague.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReferralInput" }
+      responses:
+        "201":
+          description: Created referral
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Referral" }
+        "404":
+          description: Patient not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/referrals/{id}/respond:
+    post:
+      operationId: respondToReferral
+      tags: [professional]
+      summary: Accept or decline a received referral. Accepting grants patient access.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReferralRespondInput" }
+      responses:
+        "200":
+          description: Updated referral
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Referral" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/referrals/{id}/messages:
+    get:
+      operationId: listReferralMessages
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Referral messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ReferralMessage" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    post:
+      operationId: sendReferralMessage
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReferralMessageInput" }
+      responses:
+        "201":
+          description: Sent message
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReferralMessage" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/batch-imports:
+    get:
+      operationId: listBatchImports
+      tags: [professional]
+      responses:
+        "200":
+          description: Batch import history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BatchImport" }
+    post:
+      operationId: createBatchImport
+      tags: [professional]
+      summary: Record a bulk patient import run (accepted/rejected counts + report).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BatchImportInput" }
+      responses:
+        "201":
+          description: Recorded batch import
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BatchImport" }
+
+  /professional/batch-imports/{id}:
+    get:
+      operationId: getBatchImport
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Batch import
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BatchImport" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/integrations:
+    get:
+      operationId: listIntegrationConnections
+      tags: [professional]
+      responses:
+        "200":
+          description: Integration connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/IntegrationConnection" }
+    post:
+      operationId: upsertIntegrationConnection
+      tags: [professional]
+      summary: Create or update the provider's connection to an EHR/practice system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IntegrationConnectionInput" }
+      responses:
+        "201":
+          description: Saved connection
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IntegrationConnection" }
+
+  /professional/integrations/{id}:
+    delete:
+      operationId: deleteIntegrationConnection
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     ProfessionalMeta:
@@ -1206,6 +1677,44 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
       required: [id, system, kind, status, createdAt, updatedAt]
+
+    IntegrationConnectionInput:
+      type: object
+      description: Fields to create/update a provider's EHR/practice-system connection. Tokens are encrypted at rest.
+      properties:
+        system: { type: string, minLength: 1 }
+        kind: { type: string, enum: [fhir, csv_preset, vendor_api] }
+        status: { type: string, enum: [connected, disconnected, pending] }
+        scopes: { type: string }
+        fhirBaseUrl: { type: string }
+        accessToken: { type: string }
+        refreshToken: { type: string }
+      required: [system]
+
+    ReferralRespondInput:
+      type: object
+      properties:
+        action: { type: string, enum: [accept, decline] }
+      required: [action]
+
+    BatchImportInput:
+      type: object
+      properties:
+        filename: { type: string }
+        source: { type: string, minLength: 1 }
+        totalRows: { type: integer }
+        acceptedRows: { type: integer }
+        rejectedRows: { type: integer }
+        report:
+          type: array
+          items:
+            type: object
+            properties:
+              row: { type: integer }
+              ok: { type: boolean }
+              reason: { type: string }
+            required: [row, ok]
+      required: [source]
 
     HealthStatus:
       type: object

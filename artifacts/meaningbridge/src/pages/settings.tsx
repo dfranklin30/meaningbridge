@@ -5,9 +5,28 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Save, Check, Shield, Users } from "lucide-react";
 import { format } from "date-fns";
 
+// Mirrors the player's reduce-motion handling: when the OS "reduce motion"
+// setting is active, the breath chime and haptic are suppressed, so we let the
+// person know here rather than have the sound silently do nothing in a practice.
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = () => setReduced(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return reduced;
+}
+
 export default function Settings() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const reducedMotion = usePrefersReducedMotion();
   const { data: profile } = useGetProfile();
   const { data: events } = useListSafetyEvents();
   const updateMe = useUpdateMe();
@@ -147,6 +166,11 @@ export default function Settings() {
               <div>
                 <span className="text-sm font-medium block">Gentle breath sound</span>
                 <span className="text-xs text-muted-foreground block mt-1">Play a soft chime at each breath. Off by default, so there is never a surprise sound.</span>
+                {reducedMotion && formData.breathCueEnabled && (
+                  <span className="text-xs text-muted-foreground block mt-2 rounded-md bg-secondary/30 px-3 py-2 leading-relaxed">
+                    The sound stays paused for now because your device has reduce motion turned on. Your choice is saved, and the chime will return whenever you turn that setting off.
+                  </span>
+                )}
               </div>
             </label>
 

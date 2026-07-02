@@ -43,6 +43,7 @@ export default function LandingPage() {
         <Logo variant="lockup" size={48} />
         <nav className="flex items-center gap-1 sm:gap-2 text-sm font-medium">
           {[
+            { href: "/sign-up", label: "For those grieving" },
             { href: "/pricing", label: "Plans" },
             { href: "/caregiver", label: "For professionals" },
             { href: "/notify", label: "Notify me" },

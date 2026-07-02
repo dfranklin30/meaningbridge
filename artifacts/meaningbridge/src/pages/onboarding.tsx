@@ -179,9 +179,9 @@ export default function Onboarding() {
                 {GIS_INSTRUCTIONS}
               </p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                There are five. Your answers stay private and shape how this space meets you.
-                There are no right answers, and there is no score we will hand back to you as a
-                verdict.
+                There are five, drawn from a well-validated measure of grief. Your answers stay
+                private. There are no right answers — we listen to what they tell us together and
+                let that guide how this space can best support you.
               </p>
               <button
                 className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium"
@@ -273,8 +273,7 @@ export default function Onboarding() {
                     <span className="text-sm font-medium block">Gentle safety awareness</span>
                     <span className="text-xs text-muted-foreground block mt-1">
                       As you write, MeaningBridge quietly notices language that suggests you may be
-                      in danger, so it can offer support at the right moment. You are never shown a
-                      score.
+                      in danger, so it can offer support at the right moment.
                     </span>
                   </div>
                 </label>

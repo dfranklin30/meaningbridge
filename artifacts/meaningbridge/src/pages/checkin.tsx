@@ -1,8 +1,49 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useCreateCheckIn, getListCheckInsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { VoiceInput } from "../components/voice-input";
+
+function pulseFeedback(v: {
+  distress: number;
+  meaning: number;
+  connection: number;
+  functioning: number;
+  safetyConcern: boolean;
+}): { lines: string[]; showSupport: boolean } {
+  const lines: string[] = [];
+  const showSupport = v.safetyConcern || (v.distress >= 8 && v.functioning <= 3);
+
+  if (v.distress >= 7) {
+    lines.push(
+      "Today carries a lot of weight. That level of pain is a real and understandable part of grieving someone who mattered.",
+    );
+  } else if (v.distress <= 3) {
+    lines.push(
+      "Today feels a little lighter. It is okay to let the steadier moments simply be what they are.",
+    );
+  } else {
+    lines.push("Today sits somewhere in the middle — some ache, and some room to breathe.");
+  }
+
+  if (v.connection >= 6) {
+    lines.push(
+      "You are still feeling close to the one you are remembering. That bond continuing is not something to move past.",
+    );
+  }
+  if (v.meaning <= 3) {
+    lines.push(
+      "Meaning feels hard to reach right now. It often returns slowly, in small pieces, and it does not need forcing.",
+    );
+  } else if (v.meaning >= 7) {
+    lines.push("A sense of meaning is present today, even alongside the loss.");
+  }
+  if (v.functioning <= 3) {
+    lines.push("Everyday tasks feel heavy. Be gentle with what you ask of yourself today.");
+  }
+
+  return { lines, showSupport };
+}
 
 function ScaleSlider({
   label,
@@ -60,17 +101,62 @@ export default function CheckIn() {
       });
       queryClient.invalidateQueries({ queryKey: getListCheckInsQueryKey() });
       setSubmitted(true);
-      setTimeout(() => setLocation("/app"), 3000);
     } catch (e) {
       console.error(e);
     }
   };
 
   if (submitted) {
+    const fb = pulseFeedback({ distress, meaning, connection, functioning, safetyConcern });
     return (
-      <div className="max-w-md mx-auto py-24 text-center space-y-6">
-        <h2 className="text-2xl font-serif">Thank you for checking in.</h2>
-        <p className="text-muted-foreground">Taking time to notice where you are is an act of gentleness.</p>
+      <div className="max-w-xl mx-auto py-16 space-y-6">
+        <div className="space-y-2 text-center">
+          <h2 className="text-2xl font-serif">Thank you for checking in.</h2>
+          <p className="text-muted-foreground">
+            Taking time to notice where you are is an act of gentleness.
+          </p>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-6 space-y-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            A gentle read on today
+          </p>
+          {fb.lines.map((line, i) => (
+            <p key={i} className="text-sm text-foreground/90 leading-relaxed">
+              {line}
+            </p>
+          ))}
+          <p className="text-xs text-muted-foreground pt-2">
+            This is a gentle reflection to sit with. You are the author of what it means.
+          </p>
+        </div>
+        {fb.showSupport && (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5">
+            <p className="text-sm text-foreground/90 leading-relaxed mb-3">
+              Today sounds especially heavy. You do not have to carry it alone — support is
+              available right now.
+            </p>
+            <Link
+              href="/crisis"
+              className="text-sm font-medium text-primary underline underline-offset-4"
+            >
+              See support options
+            </Link>
+          </div>
+        )}
+        <div className="flex justify-center gap-4 pt-2">
+          <button
+            onClick={() => setLocation("/dashboard")}
+            className="text-sm font-medium text-primary underline underline-offset-4"
+          >
+            See how this fits over time
+          </button>
+          <button
+            onClick={() => setLocation("/app")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Return home
+          </button>
+        </div>
       </div>
     );
   }

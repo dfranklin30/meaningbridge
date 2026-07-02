@@ -22,6 +22,7 @@ const CONVERSATION_TYPES: { id: string; label: string; desc: string }[] = [
   { id: "unfinished", label: "Unfinished business", desc: "Name what still feels left undone." },
   { id: "legacy", label: "Their legacy in you", desc: "Notice what of them you carry forward." },
   { id: "meaning", label: "Making meaning", desc: "Reflect on the meaning of the life you shared." },
+  { id: "voice", label: "In their own voice", desc: "Hear an imagined, gentle reply in the voice of the one you are remembering." },
 ];
 
 function LovedOneCard({
@@ -107,6 +108,8 @@ export default function CompanionList() {
   };
 
   if (cbOpen) {
+    const selectedPerson = deceasedList?.find((p) => p.id === selectedDeceasedId) ?? null;
+    const voiceNeedsPerson = conversationType === "voice" && !selectedDeceasedId;
     return (
       <div className="max-w-3xl mx-auto space-y-10">
         <div className="flex items-center gap-4">
@@ -167,16 +170,31 @@ export default function CompanionList() {
           </div>
         </section>
 
+        {conversationType === "voice" && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-xs text-muted-foreground leading-relaxed">
+            You have chosen to hear an imagined reply in{" "}
+            {selectedPerson ? `${selectedPerson.name}'s` : "their"} voice. This is a gentle comfort
+            shaped only from what you remember — not the real person, and not a channeling of them.
+            You can ask the companion to step out of the voice at any time.
+            {voiceNeedsPerson && (
+              <span className="block mt-2 text-foreground/80">
+                Choose who you are holding in mind above to continue.
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="rounded-lg border border-border bg-muted/40 p-4 text-xs text-muted-foreground leading-relaxed">
-          This companion offers reflection grounded in Dr. Robert Neimeyer's meaning reconstruction and continuing-bonds work. It is a support alongside human care, not a therapist or a replacement for one. It will not speak as the person who died unless you ask for an imagined message. You can pause or leave at any time, and the crisis link stays one tap away.
+          This companion offers reflection grounded in Dr. Robert Neimeyer's meaning-focused approach to grief and the continuing bonds philosophy. It is a support alongside human care, not a therapist or a replacement for one. It will only speak in the voice of the person who died if you choose that, and you can return to a reflective conversation at any time. You can pause or leave whenever you wish, and the crisis link stays one tap away.
         </div>
 
         <button
           onClick={() =>
             !isCreating &&
+            !voiceNeedsPerson &&
             startSession("continuing-bonds", { deceasedId: selectedDeceasedId, conversationType })
           }
-          disabled={isCreating}
+          disabled={isCreating || voiceNeedsPerson}
           className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isCreating ? "Preparing a quiet space..." : "Begin"}
@@ -224,9 +242,9 @@ export default function CompanionList() {
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-serif">Meaning Reconstruction</h2>
+            <h2 className="text-xl font-serif">Making Meaning</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              A reflective guide to help you rebuild your narrative, identity, and worldview after loss.
+              A reflective guide to help you explore and re-author your story, identity, and sense of the future after loss.
             </p>
             <div className="pt-2 flex items-center text-sm font-medium text-primary">
               <Plus className="w-4 h-4 mr-1" /> Start session

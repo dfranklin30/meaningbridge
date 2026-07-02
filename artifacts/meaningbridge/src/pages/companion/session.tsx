@@ -36,12 +36,49 @@ export default function CompanionSession() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedResponse, setStreamedResponse] = useState("");
   const [crisisAlert, setCrisisAlert] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [streamError, setStreamError] = useState(false);
   
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pendingRef = useRef("");
+  const revealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const doneRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [session?.messages, streamedResponse]);
+
+  const stopReveal = () => {
+    if (revealTimerRef.current !== null) {
+      clearInterval(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => stopReveal, []);
+
+  const finalize = () => {
+    stopReveal();
+    doneRef.current = false;
+    pendingRef.current = "";
+    queryClient.invalidateQueries({ queryKey: getGetChatSessionQueryKey(id) });
+    setIsStreaming(false);
+    setIsThinking(false);
+    setStreamedResponse("");
+  };
+
+  const startReveal = () => {
+    if (revealTimerRef.current !== null) return;
+    revealTimerRef.current = setInterval(() => {
+      if (pendingRef.current.length > 0) {
+        const take = Math.max(2, Math.ceil(pendingRef.current.length / 30));
+        setStreamedResponse((prev) => prev + pendingRef.current.slice(0, take));
+        pendingRef.current = pendingRef.current.slice(take);
+      } else if (doneRef.current) {
+        finalize();
+      }
+    }, 24);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +87,12 @@ export default function CompanionSession() {
     const userMessage = input.trim();
     setInput("");
     setIsStreaming(true);
+    setIsThinking(true);
     setStreamedResponse("");
     setCrisisAlert(false);
+    setStreamError(false);
+    pendingRef.current = "";
+    doneRef.current = false;
 
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}api/chat/sessions/${id}/messages`, {
@@ -80,13 +121,22 @@ export default function CompanionSession() {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.type === "delta" && data.text) {
-                setStreamedResponse(prev => prev + data.text);
+                setIsThinking(false);
+                pendingRef.current += data.text;
+                startReveal();
               } else if (data.type === "crisis") {
                 setCrisisAlert(true);
               } else if (data.type === "done") {
-                queryClient.invalidateQueries({ queryKey: getGetChatSessionQueryKey(id) });
+                doneRef.current = true;
+                startReveal();
+              } else if (data.type === "error") {
+                stopReveal();
+                pendingRef.current = "";
+                doneRef.current = false;
                 setIsStreaming(false);
+                setIsThinking(false);
                 setStreamedResponse("");
+                setStreamError(true);
               }
             } catch (err) {
               // Ignore parse errors on incomplete chunks
@@ -96,7 +146,12 @@ export default function CompanionSession() {
       }
     } catch (err) {
       console.error("Streaming error:", err);
+      stopReveal();
+      pendingRef.current = "";
+      doneRef.current = false;
       setIsStreaming(false);
+      setIsThinking(false);
+      setStreamError(true);
     }
   };
 
@@ -173,6 +228,21 @@ export default function CompanionSession() {
           </div>
         ))}
         
+        {isThinking && !streamedResponse && (
+          <div className="flex justify-start">
+            <div
+              className="max-w-[80%] rounded-2xl px-5 py-4 bg-card border border-border"
+              aria-label="The companion is reflecting"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-pulse [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-pulse [animation-delay:200ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-pulse [animation-delay:400ms]" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {isStreaming && streamedResponse && (
           <div className="flex justify-start">
             <div className="max-w-[80%] rounded-2xl px-5 py-4 bg-card border border-border text-foreground">
@@ -180,7 +250,16 @@ export default function CompanionSession() {
             </div>
           </div>
         )}
-        
+
+        {streamError && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-2xl px-5 py-4 bg-muted/40 border border-border text-sm text-muted-foreground leading-relaxed">
+              Something interrupted our conversation before the reply came through. Please take your
+              time, and send your message again when you are ready.
+            </div>
+          </div>
+        )}
+
         <div ref={bottomRef} />
       </div>
 

@@ -142,15 +142,20 @@ export default function JournalEditor() {
     }
   };
 
+  const [shareState, setShareState] = useState<"idle" | "sharing" | "done" | "error">("idle");
+
   const handleShareWithTeam = async () => {
-    setPrivacy("shared");
-    setSuggestShare(false);
+    setShareState("sharing");
     try {
       await updateEntry({ id: entryId, data: { ...buildData(), privacyStatus: "shared", sharedWithTherapist: true } });
+      setPrivacy("shared");
+      setSuggestShare(false);
+      setShareState("done");
       queryClient.invalidateQueries({ queryKey: getGetJournalEntryQueryKey(entryId) });
       queryClient.invalidateQueries({ queryKey: getListJournalEntriesQueryKey() });
     } catch (e) {
       console.error(e);
+      setShareState("error");
     }
   };
 
@@ -318,11 +323,22 @@ export default function JournalEditor() {
               <button
                 type="button"
                 onClick={handleShareWithTeam}
-                className="text-sm font-medium text-primary underline underline-offset-4"
+                disabled={shareState === "sharing"}
+                className="text-sm font-medium text-primary underline underline-offset-4 disabled:opacity-40 disabled:no-underline"
               >
-                Share this with my care team
+                {shareState === "sharing" ? "Sharing..." : "Share this with your care team"}
               </button>
+              {shareState === "error" && (
+                <p className="mt-2 text-xs text-destructive">
+                  This could not be shared just now. Please check your connection and try again.
+                </p>
+              )}
             </div>
+          )}
+          {(privacy === "shared" || shareState === "done") && (
+            <p className="text-xs text-muted-foreground">
+              This entry is shared with your care team. You can change who can see it above at any time.
+            </p>
           )}
         </div>
       </div>
@@ -361,7 +377,7 @@ export default function JournalEditor() {
                   onClick={() => setShowCrisis(false)}
                   className="w-full text-center text-sm text-muted-foreground py-2 hover:text-foreground transition-colors"
                 >
-                  Return to my entry
+                  Return to your entry
                 </button>
               </div>
             </motion.div>

@@ -12,8 +12,12 @@ import {
   PenLine,
   Activity,
   LogOut,
+  ChevronDown,
+  Info,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -77,12 +81,25 @@ interface MockPatient {
   engagement: number; // 0-1
   recent: { kind: "session" | "journal" | "checkin"; when: string; detail: string }[];
   summary: string;
+  excerpt?: string;
 }
 
-const TIER_META: Record<Tier, { label: string; tone: string }> = {
-  universal: { label: "Grief Literacy", tone: "bg-muted text-muted-foreground" },
-  targeted: { label: "Enhanced Support", tone: "bg-primary/10 text-primary" },
-  clinical: { label: "Specialist Support", tone: "bg-destructive/10 text-destructive" },
+const TIER_META: Record<Tier, { label: string; tone: string; desc: string }> = {
+  universal: {
+    label: "Grief Literacy",
+    tone: "bg-muted text-muted-foreground",
+    desc: "Adaptive grief. Most people here need understanding and normalization, not treatment. The companion keeps things light and unhurried.",
+  },
+  targeted: {
+    label: "Enhanced Support",
+    tone: "bg-primary/10 text-primary",
+    desc: "Some elevated difficulty. The companion adds structured prompts and check-ins, and gently nudges toward human support when rough patches persist.",
+  },
+  clinical: {
+    label: "Specialist Support",
+    tone: "bg-destructive/10 text-destructive",
+    desc: "Marked impairment. The companion consistently and warmly encourages live therapy and surfaces the referral path — it does not attempt to deliver treatment.",
+  },
 };
 
 const CONSENT_META: Record<ConsentState, { label: string; icon: typeof CheckCircle2 }> = {
@@ -111,6 +128,8 @@ const PATIENTS: MockPatient[] = [
     ],
     summary:
       "Maya has been sitting with the difference between missing David and looking for him. She named, for the first time, that some days she wants the missing to be the relationship now. She is asking, gently, whether that counts.",
+    excerpt:
+      "I keep setting two cups down in the morning. I do not think I am ready to stop, and I am starting to wonder if I have to.",
   },
   {
     id: "p2",
@@ -130,6 +149,8 @@ const PATIENTS: MockPatient[] = [
     ],
     summary:
       "James is pulling back from his sister and from work. He spoke about feeling that he should be further along. Two structured safety signals in the past week — the companion paused and surfaced the crisis page; he engaged.",
+    excerpt:
+      "Everyone keeps saying it gets easier. I nod. I do not want them to worry, so I have stopped saying much at all.",
   },
   {
     id: "p3",
@@ -149,6 +170,8 @@ const PATIENTS: MockPatient[] = [
     ],
     summary:
       "Sarah is in the middle of arranging her mother's papers and discovering letters she never knew about. She asked the companion how to tell whether she is delaying the harder grief.",
+    excerpt:
+      "I found a whole version of her I never met. I do not know whether reading these is keeping her close or keeping me stuck.",
   },
   {
     id: "p4",
@@ -201,6 +224,8 @@ const PATIENTS: MockPatient[] = [
     ],
     summary:
       "Devon has been working with the continuing-bonds practice and asked whether it would be appropriate to bring the letters into next session.",
+    excerpt:
+      "The mornings are still the hardest. But writing to him has started to feel less like losing him and more like keeping the conversation going.",
   },
 ];
 
@@ -262,6 +287,14 @@ export default function Caregiver() {
             value={String(totalFlags)}
             hint="across the past 14 days"
             accent={totalFlags > 0}
+            info={
+              <>
+                A safety signal is logged when a validated screener or the companion detects language
+                suggesting risk. The companion pauses normal flow and surfaces crisis resources.
+                When a person&apos;s consent is active, you are notified within minutes so a human
+                can reach out. Signals reflect what asks for a person, not what looks dramatic.
+              </>
+            }
           />
           <StatCard label="Average engagement" value={`${avgEngagement}%`} hint="sessions and journal" />
         </section>
@@ -338,11 +371,20 @@ export default function Caregiver() {
                 {selected.lossSummary} · {selected.monthsSinceLoss} months since loss
               </p>
               <div className="flex items-center gap-2 pt-2">
-                <span
-                  className={`inline-block text-[10px] uppercase tracking-wider px-2 py-1 rounded ${TIER_META[selected.tier].tone}`}
-                >
-                  {TIER_META[selected.tier].label}
-                </span>
+                <HoverCard openDelay={100}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      type="button"
+                      className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded ${TIER_META[selected.tier].tone}`}
+                    >
+                      {TIER_META[selected.tier].label}
+                      <Info className="w-3 h-3 opacity-70" />
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-72 text-xs leading-relaxed text-muted-foreground">
+                    {TIER_META[selected.tier].desc}
+                  </HoverCardContent>
+                </HoverCard>
                 <span className="text-xs text-muted-foreground">
                   · {CONSENT_META[selected.consent].label}
                 </span>
@@ -401,6 +443,11 @@ export default function Caregiver() {
                   </p>
                 </div>
               )}
+              <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                {selected.consent === "active"
+                  ? "Notification protocol: with consent active, a structured safety signal alerts you within minutes so a person can reach out. The companion always surfaces crisis resources regardless of consent."
+                  : "Until consent is active, safety signals are counted but no notification is sent to you. The companion still surfaces crisis resources directly to the person."}
+              </p>
             </div>
 
             {selected.consent === "active" ? (
@@ -411,6 +458,19 @@ export default function Caregiver() {
                 <p className="text-sm text-foreground/90 italic leading-relaxed border-l-2 border-border pl-3">
                   {selected.summary}
                 </p>
+                {selected.excerpt && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="group flex items-center gap-1.5 text-xs text-primary hover:underline">
+                      <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
+                      Read an excerpt they chose to share
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
+                      <p className="text-sm text-foreground/80 italic leading-relaxed border-l-2 border-primary/30 pl-3">
+                        &ldquo;{selected.excerpt}&rdquo;
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             ) : (
               <div className="rounded-md bg-muted/40 border border-border p-3 text-xs text-muted-foreground">
@@ -498,11 +558,13 @@ function StatCard({
   value,
   hint,
   accent,
+  info,
 }: {
   label: string;
   value: string;
   hint: string;
   accent?: boolean;
+  info?: React.ReactNode;
 }) {
   return (
     <div
@@ -510,7 +572,25 @@ function StatCard({
         accent ? "border-destructive/30" : "border-border"
       }`}
     >
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-1.5">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+        {info && (
+          <HoverCard openDelay={100}>
+            <HoverCardTrigger asChild>
+              <button
+                type="button"
+                className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                aria-label={`About ${label}`}
+              >
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </HoverCardTrigger>
+            <HoverCardContent className="w-72 text-xs leading-relaxed text-muted-foreground">
+              {info}
+            </HoverCardContent>
+          </HoverCard>
+        )}
+      </div>
       <p className={`mt-2 text-3xl font-serif ${accent ? "text-destructive" : ""}`}>{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
     </div>

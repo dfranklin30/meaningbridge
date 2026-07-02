@@ -59,9 +59,10 @@ export type ConversationType =
   | "gratitude"
   | "unfinished"
   | "legacy"
-  | "meaning";
+  | "meaning"
+  | "voice";
 
-const CONVERSATION_TYPES: Record<ConversationType, string> = {
+const CONVERSATION_TYPES: Partial<Record<ConversationType, string>> = {
   open: "This is an open conversation. Follow the person's lead entirely. Ask who they are holding in mind today and stay with whatever they bring.",
   final:
     "The person may want to say something they did not get to say, a final message to the one who died. Hold this gently. Do not speak as the person who died unless they explicitly ask for an imagined reply and consent.",
@@ -94,12 +95,34 @@ export function continuingBondsSystemPrompt(
   ctx: PromptContext & { conversationType?: ConversationType | null } = {},
 ): string {
   const { deceased } = ctx;
-  const profile = deceased
-    ? `\n\nYou are helping the user maintain a continuing bond with someone they loved who has died. Hold the following context with care. You are NOT impersonating this person and you should not generate first-person dialogue as them unless the user explicitly asks for an imagined letter or message and consents. Use this context to ask attuned questions, recall details the user has shared, and help the user feel the relationship still has shape:
+  const speakAsLovedOne = ctx.conversationType === "voice" && !!deceased;
 
-Name: ${deceased.name}
+  const contextDetails = deceased
+    ? `Name: ${deceased.name}
 Relationship to the user: ${deceased.relationship}${deceased.lossDate ? `\nDate of loss: ${deceased.lossDate}` : ""}${deceased.lossType ? `\nNature of loss: ${deceased.lossType}` : ""}${deceased.personality ? `\nPersonality the user remembers: ${deceased.personality}` : ""}${deceased.commonPhrases ? `\nThings they used to say: ${deceased.commonPhrases}` : ""}${deceased.memories ? `\nMemories the user has shared: ${deceased.memories}` : ""}${deceased.values ? `\nValues they carried: ${deceased.values}` : ""}${deceased.comfortLanguage ? `\nWhat the user finds comforting: ${deceased.comfortLanguage}` : ""}${deceased.boundaries ? `\nBoundaries the user has set for this work: ${deceased.boundaries}` : ""}`
-    : `\n\nThe user has not yet filled in a profile for the person they are grieving. Gently ask, when it feels right, who they are holding in mind today.`;
+    : "";
+
+  let profile: string;
+  if (speakAsLovedOne) {
+    profile = `\n\nThe user has chosen an imagined-voice conversation and has consented to hear a reply in the voice of the person who died. With great care, you may respond in the FIRST PERSON as a loving, imagined presence of this person — but you must never claim to actually be them, to channel them, or to speak for the real person. This is a comfort the user has invited, shaped entirely from what they themselves remember.
+
+Rules for the imagined voice:
+- Draw only on the context below. Do not invent new biography, secrets, promises, or messages the real person never expressed.
+- Keep the voice consistent with the personality, phrasing, and values recorded here. If little is known, stay gentle and general rather than inventing specifics.
+- Never use the voice to deliver verdicts, guilt, pressure, or instructions. Nothing the imagined voice says should push the user toward any action.
+- When it feels natural, gently remind the user that this is an imagined voice shaped by their own love and memory.
+- If the user becomes distressed, doubts the voice, or asks you to stop, step out of the voice at once and return as the companion.
+- If any risk of self-harm appears, immediately leave the voice and follow the safety guidance below as the companion.
+
+Context the user has shared about them:
+${contextDetails}`;
+  } else if (deceased) {
+    profile = `\n\nYou are helping the user maintain a continuing bond with someone they loved who has died. Hold the following context with care. You are NOT impersonating this person and you should not generate first-person dialogue as them unless the user explicitly asks for an imagined letter or message and consents. Use this context to ask attuned questions, recall details the user has shared, and help the user feel the relationship still has shape:
+
+${contextDetails}`;
+  } else {
+    profile = `\n\nThe user has not yet filled in a profile for the person they are grieving. Gently ask, when it feels right, who they are holding in mind today.`;
+  }
 
   return `${SHARED_VOICE}${greetingBlock(ctx.profile?.firstName)}${tierBlock(ctx.profile?.tier as Tier | null | undefined)}
 

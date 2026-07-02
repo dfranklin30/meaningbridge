@@ -1,1 +1,2 @@
-- [Generated API client base URL](api-client-base-url.md) — Orval client isn't BASE_URL-aware (setBaseUrl never called); works only because app is root-mounted. Also holds the journal-save debugging conclusion.
+- [Companion SSE contract](companion-sse.md) — chat stream emits delta|crisis|done|error frames; the client must reset streaming/thinking state on error, not just done.
+- [Continuing-bonds voice mode](continuing-bonds-voice.md) — opt-in first-person "as the deceased" mode is a real feature; conversationType is a free string, so new modes need no codegen.

@@ -7,6 +7,11 @@ import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
 import { LivingBackground } from "@/components/living-background";
+import neimeyerPortrait from "@assets/image_1782985313122.png";
+import lectureCongress from "@assets/image_1782985283687.png";
+import lectureAudience from "@assets/image_1782985270880.png";
+import lectureGreen from "@assets/image_1782985276701.png";
+import lectureTie from "@assets/image_1782985295812.png";
 
 export default function LandingPage() {
   const [origin, setOrigin] = useState("");
@@ -75,12 +80,20 @@ export default function LandingPage() {
             <h1 className="font-serif text-5xl md:text-6xl leading-[1.05] tracking-tight">
               MeaningBridge <span className="text-primary">is coming to you.</span>
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed font-serif italic">
-              Brought to you by Dr. Robert Neimeyer.
-            </p>
+            <div className="flex items-center gap-3">
+              <img
+                src={neimeyerPortrait}
+                alt="Dr. Robert Neimeyer"
+                className="w-12 h-12 rounded-full object-cover border border-border shadow-sm"
+              />
+              <p className="text-lg text-muted-foreground leading-relaxed font-serif italic">
+                Brought to you by Dr. Robert Neimeyer.
+              </p>
+            </div>
             <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg">
-              A warm, AI-assisted grief companion grounded in a meaning-oriented,
-              continuing-bonds approach. A bridge between sessions. A bridge between worlds.
+              A warm, AI-assisted grief companion grounded in Dr. Robert Neimeyer's
+              meaning-focused approach to grief and the continuing bonds philosophy.
+              A bridge between sessions. A bridge between worlds.
             </p>
 
             <div className="flex flex-wrap gap-3 pt-2">
@@ -229,7 +242,7 @@ export default function LandingPage() {
               {
                 title: "AI companion",
                 body:
-                  "A warm, unhurried presence trained in meaning-oriented, continuing-bonds care.",
+                  "A warm, unhurried presence rooted in a meaning-focused approach and the continuing bonds philosophy.",
               },
               {
                 title: "Journal",
@@ -275,6 +288,61 @@ export default function LandingPage() {
               Enter the experience
               <ArrowRight className="w-4 h-4" />
             </Link>
+          </div>
+        </section>
+
+        {/* About Dr. Neimeyer */}
+        <section className="max-w-6xl mx-auto mt-24 md:mt-32">
+          <div className="rounded-3xl bg-card/70 backdrop-blur border border-border p-8 md:p-12 shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.15)]">
+            <div className="grid md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-center">
+              <img
+                src={neimeyerPortrait}
+                alt="Dr. Robert Neimeyer"
+                className="w-40 h-40 md:w-48 md:h-48 rounded-2xl object-cover mx-auto shadow-md"
+              />
+              <div className="space-y-4">
+                <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
+                  The mind behind MeaningBridge
+                </p>
+                <h2 className="font-serif text-3xl md:text-4xl tracking-tight">
+                  Dr. Robert Neimeyer
+                </h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  Dr. Robert Neimeyer is one of the world's foremost authorities on grief and
+                  bereavement. MeaningBridge is grounded in his meaning-focused approach to grief
+                  and the continuing bonds philosophy he has helped shape — bringing decades of
+                  clinical scholarship into a warm, everyday companion.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Learn more at the{" "}
+                  <a
+                    href="https://portlandinstitute.org/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Portland Institute for Loss and Transition
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-10">
+              {[lectureCongress, lectureAudience, lectureGreen, lectureTie].map((src, i) => (
+                <div
+                  key={i}
+                  className="aspect-[4/3] rounded-xl overflow-hidden border border-border bg-secondary/30"
+                >
+                  <img
+                    src={src}
+                    alt="Dr. Robert Neimeyer speaking"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>

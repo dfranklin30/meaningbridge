@@ -267,6 +267,25 @@ export default function ProviderIntake() {
     if (ok !== null) setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
 
+  async function goToStep(target: number) {
+    if (target === step || saving || submitting) return;
+    setFormError(null);
+    // Moving back is always allowed; persist the draft so nothing is lost.
+    if (target < step) {
+      await saveDraft();
+      setStep(target);
+      return;
+    }
+    // Moving forward past patient identity requires at least a first name.
+    if (target > 1 && !form.identity.firstName.trim()) {
+      setFormError("A first name is needed to continue.");
+      setStep(1);
+      return;
+    }
+    const ok = await saveDraft();
+    if (ok !== null) setStep(target);
+  }
+
   async function saveAndExit() {
     const ok = await saveDraft();
     // Only leave once the draft is safely persisted, so partially-entered PHI
@@ -322,18 +341,26 @@ export default function ProviderIntake() {
       <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
         {STEPS.map((label, i) => (
           <li key={label} className="flex items-center gap-2">
-            <span
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${
-                i < step
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : i === step
-                    ? "border-primary text-primary"
-                    : "border-border text-muted-foreground"
-              }`}
+            <button
+              type="button"
+              onClick={() => goToStep(i)}
+              disabled={saving || submitting}
+              aria-current={i === step ? "step" : undefined}
+              className="flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-secondary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {i < step ? <Check className="h-3 w-3" /> : i + 1}
-            </span>
-            <span className={i === step ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+              <span
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-[11px] ${
+                  i < step
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : i === step
+                      ? "border-primary text-primary"
+                      : "border-border text-muted-foreground"
+                }`}
+              >
+                {i < step ? <Check className="h-3 w-3" /> : i + 1}
+              </span>
+              <span className={i === step ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+            </button>
             {i < STEPS.length - 1 && <span className="text-border">·</span>}
           </li>
         ))}

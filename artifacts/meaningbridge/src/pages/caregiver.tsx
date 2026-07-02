@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Show, useClerk } from "@clerk/react";
+import { useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   ShieldAlert,
@@ -14,6 +16,7 @@ import {
   LogOut,
   ChevronDown,
   Info,
+  HeartHandshake,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -23,6 +26,23 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function CaregiverAccountNav() {
   const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const updateMe = useUpdateMe();
+
+  const switchToGrieving = () => {
+    if (updateMe.isPending) return;
+    updateMe.mutate(
+      { data: { role: "seeker" } },
+      {
+        onSuccess: (updated) => {
+          queryClient.setQueryData(getGetMeQueryKey(), updated);
+          setLocation("/app");
+        },
+      },
+    );
+  };
+
   return (
     <>
       <Show when="signed-out">
@@ -46,6 +66,18 @@ function CaregiverAccountNav() {
         <Link href="/pricing" className="hover:text-foreground transition-colors">
           Plans
         </Link>
+        <button
+          type="button"
+          onClick={switchToGrieving}
+          disabled={updateMe.isPending}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md border border-border hover:border-foreground transition-colors disabled:opacity-60"
+        >
+          <HeartHandshake className="w-3.5 h-3.5" />
+          {updateMe.isPending ? "Switching..." : "Grieving experience"}
+        </button>
+        {updateMe.isError && (
+          <span className="text-xs text-destructive">Could not switch. Please try again.</span>
+        )}
         <button
           type="button"
           onClick={() => signOut({ redirectUrl: basePath || "/" })}

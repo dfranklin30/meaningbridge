@@ -1,13 +1,29 @@
 import { useState, useEffect } from "react";
-import { useGetProfile, useUpdateProfile, getGetProfileQueryKey, useListSafetyEvents } from "@workspace/api-client-react";
+import { useLocation } from "wouter";
+import { useGetProfile, useUpdateProfile, getGetProfileQueryKey, useListSafetyEvents, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Save, Check, Shield } from "lucide-react";
+import { Save, Check, Shield, Users } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Settings() {
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const { data: profile } = useGetProfile();
   const { data: events } = useListSafetyEvents();
+  const updateMe = useUpdateMe();
+
+  const switchToProfessional = () => {
+    if (updateMe.isPending) return;
+    updateMe.mutate(
+      { data: { role: "professional" } },
+      {
+        onSuccess: (updated) => {
+          queryClient.setQueryData(getGetMeQueryKey(), updated);
+          setLocation("/caregiver");
+        },
+      },
+    );
+  };
   
   const [formData, setFormData] = useState({
     name: "",
@@ -207,6 +223,28 @@ export default function Settings() {
                 </div>
               ))}
             </div>
+          )}
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-serif border-b border-border/50 pb-2 flex items-center gap-2">
+            <Users className="w-5 h-5 text-muted-foreground" /> Professional portal
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            If you are a clinician, you can switch to the professional portal to see the care-team
+            view. You can return to the grieving experience from there at any time.
+          </p>
+          <button
+            type="button"
+            onClick={switchToProfessional}
+            disabled={updateMe.isPending}
+            className="inline-flex items-center gap-2 border border-border rounded-md px-4 py-2 text-sm font-medium hover:border-foreground disabled:opacity-60 transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            {updateMe.isPending ? "Switching..." : "Switch to professional portal"}
+          </button>
+          {updateMe.isError && (
+            <p className="text-sm text-destructive">Could not switch right now. Please try again.</p>
           )}
         </section>
       </div>

@@ -11,6 +11,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Anchor, Plus, ArrowLeft, Check, User } from "lucide-react";
 import { format } from "date-fns";
+import { CompanionPanels } from "@/components/companion-panels";
 
 type DeceasedProfile = { id: number; name: string; relationship: string };
 
@@ -251,6 +252,10 @@ export default function CompanionList() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="pt-8 border-t border-border/50">
+        <CompanionPanels />
       </div>
 
       {sessions && sessions.length > 0 && (

@@ -21,6 +21,7 @@ import {
   type ConversationType,
 } from "../lib/prompts";
 import { requireAuth } from "../middlewares/requireAuth";
+import { listMemories, memoryBlock, extractAndStoreMemories } from "../lib/companionMemory";
 
 const router: IRouter = Router();
 
@@ -94,6 +95,8 @@ router.post("/sessions/:id/messages", async (req, res) => {
     .where(eq(profileTable.userId, req.userId!))
     .limit(1);
 
+  const memories = await listMemories(req.userId!);
+
   let systemPrompt: string;
   if (session.mode === "continuing-bonds") {
     let deceased = null;
@@ -112,6 +115,7 @@ router.post("/sessions/:id/messages", async (req, res) => {
   } else {
     systemPrompt = meaningSystemPrompt({ profile: profile ?? null });
   }
+  systemPrompt += memoryBlock(memories);
 
   const history = await db.select().from(chatMessagesTable).where(eq(chatMessagesTable.sessionId, id)).orderBy(asc(chatMessagesTable.createdAt));
 
@@ -145,6 +149,14 @@ router.post("/sessions/:id/messages", async (req, res) => {
       crisisFlag: false,
     });
     send({ type: "done" });
+    // Fire-and-forget: distil durable facts from this exchange so the companion
+    // remembers across sessions. Never blocks the response.
+    void extractAndStoreMemories({
+      userId: req.userId!,
+      userText: body.content,
+      assistantText: assistant,
+      existing: memories.map((m) => m.content),
+    });
   } catch (err) {
     req.log.error({ err }, "chat stream error");
     send({ type: "error", message: err instanceof Error ? err.message : "stream failed" });

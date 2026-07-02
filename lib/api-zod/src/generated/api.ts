@@ -2085,3 +2085,300 @@ export const UpsertIntegrationConnectionBody = zod
 export const DeleteIntegrationConnectionParams = zod.object({
   id: zod.coerce.number(),
 });
+
+/**
+ * @summary Durable things the companion remembers about the person (their own content).
+ */
+export const ListCompanionMemoryResponseItem = zod.object({
+  id: zod.number(),
+  content: zod.string(),
+  category: zod.string(),
+  source: zod.enum(["companion", "user"]),
+  createdAt: zod.coerce.date(),
+});
+export const ListCompanionMemoryResponse = zod.array(
+  ListCompanionMemoryResponseItem,
+);
+
+export const AddCompanionMemoryBody = zod.object({
+  content: zod.string().min(1),
+  category: zod.string().optional(),
+});
+
+export const DeleteCompanionMemoryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Gentle practice/ritual invitations the companion has offered or the person has kept.
+ */
+export const ListCompanionTasksResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  body: zod.string().nullish(),
+  practiceSlug: zod.string().nullish(),
+  status: zod.enum(["suggested", "active", "completed", "dismissed"]),
+  source: zod.enum(["companion", "user"]),
+  dueAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListCompanionTasksResponse = zod.array(
+  ListCompanionTasksResponseItem,
+);
+
+export const CreateCompanionTaskBody = zod.object({
+  title: zod.string().min(1),
+  body: zod.string().optional(),
+  practiceSlug: zod.string().optional(),
+  dueAt: zod.coerce.date().optional(),
+  status: zod
+    .enum(["suggested", "active", "completed", "dismissed"])
+    .optional(),
+});
+
+export const UpdateCompanionTaskParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateCompanionTaskBody = zod.object({
+  status: zod
+    .enum(["suggested", "active", "completed", "dismissed"])
+    .optional(),
+  dueAt: zod.coerce.date().nullish(),
+});
+
+export const UpdateCompanionTaskResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  body: zod.string().nullish(),
+  practiceSlug: zod.string().nullish(),
+  status: zod.enum(["suggested", "active", "completed", "dismissed"]),
+  source: zod.enum(["companion", "user"]),
+  dueAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary The person's proactive check-in cadence, quiet hours, and pause switch.
+ */
+export const GetOutreachPreferencesResponse = zod.object({
+  checkinsEnabled: zod.boolean(),
+  cadenceDays: zod.number(),
+  taskRemindersEnabled: zod.boolean(),
+  quietStartHour: zod.number(),
+  quietEndHour: zod.number(),
+  timezone: zod.string(),
+  channel: zod.string(),
+  paused: zod.boolean(),
+  lastCheckinAt: zod.coerce.date().nullish(),
+});
+
+export const updateOutreachPreferencesBodyCadenceDaysMax = 90;
+
+export const updateOutreachPreferencesBodyQuietStartHourMin = 0;
+export const updateOutreachPreferencesBodyQuietStartHourMax = 23;
+
+export const updateOutreachPreferencesBodyQuietEndHourMin = 0;
+export const updateOutreachPreferencesBodyQuietEndHourMax = 23;
+
+export const UpdateOutreachPreferencesBody = zod.object({
+  checkinsEnabled: zod.boolean().optional(),
+  cadenceDays: zod
+    .number()
+    .min(1)
+    .max(updateOutreachPreferencesBodyCadenceDaysMax)
+    .optional(),
+  taskRemindersEnabled: zod.boolean().optional(),
+  quietStartHour: zod
+    .number()
+    .min(updateOutreachPreferencesBodyQuietStartHourMin)
+    .max(updateOutreachPreferencesBodyQuietStartHourMax)
+    .optional(),
+  quietEndHour: zod
+    .number()
+    .min(updateOutreachPreferencesBodyQuietEndHourMin)
+    .max(updateOutreachPreferencesBodyQuietEndHourMax)
+    .optional(),
+  timezone: zod.string().optional(),
+  paused: zod.boolean().optional(),
+});
+
+export const UpdateOutreachPreferencesResponse = zod.object({
+  checkinsEnabled: zod.boolean(),
+  cadenceDays: zod.number(),
+  taskRemindersEnabled: zod.boolean(),
+  quietStartHour: zod.number(),
+  quietEndHour: zod.number(),
+  timezone: zod.string(),
+  channel: zod.string(),
+  paused: zod.boolean(),
+  lastCheckinAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Metadata-only engagement + safety signals for a patient (never any patient content).
+ */
+export const GetPatientEngagementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetPatientEngagementResponse = zod
+  .object({
+    patientId: zod.number(),
+    status: zod.string(),
+    tier: zod.string().nullish(),
+    sessionCount: zod.number(),
+    lastActiveAt: zod.coerce.date().nullish(),
+    companionMessageCount: zod.number(),
+    journalEntryCount: zod.number(),
+    checkinCount: zod.number(),
+    lastCheckinAt: zod.coerce.date().nullish(),
+    safetyEventCount: zod.number(),
+    openSafetyEventCount: zod.number(),
+    lastSafetyEventAt: zod.coerce.date().nullish(),
+  })
+  .describe(
+    "Metadata-only engagement + safety signals. Contains counts and timestamps, never any patient content.",
+  );
+
+/**
+ * @summary Ask the MeaningBridge provider assistant about a patient. Answers from metadata only.
+ */
+export const AskProviderAssistantParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AskProviderAssistantBody = zod.object({
+  question: zod.string().min(1),
+});
+
+export const AskProviderAssistantResponse = zod.object({
+  answer: zod.string(),
+});
+
+export const ListPatientAppointmentsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListPatientAppointmentsResponseItem = zod.object({
+  id: zod.number(),
+  patientId: zod.number(),
+  providerUserId: zod.number(),
+  title: zod.string(),
+  startsAt: zod.coerce.date(),
+  endsAt: zod.coerce.date(),
+  status: zod.enum(["proposed", "confirmed", "declined", "cancelled"]),
+  location: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  googleEventId: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListPatientAppointmentsResponse = zod.array(
+  ListPatientAppointmentsResponseItem,
+);
+
+/**
+ * @summary Propose a session time; emails the patient a confirm/decline link and mirrors to calendar when connected.
+ */
+export const ProposeAppointmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ProposeAppointmentBody = zod.object({
+  title: zod.string().optional(),
+  startsAt: zod.coerce.date(),
+  endsAt: zod.coerce.date(),
+  location: zod.string().optional(),
+  notes: zod.string().optional(),
+});
+
+export const CancelAppointmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CancelAppointmentResponse = zod.object({
+  id: zod.number(),
+  patientId: zod.number(),
+  providerUserId: zod.number(),
+  title: zod.string(),
+  startsAt: zod.coerce.date(),
+  endsAt: zod.coerce.date(),
+  status: zod.enum(["proposed", "confirmed", "declined", "cancelled"]),
+  location: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  googleEventId: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary The provider's calendar-sync setting and whether Google Calendar is connected.
+ */
+export const GetProviderCalendarResponse = zod.object({
+  provider: zod.string(),
+  calendarId: zod.string(),
+  syncEnabled: zod.boolean(),
+  connected: zod
+    .boolean()
+    .describe(
+      "Whether a Google Calendar account is connected at the platform level.",
+    ),
+});
+
+export const UpdateProviderCalendarBody = zod.object({
+  calendarId: zod.string().optional(),
+  syncEnabled: zod.boolean().optional(),
+});
+
+export const UpdateProviderCalendarResponse = zod.object({
+  provider: zod.string(),
+  calendarId: zod.string(),
+  syncEnabled: zod.boolean(),
+  connected: zod
+    .boolean()
+    .describe(
+      "Whether a Google Calendar account is connected at the platform level.",
+    ),
+});
+
+/**
+ * @summary Public, token-gated view of a proposed appointment for the patient to confirm or decline.
+ */
+export const GetAppointmentByTokenParams = zod.object({
+  token: zod.coerce.string(),
+});
+
+export const GetAppointmentByTokenResponse = zod
+  .object({
+    title: zod.string(),
+    startsAt: zod.coerce.date(),
+    endsAt: zod.coerce.date(),
+    status: zod.enum(["proposed", "confirmed", "declined", "cancelled"]),
+    providerName: zod.string().nullish(),
+    location: zod.string().nullish(),
+  })
+  .describe(
+    "The limited, no-login view a patient sees when confirming an appointment.",
+  );
+
+export const RespondToAppointmentParams = zod.object({
+  token: zod.coerce.string(),
+});
+
+export const RespondToAppointmentBody = zod.object({
+  decision: zod.enum(["confirm", "decline"]),
+});
+
+export const RespondToAppointmentResponse = zod
+  .object({
+    title: zod.string(),
+    startsAt: zod.coerce.date(),
+    endsAt: zod.coerce.date(),
+    status: zod.enum(["proposed", "confirmed", "declined", "cancelled"]),
+    providerName: zod.string().nullish(),
+    location: zod.string().nullish(),
+  })
+  .describe(
+    "The limited, no-login view a patient sees when confirming an appointment.",
+  );

@@ -4,6 +4,7 @@ import { useGetProfile, useUpdateProfile, getGetProfileQueryKey, useListSafetyEv
 import { useQueryClient } from "@tanstack/react-query";
 import { Save, Check, Shield, Users } from "lucide-react";
 import { format } from "date-fns";
+import { OutreachSettings } from "@/components/outreach-settings";
 
 // Mirrors the player's reduce-motion handling: when the OS "reduce motion"
 // setting is active, the breath chime and haptic are suppressed, so we let the
@@ -252,6 +253,8 @@ export default function Settings() {
             </label>
           </div>
         </section>
+
+        <OutreachSettings />
 
         <section className="space-y-6">
           <h2 className="text-xl font-serif border-b border-border/50 pb-2 flex items-center gap-2">

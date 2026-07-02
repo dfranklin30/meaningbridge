@@ -9,6 +9,7 @@ import securityRouter from "./professionalSecurity";
 import directoryRouter from "./professionalDirectory";
 import adminRouter from "./professionalAdmin";
 import patientsRouter from "./professionalPatients";
+import careRouter from "./professionalCare";
 import intakesRouter from "./professionalIntakes";
 import referralsRouter from "./professionalReferrals";
 import integrationsRouter from "./professionalIntegrations";
@@ -53,6 +54,7 @@ router.use(providerGate, integrationsCallbackRouter);
 // Applied at mount so no individual PHI route can forget the gate.
 const phiGate = [requireAuth, requireProfessional, requireVerifiedProvider, requireTwoFactor];
 router.use(phiGate, patientsRouter);
+router.use(phiGate, careRouter);
 router.use(phiGate, intakesRouter);
 router.use(phiGate, referralsRouter);
 router.use(phiGate, integrationsRouter);

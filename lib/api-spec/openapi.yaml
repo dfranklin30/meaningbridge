@@ -36,6 +36,10 @@ tags:
     description: Object storage upload and serving endpoints
   - name: professional
     description: Professional (clinician) portal — providers, patients, intake, consent, referrals, integrations
+  - name: companion
+    description: Companion agent — durable memory, gentle task invitations, and proactive outreach preferences
+  - name: appointments
+    description: Public, token-gated appointment confirmation for patients
 paths:
   /me:
     get:
@@ -1699,8 +1703,482 @@ paths:
         "204":
           description: Deleted
 
+  /companion/memory:
+    get:
+      operationId: listCompanionMemory
+      tags: [companion]
+      summary: Durable things the companion remembers about the person (their own content).
+      responses:
+        "200":
+          description: Memory entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CompanionMemory" }
+    post:
+      operationId: addCompanionMemory
+      tags: [companion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompanionMemoryInput" }
+      responses:
+        "201":
+          description: Created memory entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CompanionMemory" }
+
+  /companion/memory/{id}:
+    delete:
+      operationId: deleteCompanionMemory
+      tags: [companion]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /companion/tasks:
+    get:
+      operationId: listCompanionTasks
+      tags: [companion]
+      summary: Gentle practice/ritual invitations the companion has offered or the person has kept.
+      responses:
+        "200":
+          description: Companion tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CompanionTask" }
+    post:
+      operationId: createCompanionTask
+      tags: [companion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompanionTaskInput" }
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CompanionTask" }
+
+  /companion/tasks/{id}:
+    patch:
+      operationId: updateCompanionTask
+      tags: [companion]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CompanionTaskUpdate" }
+      responses:
+        "200":
+          description: Updated task
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CompanionTask" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /companion/outreach:
+    get:
+      operationId: getOutreachPreferences
+      tags: [companion]
+      summary: The person's proactive check-in cadence, quiet hours, and pause switch.
+      responses:
+        "200":
+          description: Outreach preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OutreachPreferences" }
+    put:
+      operationId: updateOutreachPreferences
+      tags: [companion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OutreachPreferencesInput" }
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OutreachPreferences" }
+
+  /professional/patients/{id}/engagement:
+    get:
+      operationId: getPatientEngagement
+      tags: [professional]
+      summary: Metadata-only engagement + safety signals for a patient (never any patient content).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Engagement metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PatientEngagement" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/patients/{id}/assistant:
+    post:
+      operationId: askProviderAssistant
+      tags: [professional]
+      summary: Ask the MeaningBridge provider assistant about a patient. Answers from metadata only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderAssistantInput" }
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProviderAssistantReply" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/patients/{id}/appointments:
+    get:
+      operationId: listPatientAppointments
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Appointment" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    post:
+      operationId: proposeAppointment
+      tags: [professional]
+      summary: Propose a session time; emails the patient a confirm/decline link and mirrors to calendar when connected.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AppointmentInput" }
+      responses:
+        "201":
+          description: Proposed appointment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/appointments/{id}/cancel:
+    post:
+      operationId: cancelAppointment
+      tags: [professional]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Cancelled appointment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
+  /professional/calendar:
+    get:
+      operationId: getProviderCalendar
+      tags: [professional]
+      summary: The provider's calendar-sync setting and whether Google Calendar is connected.
+      responses:
+        "200":
+          description: Calendar setting
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProviderCalendar" }
+    put:
+      operationId: updateProviderCalendar
+      tags: [professional]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProviderCalendarInput" }
+      responses:
+        "200":
+          description: Updated calendar setting
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProviderCalendar" }
+
+  /appointments/{token}:
+    get:
+      operationId: getAppointmentByToken
+      tags: [appointments]
+      summary: Public, token-gated view of a proposed appointment for the patient to confirm or decline.
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Appointment public view
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppointmentPublicView" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    post:
+      operationId: respondToAppointment
+      tags: [appointments]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AppointmentRespondInput" }
+      responses:
+        "200":
+          description: Updated appointment public view
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppointmentPublicView" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
 components:
   schemas:
+    CompanionMemory:
+      type: object
+      properties:
+        id: { type: integer }
+        content: { type: string }
+        category: { type: string }
+        source: { type: string, enum: [companion, user] }
+        createdAt: { type: string, format: date-time }
+      required: [id, content, category, source, createdAt]
+
+    CompanionMemoryInput:
+      type: object
+      properties:
+        content: { type: string, minLength: 1 }
+        category: { type: string }
+      required: [content]
+
+    CompanionTask:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        body: { type: ["string", "null"] }
+        practiceSlug: { type: ["string", "null"] }
+        status: { type: string, enum: [suggested, active, completed, dismissed] }
+        source: { type: string, enum: [companion, user] }
+        dueAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, status, source, createdAt]
+
+    CompanionTaskInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        body: { type: string }
+        practiceSlug: { type: string }
+        dueAt: { type: string, format: date-time }
+        status: { type: string, enum: [suggested, active, completed, dismissed] }
+      required: [title]
+
+    CompanionTaskUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [suggested, active, completed, dismissed] }
+        dueAt: { type: ["string", "null"], format: date-time }
+
+    OutreachPreferences:
+      type: object
+      properties:
+        checkinsEnabled: { type: boolean }
+        cadenceDays: { type: integer }
+        taskRemindersEnabled: { type: boolean }
+        quietStartHour: { type: integer }
+        quietEndHour: { type: integer }
+        timezone: { type: string }
+        channel: { type: string }
+        paused: { type: boolean }
+        lastCheckinAt: { type: ["string", "null"], format: date-time }
+      required:
+        [checkinsEnabled, cadenceDays, taskRemindersEnabled, quietStartHour, quietEndHour, timezone, channel, paused]
+
+    OutreachPreferencesInput:
+      type: object
+      properties:
+        checkinsEnabled: { type: boolean }
+        cadenceDays: { type: integer, minimum: 1, maximum: 90 }
+        taskRemindersEnabled: { type: boolean }
+        quietStartHour: { type: integer, minimum: 0, maximum: 23 }
+        quietEndHour: { type: integer, minimum: 0, maximum: 23 }
+        timezone: { type: string }
+        paused: { type: boolean }
+
+    PatientEngagement:
+      type: object
+      description: Metadata-only engagement + safety signals. Contains counts and timestamps, never any patient content.
+      properties:
+        patientId: { type: integer }
+        status: { type: string }
+        tier: { type: ["string", "null"] }
+        sessionCount: { type: integer }
+        lastActiveAt: { type: ["string", "null"], format: date-time }
+        companionMessageCount: { type: integer }
+        journalEntryCount: { type: integer }
+        checkinCount: { type: integer }
+        lastCheckinAt: { type: ["string", "null"], format: date-time }
+        safetyEventCount: { type: integer }
+        openSafetyEventCount: { type: integer }
+        lastSafetyEventAt: { type: ["string", "null"], format: date-time }
+      required:
+        [patientId, status, sessionCount, companionMessageCount, journalEntryCount, checkinCount, safetyEventCount, openSafetyEventCount]
+
+    ProviderAssistantInput:
+      type: object
+      properties:
+        question: { type: string, minLength: 1 }
+      required: [question]
+
+    ProviderAssistantReply:
+      type: object
+      properties:
+        answer: { type: string }
+      required: [answer]
+
+    Appointment:
+      type: object
+      properties:
+        id: { type: integer }
+        patientId: { type: integer }
+        providerUserId: { type: integer }
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        status: { type: string, enum: [proposed, confirmed, declined, cancelled] }
+        location: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        googleEventId: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, patientId, providerUserId, title, startsAt, endsAt, status, createdAt]
+
+    AppointmentInput:
+      type: object
+      properties:
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        location: { type: string }
+        notes: { type: string }
+      required: [startsAt, endsAt]
+
+    AppointmentPublicView:
+      type: object
+      description: The limited, no-login view a patient sees when confirming an appointment.
+      properties:
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        status: { type: string, enum: [proposed, confirmed, declined, cancelled] }
+        providerName: { type: ["string", "null"] }
+        location: { type: ["string", "null"] }
+      required: [title, startsAt, endsAt, status]
+
+    AppointmentRespondInput:
+      type: object
+      properties:
+        decision: { type: string, enum: [confirm, decline] }
+      required: [decision]
+
+    ProviderCalendar:
+      type: object
+      properties:
+        provider: { type: string }
+        calendarId: { type: string }
+        syncEnabled: { type: boolean }
+        connected: { type: boolean, description: Whether a Google Calendar account is connected at the platform level. }
+      required: [provider, calendarId, syncEnabled, connected]
+
+    ProviderCalendarInput:
+      type: object
+      properties:
+        calendarId: { type: string }
+        syncEnabled: { type: boolean }
+
     ProfessionalMeta:
       type: object
       description: Static reference data shared by the provider onboarding, intake, and integrations UIs.

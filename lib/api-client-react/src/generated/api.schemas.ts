@@ -5,6 +5,247 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+export type CompanionMemorySource =
+  (typeof CompanionMemorySource)[keyof typeof CompanionMemorySource];
+
+export const CompanionMemorySource = {
+  companion: "companion",
+  user: "user",
+} as const;
+
+export interface CompanionMemory {
+  id: number;
+  content: string;
+  category: string;
+  source: CompanionMemorySource;
+  createdAt: string;
+}
+
+export interface CompanionMemoryInput {
+  /** @minLength 1 */
+  content: string;
+  category?: string;
+}
+
+export type CompanionTaskStatus =
+  (typeof CompanionTaskStatus)[keyof typeof CompanionTaskStatus];
+
+export const CompanionTaskStatus = {
+  suggested: "suggested",
+  active: "active",
+  completed: "completed",
+  dismissed: "dismissed",
+} as const;
+
+export type CompanionTaskSource =
+  (typeof CompanionTaskSource)[keyof typeof CompanionTaskSource];
+
+export const CompanionTaskSource = {
+  companion: "companion",
+  user: "user",
+} as const;
+
+export interface CompanionTask {
+  id: number;
+  title: string;
+  /** @nullable */
+  body?: string | null;
+  /** @nullable */
+  practiceSlug?: string | null;
+  status: CompanionTaskStatus;
+  source: CompanionTaskSource;
+  /** @nullable */
+  dueAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+}
+
+export type CompanionTaskInputStatus =
+  (typeof CompanionTaskInputStatus)[keyof typeof CompanionTaskInputStatus];
+
+export const CompanionTaskInputStatus = {
+  suggested: "suggested",
+  active: "active",
+  completed: "completed",
+  dismissed: "dismissed",
+} as const;
+
+export interface CompanionTaskInput {
+  /** @minLength 1 */
+  title: string;
+  body?: string;
+  practiceSlug?: string;
+  dueAt?: string;
+  status?: CompanionTaskInputStatus;
+}
+
+export type CompanionTaskUpdateStatus =
+  (typeof CompanionTaskUpdateStatus)[keyof typeof CompanionTaskUpdateStatus];
+
+export const CompanionTaskUpdateStatus = {
+  suggested: "suggested",
+  active: "active",
+  completed: "completed",
+  dismissed: "dismissed",
+} as const;
+
+export interface CompanionTaskUpdate {
+  status?: CompanionTaskUpdateStatus;
+  /** @nullable */
+  dueAt?: string | null;
+}
+
+export interface OutreachPreferences {
+  checkinsEnabled: boolean;
+  cadenceDays: number;
+  taskRemindersEnabled: boolean;
+  quietStartHour: number;
+  quietEndHour: number;
+  timezone: string;
+  channel: string;
+  paused: boolean;
+  /** @nullable */
+  lastCheckinAt?: string | null;
+}
+
+export interface OutreachPreferencesInput {
+  checkinsEnabled?: boolean;
+  /**
+   * @minimum 1
+   * @maximum 90
+   */
+  cadenceDays?: number;
+  taskRemindersEnabled?: boolean;
+  /**
+   * @minimum 0
+   * @maximum 23
+   */
+  quietStartHour?: number;
+  /**
+   * @minimum 0
+   * @maximum 23
+   */
+  quietEndHour?: number;
+  timezone?: string;
+  paused?: boolean;
+}
+
+/**
+ * Metadata-only engagement + safety signals. Contains counts and timestamps, never any patient content.
+ */
+export interface PatientEngagement {
+  patientId: number;
+  status: string;
+  /** @nullable */
+  tier?: string | null;
+  sessionCount: number;
+  /** @nullable */
+  lastActiveAt?: string | null;
+  companionMessageCount: number;
+  journalEntryCount: number;
+  checkinCount: number;
+  /** @nullable */
+  lastCheckinAt?: string | null;
+  safetyEventCount: number;
+  openSafetyEventCount: number;
+  /** @nullable */
+  lastSafetyEventAt?: string | null;
+}
+
+export interface ProviderAssistantInput {
+  /** @minLength 1 */
+  question: string;
+}
+
+export interface ProviderAssistantReply {
+  answer: string;
+}
+
+export type AppointmentStatus =
+  (typeof AppointmentStatus)[keyof typeof AppointmentStatus];
+
+export const AppointmentStatus = {
+  proposed: "proposed",
+  confirmed: "confirmed",
+  declined: "declined",
+  cancelled: "cancelled",
+} as const;
+
+export interface Appointment {
+  id: number;
+  patientId: number;
+  providerUserId: number;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentStatus;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  googleEventId?: string | null;
+  createdAt: string;
+}
+
+export interface AppointmentInput {
+  title?: string;
+  startsAt: string;
+  endsAt: string;
+  location?: string;
+  notes?: string;
+}
+
+export type AppointmentPublicViewStatus =
+  (typeof AppointmentPublicViewStatus)[keyof typeof AppointmentPublicViewStatus];
+
+export const AppointmentPublicViewStatus = {
+  proposed: "proposed",
+  confirmed: "confirmed",
+  declined: "declined",
+  cancelled: "cancelled",
+} as const;
+
+/**
+ * The limited, no-login view a patient sees when confirming an appointment.
+ */
+export interface AppointmentPublicView {
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentPublicViewStatus;
+  /** @nullable */
+  providerName?: string | null;
+  /** @nullable */
+  location?: string | null;
+}
+
+export type AppointmentRespondInputDecision =
+  (typeof AppointmentRespondInputDecision)[keyof typeof AppointmentRespondInputDecision];
+
+export const AppointmentRespondInputDecision = {
+  confirm: "confirm",
+  decline: "decline",
+} as const;
+
+export interface AppointmentRespondInput {
+  decision: AppointmentRespondInputDecision;
+}
+
+export interface ProviderCalendar {
+  provider: string;
+  calendarId: string;
+  syncEnabled: boolean;
+  /** Whether a Google Calendar account is connected at the platform level. */
+  connected: boolean;
+}
+
+export interface ProviderCalendarInput {
+  calendarId?: string;
+  syncEnabled?: boolean;
+}
+
 export type IntegrationSystemOptionKind =
   (typeof IntegrationSystemOptionKind)[keyof typeof IntegrationSystemOptionKind];
 

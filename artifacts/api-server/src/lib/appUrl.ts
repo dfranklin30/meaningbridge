@@ -33,3 +33,21 @@ export function appOrigin(req: Request): string {
       : undefined) ?? req.headers.host;
   return `${proto}://${host}`;
 }
+
+/**
+ * Request-free origin for background code (the outreach scheduler) that must
+ * build absolute links without a Request. Uses the same trusted configuration
+ * order as `appOrigin`, minus the header fallback.
+ */
+export function appOriginStatic(): string {
+  const configured = process.env.APP_ORIGIN?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const deployed = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
+  if (deployed) return `https://${deployed}`;
+
+  const dev = process.env.REPLIT_DEV_DOMAIN?.trim();
+  if (dev) return `https://${dev}`;
+
+  return "http://localhost";
+}

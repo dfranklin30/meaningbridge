@@ -17,6 +17,8 @@ import voiceRouter from "./voice";
 import careRouter from "./care";
 import professionalRouter from "./professional";
 import consentRouter from "./consent";
+import companionRouter from "./companion";
+import appointmentsRouter from "./appointments";
 
 const router: IRouter = Router();
 
@@ -38,5 +40,7 @@ router.use("/voice", voiceRouter);
 router.use("/care", careRouter);
 router.use("/professional", professionalRouter);
 router.use("/consent", consentRouter);
+router.use("/companion", companionRouter);
+router.use("/appointments", appointmentsRouter);
 
 export default router;

@@ -1,2 +1,4 @@
 - [Public consent-token security](consent-token-security.md) — patient e-sign bearer token in URL path: redact from logs, single-use (clear hash on sign), server-owned intake state machine.
 - [Provider 2FA gate concurrency](two-factor-gate-concurrency.md) — useTwoFactorGate must queue ALL blocked requests; single-slot state deadlocks parallel guarded fetches (Promise.all hangs).
+- [Companion practice link contract](companion-practice-link-contract.md) — companion tasks store a practice slug; player route is numeric id, so resolve slug→id before linking or the link opens nothing.
+- [Provider portal data-access](provider-portal-data-access.md) — clinician pages use a manual api()+2FA guard helper (not generated hooks) and stay metadata-only; seeker pages use generated react-query hooks.

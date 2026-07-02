@@ -239,7 +239,7 @@ export default function ProviderPatients() {
                       </button>
                     )}
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-6 text-sm text-muted-foreground">
+                  <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
                       {p.sessionCount} session{p.sessionCount === 1 ? "" : "s"} started
@@ -250,6 +250,12 @@ export default function ProviderPatients() {
                         ? "Awaiting consent"
                         : relativeTime(p.lastActiveAt)}
                     </span>
+                    <Link
+                      href={`/care/patients/${p.id}`}
+                      className="ml-auto text-primary hover:underline"
+                    >
+                      View overview
+                    </Link>
                   </div>
                 </li>
               );

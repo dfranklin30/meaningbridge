@@ -1,0 +1,106 @@
+# Replit Agent Prompt — MeaningBridge "For Professionals": From Sandbox to Functional System
+
+Copy everything below the line into Replit Agent.
+
+---
+
+## PROMPT
+
+You are working on the existing MeaningBridge app (meaningbridge.replit.app), an AI-assisted grief companion by Dr. Robert Neimeyer, grounded in meaning-oriented, continuing-bonds grief therapy. The "For Professionals" section currently runs on **dummy/sandbox data**. Convert it into a **fully functional, production-ready professional portal** with real data persistence, real accounts, and real workflows. Do not leave any hardcoded demo data in the production path — move all existing dummy data behind an explicit "Demo mode" toggle that is off by default.
+
+### 1. Replace dummy data with a real backend
+
+- Create a real database (PostgreSQL via Replit's built-in database) with tables for: `providers`, `patients` (referred clients), `intakes`, `provider_patient_links`, `batch_imports`, `audit_log`, and `consents`.
+- All data shown in the For Professionals dashboard must be read/written from this database — no seeded fake patients, no placeholder stats.
+- Add provider authentication: email + password with email verification, plus mandatory 2FA (TOTP). Sessions expire after 15 minutes of inactivity with re-auth required.
+- Provider onboarding requires: full name, credentials (MD/DO/PhD/PsyD/LCSW/LMFT/etc.), license number + state, NPI number (validate 10-digit format and Luhn check against the NPI algorithm; optionally verify against the free NPPES NPI Registry API at https://npiregistry.cms.hhs.gov/api/), practice name, and practice address. New provider accounts are held in "pending verification" status until approved by an admin (build a simple admin approval queue).
+
+### 2. Provider network directory ("Dr. Neimeyer's colleague network")
+
+- Once verified, providers appear in a searchable, opt-in network directory: name, credentials, specialty tags (e.g., grief therapy, meaning reconstruction, complicated grief, bereavement after suicide loss, child/adolescent grief), state(s) licensed, telehealth yes/no, accepting referrals yes/no.
+- Providers can send referrals to each other inside the portal: pick a colleague → attach an intake summary → colleague accepts/declines. Log every referral event in `audit_log`.
+- Include a private messaging thread per referral (not general chat) so context stays attached to the patient record.
+
+### 3. Patient intake form (single add)
+
+Build a multi-step intake form providers use to enroll a patient into MeaningBridge. Steps:
+
+**Step 1 — Referring provider (auto-filled from account):** provider name, NPI, practice, contact.
+
+**Step 2 — Patient identity:** first/last name, DOB, pronouns (optional), phone, email, preferred contact method, emergency contact name + phone.
+
+**Step 3 — Loss & clinical context:**
+- Relationship to deceased (partner, child, parent, sibling, friend, other)
+- Date of loss; cause-of-loss category (illness — anticipated, illness — sudden, accident, suicide, homicide, overdose, perinatal loss, other/undisclosed)
+- Time since loss auto-computed
+- Screening scores if available: PG-13-R (Prolonged Grief), PHQ-9, GAD-7, C-SSRS risk flag (fields optional, numeric-validated)
+- Current diagnoses (free text + ICD-10 code autocomplete for common codes: F43.81 prolonged grief disorder, F43.21 adjustment disorder w/ depressed mood, F32.x, F41.1)
+- Current medications (free text), other current treatment (individual therapy, group, psychiatry, none)
+- Safety note: if C-SSRS flag or provider marks "active suicidal ideation," show a banner that MeaningBridge is an adjunct, not crisis care, and require the provider to confirm a safety plan exists before submission.
+
+**Step 4 — Goals for MeaningBridge:** checkboxes (continuing bonds work, meaning reconstruction, narrative/legacy work, between-session support, grief psychoeducation) + free-text "what would help most."
+
+**Step 5 — Consent:** patient consent is required before the account activates. On submit, the system emails the patient a secure invite link; the patient reviews a plain-language consent (data use, AI limitations, not a substitute for therapy or emergency services) and e-signs. Store consent timestamp + IP in `consents`. The provider dashboard shows status: Invited → Consented → Active.
+
+Validate everything server-side. Save partial drafts. On completion, create the patient record, link it to the provider, and surface the patient's MeaningBridge engagement summary (sessions started, last active — never conversation content) back to the provider dashboard.
+
+### 4. One worked example (fictional — label it clearly)
+
+Include exactly one example intake, visible only in Demo mode, watermarked "SAMPLE — FICTIONAL":
+
+> **Referring provider:** Dr. Sarah Chen, MD, Psychiatry — NPI 1234567893, Riverbend Psychiatric Associates, Portland OR.
+> **Patient:** Marcus Webb, DOB 03/14/1972, phone (555) 014-2298, email m.webb.sample@example.com, prefers email. Emergency contact: Diane Webb, sister, (555) 014-7761.
+> **Loss:** Wife, Elena, died 11 months ago — sudden illness (aortic dissection). PG-13-R: 34 (above threshold), PHQ-9: 14, GAD-7: 9, C-SSRS: no active ideation. Dx: F43.81 Prolonged grief disorder. Meds: sertraline 100 mg. Currently in biweekly individual therapy.
+> **Goals:** continuing bonds work, narrative/legacy work; "Marcus wants a place to talk to/about Elena between sessions; struggles most at night."
+> **Status:** Invited → Consented (e-signed 07/01/2026) → Active.
+
+### 5. Batch upload
+
+Two paths:
+
+**Path A — CSV/spreadsheet upload:**
+- Provide a downloadable CSV template with a header row matching the intake fields (one patient per row; consent still collected individually via emailed invite links).
+- Upload flow: file → column-mapping screen (auto-map by header name, let provider fix mismatches) → row-by-row validation report (accept valid rows, list rejected rows with reasons, never fail the whole file) → confirmation screen showing count before commit → send invite emails in a queued job.
+- Accept .csv and .xlsx. Max 500 rows per upload. Record every import in `batch_imports` with who/when/counts.
+
+**Path B — EHR integration (the systems psychiatrists already use):**
+Build an "Integrations" settings page. Target these systems, most common in behavioral-health practices: **Valant, Osmind, ICANotes, SimplePractice, TherapyNotes, Tebra, and (for hospital-affiliated prescribers) Epic and athenahealth.**
+
+Implementation tiers — build in this order:
+1. **FHIR R4 (works today for Epic, athenahealth, and any Cures-Act-compliant EHR):** Implement a SMART-on-FHIR client. Provider connects their EHR via OAuth 2.0; MeaningBridge pulls `Patient` demographics and optionally `Condition` and `MedicationRequest` resources to prefill intakes. Never write back to the EHR in v1. Store only the minimum fields the intake needs.
+2. **Universal CSV export bridge (works today for all of them):** Every EHR above can export a patient/client list to CSV. Ship per-EHR mapping presets (e.g., "SimplePractice client export," "TherapyNotes patient export") that auto-map their known column names into Path A.
+3. **Vendor APIs (roadmap, stub the UI as "Request access"):** Valant, SimplePractice, TherapyNotes and Osmind offer partner/API programs that require a signed agreement and security review — build the OAuth scaffolding and a "Contact us to enable" state rather than faking a live connection.
+
+Every integration connection must record: which system, connected by whom, when, scopes granted, and a disconnect button that revokes tokens.
+
+### 6. HIPAA requirements (non-negotiable — build these in, don't defer)
+
+- **BAA:** Display prominently in provider onboarding that PHI processing requires a Business Associate Agreement. Gate live-PHI features behind an admin flag until a BAA process exists. Note in the admin docs: Replit's standard hosting does not include a BAA — before real PHI is stored, deploy the database and app on a HIPAA-eligible host with a signed BAA (e.g., AWS/GCP/Azure HIPAA-eligible services), and a BAA is also needed with the email provider and the AI/LLM API vendor. Build the app so migration is easy (env-var connection strings, no vendor-specific code).
+- **Encryption:** TLS 1.2+ everywhere; encrypt PHI fields at rest (application-level AES-256 encryption for name, DOB, contact info, clinical fields, with keys in environment secrets, never in code).
+- **Access control:** Role-based access (provider sees only their own linked patients; admin roles separated; no provider can browse the patient table). Enforce in queries, not just UI.
+- **Audit logging:** Immutable `audit_log` of every create/read/update/delete on PHI: who, what record, what action, timestamp, IP. Viewable by admins.
+- **Minimum necessary:** Providers see engagement metadata only (enrollment status, last active, session count) — never the patient's conversation content with the companion.
+- **Data retention & deletion:** Patient can revoke consent; on revocation, deactivate the account, stop provider visibility, and honor deletion requests with a documented workflow.
+- **Session security:** 15-minute idle timeout, 2FA, password rules (12+ chars), lockout after 5 failed attempts, no PHI in URLs, no PHI in logs or error messages.
+- **Breach readiness:** Log enough to reconstruct access history; add an admin "export audit trail" function.
+- **De-identified analytics only:** Any usage dashboards aggregate without names/DOBs.
+
+### 7. Acceptance checklist (verify before finishing)
+
+- [ ] No dummy data appears anywhere outside Demo mode
+- [ ] A new provider can register, get verified, and appear in the directory
+- [ ] Single intake completes end-to-end: form → patient invite email → consent → active
+- [ ] The Marcus Webb sample renders only in Demo mode, watermarked
+- [ ] CSV template downloads; a 3-row test file imports with 1 intentionally bad row correctly rejected and reported
+- [ ] EHR page shows FHIR connect flow, per-EHR CSV presets, and "Request access" stubs for vendor APIs
+- [ ] Audit log captures a full intake lifecycle
+- [ ] A provider cannot query or view another provider's patients (test this)
+- [ ] All PHI fields encrypted at rest; verified by inspecting raw DB rows
+
+---
+
+## Notes for you (not part of the Replit prompt)
+
+- **HIPAA reality check:** Replit hosting itself won't sign a BAA. The prompt makes Replit build everything HIPAA-*ready*, but before real patient data goes in, the app must move to (or proxy PHI through) a host that will sign a BAA. Same for the email service and the LLM API (Anthropic, OpenAI, etc. offer BAAs on qualifying plans).
+- **Why these EHRs:** Valant, Osmind, and ICANotes are the leading psychiatry-specific EHRs; SimplePractice (250k+ clinicians) and TherapyNotes dominate solo/small behavioral-health practices; Epic/athenahealth cover hospital-affiliated psychiatrists and are reachable today via standard FHIR APIs required by the 21st Century Cures Act.
+- **Fastest real-world path:** the CSV-with-presets bridge works immediately with every EHR; the FHIR connection covers the big systems; direct vendor APIs come later because each requires a partnership agreement and security review.

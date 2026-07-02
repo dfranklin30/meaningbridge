@@ -250,6 +250,19 @@ export interface AppointmentInput {
   notes?: string;
 }
 
+/**
+ * Fields a provider may change on a still-editable session. All optional; only provided fields are updated.
+ */
+export interface AppointmentEditInput {
+  title?: string;
+  startsAt?: string;
+  endsAt?: string;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
 export type AppointmentPublicViewStatus =
   (typeof AppointmentPublicViewStatus)[keyof typeof AppointmentPublicViewStatus];
 

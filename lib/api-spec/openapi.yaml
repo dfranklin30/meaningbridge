@@ -1982,6 +1982,38 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AnthropicError" }
 
+  /professional/appointments/{id}:
+    patch:
+      operationId: editAppointment
+      tags: [professional]
+      summary: Edit a proposed/confirmed session's time, title, or location; keeps the mirrored calendar event in sync.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AppointmentEditInput" }
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+        "409":
+          description: Appointment can no longer be edited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+
   /professional/appointments/{id}/cancel:
     post:
       operationId: cancelAppointment
@@ -2244,6 +2276,16 @@ components:
         location: { type: string }
         notes: { type: string }
       required: [startsAt, endsAt]
+
+    AppointmentEditInput:
+      type: object
+      description: Fields a provider may change on a still-editable session. All optional; only provided fields are updated.
+      properties:
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        location: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
 
     AppointmentPublicView:
       type: object

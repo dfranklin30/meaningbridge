@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import {
   AskProviderAssistantBody,
+  EditAppointmentBody,
   ProposeAppointmentBody,
   UpdateProviderCalendarBody,
 } from "@workspace/api-zod";
@@ -26,6 +27,7 @@ import {
   listCalendars,
   removeAppointmentFromCalendar,
   syncAppointmentToCalendar,
+  updateAppointmentInCalendar,
 } from "../lib/calendarSync";
 
 /**
@@ -240,6 +242,99 @@ router.post("/patients/:id/appointments", async (req, res) => {
 
   await audit(req, "appointment.propose", { detail: `patient ${id} appointment ${row!.id}` });
   res.status(201).json(toAppointment(row!));
+});
+
+router.patch("/appointments/:id", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const parsed = EditAppointmentBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid appointment", details: parsed.error.issues });
+    return;
+  }
+  const [appt] = await db
+    .select()
+    .from(appointmentsTable)
+    .where(and(eq(appointmentsTable.id, id), eq(appointmentsTable.providerUserId, req.userId!)))
+    .limit(1);
+  if (!appt) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  // Only a still-live session can be edited; a declined/cancelled one has no
+  // calendar event to keep in sync and should not silently reanimate.
+  if (appt.status !== "proposed" && appt.status !== "confirmed") {
+    res.status(409).json({ error: "This appointment can no longer be edited." });
+    return;
+  }
+
+  // Merge: only provided fields change. location/notes are nullable, so an
+  // explicit null clears them while an absent key leaves them as-is.
+  const title = parsed.data.title?.trim() || appt.title;
+  const startsAt = parsed.data.startsAt ?? appt.startsAt;
+  const endsAt = parsed.data.endsAt ?? appt.endsAt;
+  const location =
+    parsed.data.location !== undefined ? (parsed.data.location?.trim() || null) : appt.location;
+  const notes =
+    parsed.data.notes !== undefined ? (parsed.data.notes?.trim() || null) : appt.notes;
+  if (endsAt <= startsAt) {
+    res.status(400).json({ error: "End time must be after start time" });
+    return;
+  }
+
+  // Keep the mirrored event in step with the edit. Update the existing event
+  // when one is mirrored; if it has drifted away (deleted on the provider's
+  // side) or was never created, fall back to creating one — but only while the
+  // provider has sync enabled and a calendar is connected. Failures never break
+  // the appointment write, matching the create/delete seams.
+  let googleEventId = appt.googleEventId;
+  let googleCalendarId = appt.googleCalendarId;
+  try {
+    const connected = await isCalendarConnected();
+    if (connected && googleEventId && googleCalendarId) {
+      const { missing } = await updateAppointmentInCalendar({
+        calendarId: googleCalendarId,
+        eventId: googleEventId,
+        title,
+        startsAt,
+        endsAt,
+        location,
+      });
+      if (missing) {
+        googleEventId = null;
+        googleCalendarId = null;
+      }
+    }
+    if (connected && !googleEventId) {
+      const calendar = await getOrCreateCalendar(req.userId!);
+      if (calendar.syncEnabled) {
+        const patient = await getPatientForProvider(req.userId!, appt.patientId);
+        const { eventId } = await syncAppointmentToCalendar({
+          calendarId: calendar.calendarId,
+          title,
+          startsAt,
+          endsAt,
+          location,
+          attendeeEmail: patient ? decryptPhi(patient.emailEnc) : null,
+        });
+        googleEventId = eventId;
+        googleCalendarId = calendar.calendarId;
+      }
+    }
+  } catch (err) {
+    req.log.warn({ err }, "calendar sync on edit failed (appointment saved regardless)");
+  }
+
+  const [row] = await db
+    .update(appointmentsTable)
+    .set({ title, startsAt, endsAt, location, notes, googleEventId, googleCalendarId, updatedAt: new Date() })
+    .where(eq(appointmentsTable.id, id))
+    .returning();
+  await audit(req, "appointment.edit", { detail: `appointment ${id}` });
+  res.json(toAppointment(row!));
 });
 
 router.post("/appointments/:id/cancel", async (req, res) => {

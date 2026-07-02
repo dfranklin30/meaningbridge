@@ -119,6 +119,50 @@ export async function syncAppointmentToCalendar(
   return { eventId: event.id ?? null };
 }
 
+/**
+ * Update an already-mirrored event in place with PATCH, so an edited time,
+ * title, or location is reflected without deleting and recreating (which would
+ * drop the event's history and re-fire notifications). Only the mutable fields
+ * are sent; attendees are intentionally left untouched so an edit never
+ * re-invites the patient. A 404/410 means the event is gone on the provider's
+ * side; we surface that so the caller can fall back to creating a fresh one.
+ */
+export interface CalendarEventUpdateInput {
+  calendarId: string;
+  eventId: string;
+  title: string;
+  startsAt: Date;
+  endsAt: Date;
+  location?: string | null;
+  description?: string;
+}
+
+export async function updateAppointmentInCalendar(
+  input: CalendarEventUpdateInput,
+): Promise<{ ok: boolean; missing: boolean }> {
+  const body: Record<string, unknown> = {
+    summary: input.title,
+    start: { dateTime: input.startsAt.toISOString() },
+    end: { dateTime: input.endsAt.toISOString() },
+    // Send null to clear a removed location; PATCH otherwise leaves it as-is.
+    location: input.location ?? null,
+  };
+  if (input.description) body.description = input.description;
+
+  const res = await connectors.proxy(
+    CONNECTOR_NAME,
+    `${CALENDAR_API}/calendars/${encodeURIComponent(input.calendarId)}/events/${encodeURIComponent(input.eventId)}`,
+    { method: "PATCH", body },
+  );
+  if (res.status === 404 || res.status === 410) {
+    return { ok: false, missing: true };
+  }
+  if (!res.ok) {
+    throw new Error(`Google Calendar update failed: ${res.status} ${await res.text()}`);
+  }
+  return { ok: true, missing: false };
+}
+
 /** Remove a previously mirrored event. */
 export async function removeAppointmentFromCalendar(
   calendarId: string,

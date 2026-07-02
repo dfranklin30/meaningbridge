@@ -8,6 +8,7 @@ import {
   CalendarClock,
   Loader2,
   X,
+  Pencil,
   Sparkles,
 } from "lucide-react";
 import {
@@ -37,6 +38,13 @@ function fmtDateTime(iso: string): string {
         hour: "numeric",
         minute: "2-digit",
       });
+}
+
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function fmtRelative(iso: string | null | undefined): string {
@@ -301,6 +309,14 @@ function AppointmentsPanel({
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [savingCal, setSavingCal] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    startsAt: "",
+    endsAt: "",
+    location: "",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const STATUS_TONE: Record<string, string> = {
     proposed: "bg-amber-100 text-amber-800",
@@ -356,6 +372,48 @@ function AppointmentsPanel({
         setError(err instanceof Error ? err.message : "We could not cancel this appointment.");
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const startEdit = (a: Appointment) => {
+    setError(null);
+    setEditingId(a.id);
+    setEditForm({
+      title: a.title,
+      startsAt: toLocalInput(a.startsAt),
+      endsAt: toLocalInput(a.endsAt),
+      location: a.location ?? "",
+    });
+  };
+
+  const saveEdit = async (id: number) => {
+    if (savingEdit) return;
+    if (!editForm.startsAt || !editForm.endsAt) {
+      setError("Please choose a start and end time.");
+      return;
+    }
+    setSavingEdit(true);
+    setError(null);
+    try {
+      await guard(() =>
+        api<Appointment>(`/professional/appointments/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            title: editForm.title.trim() || undefined,
+            startsAt: new Date(editForm.startsAt).toISOString(),
+            endsAt: new Date(editForm.endsAt).toISOString(),
+            location: editForm.location.trim() || null,
+          }),
+        }),
+      );
+      setEditingId(null);
+      await onChanged();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403 && err.code) onPhi(err.code);
+      else if (!(err instanceof ApiError && err.code === "two_factor_challenge_required"))
+        setError(err instanceof Error ? err.message : "We could not update this appointment.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -534,38 +592,116 @@ function AppointmentsPanel({
           {[...active, ...past].map((a) => (
             <li
               key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-background px-4 py-3"
+              className="rounded-lg border border-border/70 bg-background px-4 py-3"
             >
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{a.title}</span>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${
-                      STATUS_TONE[a.status] ?? "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {a.status}
-                  </span>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{a.title}</span>
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${
+                        STATUS_TONE[a.status] ?? "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {a.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {fmtDateTime(a.startsAt)}
+                    {a.location ? ` · ${a.location}` : ""}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {fmtDateTime(a.startsAt)}
-                  {a.location ? ` · ${a.location}` : ""}
-                </div>
+                {(a.status === "proposed" || a.status === "confirmed") && editingId !== a.id && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(a)}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cancel(a.id)}
+                      disabled={cancellingId === a.id}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      {cancellingId === a.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <X className="w-3.5 h-3.5" />
+                      )}
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
-              {(a.status === "proposed" || a.status === "confirmed") && (
-                <button
-                  type="button"
-                  onClick={() => cancel(a.id)}
-                  disabled={cancellingId === a.id}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  {cancellingId === a.id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <X className="w-3.5 h-3.5" />
+
+              {editingId === a.id && (
+                <div className="mt-3 space-y-3 border-t border-border/70 pt-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Title</label>
+                    <input
+                      value={editForm.title}
+                      onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                      className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Starts</label>
+                      <input
+                        type="datetime-local"
+                        value={editForm.startsAt}
+                        onChange={(e) => setEditForm((f) => ({ ...f, startsAt: e.target.value }))}
+                        className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Ends</label>
+                      <input
+                        type="datetime-local"
+                        value={editForm.endsAt}
+                        onChange={(e) => setEditForm((f) => ({ ...f, endsAt: e.target.value }))}
+                        className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Location (optional)
+                    </label>
+                    <input
+                      value={editForm.location}
+                      onChange={(e) => setEditForm((f) => ({ ...f, location: e.target.value }))}
+                      placeholder="Telehealth, or an address"
+                      className="w-full bg-card border border-border rounded-md px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => saveEdit(a.id)}
+                      disabled={savingEdit}
+                      className="btn-primary inline-flex items-center gap-1.5"
+                    >
+                      {savingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save changes"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="px-4 py-2 rounded-md border border-border text-sm hover:border-foreground transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {calendar?.connected && calendar.syncEnabled && a.googleEventId && (
+                    <p className="text-xs text-muted-foreground">
+                      Your connected calendar will be updated to match.
+                    </p>
                   )}
-                  Cancel
-                </button>
+                </div>
               )}
             </li>
           ))}

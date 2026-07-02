@@ -2411,6 +2411,39 @@ export const ProposeAppointmentBody = zod.object({
   notes: zod.string().optional(),
 });
 
+/**
+ * @summary Edit a proposed/confirmed session's time, title, or location; keeps the mirrored calendar event in sync.
+ */
+export const EditAppointmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const EditAppointmentBody = zod
+  .object({
+    title: zod.string().optional(),
+    startsAt: zod.coerce.date().optional(),
+    endsAt: zod.coerce.date().optional(),
+    location: zod.string().nullish(),
+    notes: zod.string().nullish(),
+  })
+  .describe(
+    "Fields a provider may change on a still-editable session. All optional; only provided fields are updated.",
+  );
+
+export const EditAppointmentResponse = zod.object({
+  id: zod.number(),
+  patientId: zod.number(),
+  providerUserId: zod.number(),
+  title: zod.string(),
+  startsAt: zod.coerce.date(),
+  endsAt: zod.coerce.date(),
+  status: zod.enum(["proposed", "confirmed", "declined", "cancelled"]),
+  location: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  googleEventId: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
 export const CancelAppointmentParams = zod.object({
   id: zod.coerce.number(),
 });

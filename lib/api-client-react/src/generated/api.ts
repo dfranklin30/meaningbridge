@@ -25,6 +25,7 @@ import type {
   AnthropicMessage,
   AnthropicMessageInput,
   Appointment,
+  AppointmentEditInput,
   AppointmentInput,
   AppointmentPublicView,
   AppointmentRespondInput,
@@ -8774,6 +8775,93 @@ export const useProposeAppointment = <
   TContext
 > => {
   return useMutation(getProposeAppointmentMutationOptions(options));
+};
+
+/**
+ * @summary Edit a proposed/confirmed session's time, title, or location; keeps the mirrored calendar event in sync.
+ */
+export const getEditAppointmentUrl = (id: number) => {
+  return `/api/professional/appointments/${id}`;
+};
+
+export const editAppointment = async (
+  id: number,
+  appointmentEditInput: AppointmentEditInput,
+  options?: RequestInit,
+): Promise<Appointment> => {
+  return customFetch<Appointment>(getEditAppointmentUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(appointmentEditInput),
+  });
+};
+
+export const getEditAppointmentMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof editAppointment>>,
+    TError,
+    { id: number; data: BodyType<AppointmentEditInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof editAppointment>>,
+  TError,
+  { id: number; data: BodyType<AppointmentEditInput> },
+  TContext
+> => {
+  const mutationKey = ["editAppointment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof editAppointment>>,
+    { id: number; data: BodyType<AppointmentEditInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return editAppointment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type EditAppointmentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof editAppointment>>
+>;
+export type EditAppointmentMutationBody = BodyType<AppointmentEditInput>;
+export type EditAppointmentMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Edit a proposed/confirmed session's time, title, or location; keeps the mirrored calendar event in sync.
+ */
+export const useEditAppointment = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof editAppointment>>,
+    TError,
+    { id: number; data: BodyType<AppointmentEditInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof editAppointment>>,
+  TError,
+  { id: number; data: BodyType<AppointmentEditInput> },
+  TContext
+> => {
+  return useMutation(getEditAppointmentMutationOptions(options));
 };
 
 export const getCancelAppointmentUrl = (id: number) => {

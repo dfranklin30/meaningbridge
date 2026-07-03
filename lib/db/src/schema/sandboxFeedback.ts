@@ -4,6 +4,7 @@ import {
   text,
   integer,
   boolean,
+  jsonb,
   timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -16,6 +17,12 @@ export const sandboxFeedbackTable = pgTable("sandbox_feedback", {
   aestheticsRating: integer("aesthetics_rating"),
   helpfulnessRating: integer("helpfulness_rating"),
   overallRating: integer("overall_rating"),
+  // Extended site-evaluation payload: a flexible map of dimension -> 0-10 score
+  // and an optional matching map of dimension -> free-text comment, so the
+  // questionnaire can evolve without a migration per question.
+  ratings: jsonb("ratings").$type<Record<string, number>>(),
+  comments: jsonb("comments").$type<Record<string, string>>(),
+  additionalSuggestions: text("additional_suggestions"),
   narrative: text("narrative"),
   name: text("name"),
   roleLabel: text("role_label"),

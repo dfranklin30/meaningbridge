@@ -7,6 +7,7 @@ import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
 import { LivingBackground } from "@/components/living-background";
+import photoBonds from "@/assets/photo-bonds.png";
 import neimeyerPortrait from "@assets/image_1782985313122.png";
 import lectureCongress from "@assets/image_1782985283687.png";
 import lectureAudience from "@assets/image_1782985270880.png";
@@ -47,6 +48,7 @@ export default function LandingPage() {
             { href: "/sign-up", label: "For those grieving" },
             { href: "/pricing", label: "Plans" },
             { href: "/caregiver", label: "For professionals" },
+            { href: "/evaluate", label: "Share feedback" },
             { href: "/notify", label: "Notify me" },
           ].map((item) => (
             <Link
@@ -264,7 +266,7 @@ export default function LandingPage() {
               {
                 title: "Loved one",
                 body:
-                  "A place to keep a profile of who they were and what they meant.",
+                  "A place to keep a profile of who they were and what they still mean.",
               },
               {
                 title: "Crisis support",
@@ -285,13 +287,64 @@ export default function LandingPage() {
           <div className="text-center mt-12">
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+              className="group inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-medium text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
             >
               Enter the experience
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
           </div>
         </section>
+
+        {/* Evaluation invitation */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-5xl mx-auto mt-24 md:mt-32"
+        >
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/[0.08] via-card to-card p-8 md:p-14 shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.15)]">
+            <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+            <div className="relative grid md:grid-cols-[1.4fr_1fr] gap-8 md:gap-12 items-center">
+              <div className="space-y-4">
+                <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
+                  Your impressions matter
+                </p>
+                <h2 className="font-serif text-3xl md:text-4xl tracking-tight">
+                  Tell us how this felt.
+                </h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  MeaningBridge is still taking shape. If you have looked around
+                  — as someone grieving, a clinician, or a thoughtful visitor —
+                  a few minutes of honest reflection helps us build something
+                  worthy of the people it is meant to hold.
+                </p>
+                <div className="flex flex-wrap items-center gap-4 pt-2">
+                  <Link
+                    href="/evaluate"
+                    className="group inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-medium text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
+                  >
+                    Share your reflection
+                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </Link>
+                  <span className="text-xs text-muted-foreground">
+                    A few short sliders. No account needed.
+                  </span>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden border border-border shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.2)]">
+                  <img
+                    src={photoBonds}
+                    alt="Two people sitting close together in soft window light, one resting gently on the other's shoulder."
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
 
         {/* About Dr. Neimeyer */}
         <section className="max-w-6xl mx-auto mt-24 md:mt-32">

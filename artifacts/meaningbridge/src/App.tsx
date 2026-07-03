@@ -31,6 +31,7 @@ import PresentPage from "@/pages/present";
 import Pricing from "@/pages/pricing";
 import Caregiver from "@/pages/caregiver";
 import Sandbox from "@/pages/sandbox";
+import EvaluatePage from "@/pages/evaluate";
 import SelectRole from "@/pages/select-role";
 
 import Home from "@/pages/home";
@@ -426,6 +427,7 @@ function AppRouterSwitch() {
       <Route path="/consent/:token" component={ConsentPage} />
       <Route path="/appointments/:token" component={AppointmentConfirm} />
       <Route path="/sandbox" component={Sandbox} />
+      <Route path="/evaluate" component={EvaluatePage} />
       <Route path="/care/invite" component={CareInvite} />
       <Route path="/care/account" component={ProfessionalPortalGate} />
       <Route path="/care/onboarding" component={ProfessionalPortalGate} />

@@ -49,6 +49,20 @@ const FEEDBACK_CC = ["neimeyer@portlandinstitute.org"];
 const ratingLabel = (n: number | null | undefined): string =>
   n == null ? "\u2014" : `${n} of 5`;
 
+// Human-readable labels for the extended site-evaluation dimensions.
+const EVAL_DIMENSIONS: { key: string; label: string }[] = [
+  { key: "navigation", label: "Ease of navigation" },
+  { key: "aesthetics", label: "Aesthetics" },
+  { key: "tone", label: "Tone of language for grievers" },
+  { key: "relevance", label: "Relevance of features offered" },
+  { key: "helpfulness", label: "Perceived helpfulness to bereaved users" },
+  { key: "fidelity", label: "Fidelity to the voice of the deceased" },
+  { key: "therapistValue", label: "Helpfulness of features to therapists" },
+  { key: "trust", label: "Trust and sense of safety" },
+  { key: "easeOfUse", label: "Overall ease of use" },
+  { key: "recommend", label: "Likelihood to recommend" },
+];
+
 const router: IRouter = Router();
 
 router.post("/feedback", async (req, res) => {
@@ -60,6 +74,11 @@ router.post("/feedback", async (req, res) => {
   const roleLabel = body.roleLabel?.trim() || null;
   const source = body.source?.trim() || "sandbox";
   const consentToShare = body.consentToShare ?? false;
+  const additionalSuggestions = body.additionalSuggestions?.trim() || null;
+  const ratings =
+    body.ratings && Object.keys(body.ratings).length > 0 ? body.ratings : null;
+  const comments =
+    body.comments && Object.keys(body.comments).length > 0 ? body.comments : null;
 
   const [feedback] = await db
     .insert(sandboxFeedbackTable)
@@ -69,6 +88,9 @@ router.post("/feedback", async (req, res) => {
       aestheticsRating: body.aestheticsRating ?? null,
       helpfulnessRating: body.helpfulnessRating ?? null,
       overallRating: body.overallRating ?? null,
+      ratings,
+      comments,
+      additionalSuggestions,
       narrative,
       name,
       roleLabel,
@@ -87,9 +109,47 @@ router.post("/feedback", async (req, res) => {
     const safeNarrative = narrative ? escapeHtml(narrative) : null;
     const safeName = name ? escapeHtml(name) : null;
     const safeRoleLabel = roleLabel ? escapeHtml(roleLabel) : null;
-    const subject = `MeaningBridge sandbox feedback${role ? ` — ${role}` : ""}`;
+    const safeSuggestions = additionalSuggestions
+      ? escapeHtml(additionalSuggestions)
+      : null;
+
+    // Extended site-evaluation dimensions (0-10), only those actually rated.
+    const evalRows = EVAL_DIMENSIONS.filter(
+      (d) => ratings != null && ratings[d.key] != null,
+    ).map((d) => ({
+      label: d.label,
+      score: ratings![d.key]!,
+      comment: comments?.[d.key]?.trim() || null,
+    }));
+    const evalTextLines = evalRows.length
+      ? [
+          "",
+          "Site evaluation (0-10):",
+          ...evalRows.map(
+            (r) =>
+              `  ${r.label}: ${r.score} of 10${r.comment ? ` — ${r.comment}` : ""}`,
+          ),
+        ]
+      : [];
+    const evalHtml = evalRows.length
+      ? `<p style="margin:18px 0 6px;color:#6b7280;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;">Site evaluation (0-10)</p>
+         <table style="border-collapse:collapse;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;">
+         ${evalRows
+           .map(
+             (r) =>
+               `<tr><td style="padding:4px 14px 4px 0;color:#6b7280;vertical-align:top;">${escapeHtml(r.label)}</td><td style="padding:4px 0;"><strong>${r.score}</strong> of 10${r.comment ? `<br/><span style="color:#6b7280;">${escapeHtml(r.comment)}</span>` : ""}</td></tr>`,
+           )
+           .join("")}
+         </table>`
+      : "";
+    const suggestionsHtml = safeSuggestions
+      ? `<p style="margin:18px 0 6px;color:#6b7280;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;">Additional suggestions</p><p style="margin:0;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #e5e1d5;">${safeSuggestions}</p>`
+      : "";
+    const isSiteEval = source === "site-eval";
+    const kindLabel = isSiteEval ? "site evaluation" : "sandbox feedback";
+    const subject = `MeaningBridge ${kindLabel}${role ? ` — ${role}` : ""}`;
     const textLines = [
-      "New sandbox feedback was submitted.",
+      `New ${kindLabel} was submitted.`,
       "",
       `Experienced as:   ${role ?? "\u2014"}`,
       `Ease of navigation: ${ratingLabel(body.navigationRating)}`,
@@ -103,13 +163,17 @@ router.post("/feedback", async (req, res) => {
       "",
       "Narrative:",
       narrative ?? "\u2014",
+      ...evalTextLines,
+      ...(additionalSuggestions
+        ? ["", "Additional suggestions:", additionalSuggestions]
+        : []),
       "",
       `Time: ${feedback.createdAt.toISOString()}`,
     ];
     const html = `
       <div style="font-family:Georgia,'Times New Roman',serif;color:#1f2937;line-height:1.6;max-width:560px;margin:0 auto;padding:28px 24px;background:#fbf6ec;border-radius:12px;">
         ${logoBlock()}
-        <p style="font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#1f3a68;text-align:center;margin:0 0 18px;">New sandbox feedback</p>
+        <p style="font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#1f3a68;text-align:center;margin:0 0 18px;">New ${isSiteEval ? "site evaluation" : "sandbox feedback"}</p>
         <table style="border-collapse:collapse;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;">
           <tr><td style="padding:5px 14px 5px 0;color:#6b7280;">Experienced as</td><td style="padding:5px 0;">${escapeHtml(role ?? "\u2014")}</td></tr>
           <tr><td style="padding:5px 14px 5px 0;color:#6b7280;">Ease of navigation</td><td style="padding:5px 0;">${ratingLabel(body.navigationRating)}</td></tr>
@@ -125,7 +189,9 @@ router.post("/feedback", async (req, res) => {
             ? `<p style="margin:18px 0 6px;color:#6b7280;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;">Narrative</p><p style="margin:0;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #e5e1d5;">${safeNarrative}</p>`
             : ""
         }
-        <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Automated notification from the MeaningBridge sandbox.</p>
+        ${evalHtml}
+        ${suggestionsHtml}
+        <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Automated notification from MeaningBridge.</p>
       </div>
     `;
     sendMail({

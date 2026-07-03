@@ -1291,6 +1291,9 @@ export const createSandboxFeedbackBodyHelpfulnessRatingMax = 5;
 
 export const createSandboxFeedbackBodyOverallRatingMax = 5;
 
+export const createSandboxFeedbackBodyRatingsMinOne = 0;
+export const createSandboxFeedbackBodyRatingsMaxOne = 10;
+
 export const CreateSandboxFeedbackBody = zod.object({
   role: zod.string().nullish().describe("seeker | professional"),
   navigationRating: zod
@@ -1313,6 +1316,21 @@ export const CreateSandboxFeedbackBody = zod.object({
     .min(1)
     .max(createSandboxFeedbackBodyOverallRatingMax)
     .nullish(),
+  ratings: zod
+    .record(
+      zod.string(),
+      zod
+        .number()
+        .min(createSandboxFeedbackBodyRatingsMinOne)
+        .max(createSandboxFeedbackBodyRatingsMaxOne),
+    )
+    .nullish()
+    .describe("Site-evaluation dimension -> 0-10 score"),
+  comments: zod
+    .record(zod.string(), zod.string())
+    .nullish()
+    .describe("Site-evaluation dimension -> free-text comment"),
+  additionalSuggestions: zod.string().nullish(),
   narrative: zod.string().nullish(),
   name: zod.string().nullish(),
   roleLabel: zod.string().nullish(),
@@ -1329,6 +1347,15 @@ export const CreateSandboxFeedbackResponse = zod.object({
     aestheticsRating: zod.number().nullish(),
     helpfulnessRating: zod.number().nullish(),
     overallRating: zod.number().nullish(),
+    ratings: zod
+      .record(zod.string(), zod.number())
+      .nullish()
+      .describe("Site-evaluation dimension -> 0-10 score"),
+    comments: zod
+      .record(zod.string(), zod.string())
+      .nullish()
+      .describe("Site-evaluation dimension -> free-text comment"),
+    additionalSuggestions: zod.string().nullish(),
     narrative: zod.string().nullish(),
     name: zod.string().nullish(),
     roleLabel: zod.string().nullish(),
@@ -1348,6 +1375,15 @@ export const ListSandboxFeedbackResponseItem = zod.object({
   aestheticsRating: zod.number().nullish(),
   helpfulnessRating: zod.number().nullish(),
   overallRating: zod.number().nullish(),
+  ratings: zod
+    .record(zod.string(), zod.number())
+    .nullish()
+    .describe("Site-evaluation dimension -> 0-10 score"),
+  comments: zod
+    .record(zod.string(), zod.string())
+    .nullish()
+    .describe("Site-evaluation dimension -> free-text comment"),
+  additionalSuggestions: zod.string().nullish(),
   narrative: zod.string().nullish(),
   name: zod.string().nullish(),
   roleLabel: zod.string().nullish(),

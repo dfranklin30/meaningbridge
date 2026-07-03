@@ -2,19 +2,21 @@ import { motion } from "framer-motion";
 
 /**
  * BridgeAnimation
- * A calm, abstract SVG scene showing three presences connected by a
- * gently breathing pair of bridge arcs (echoing the infinity/bridge logo):
- *   - Seeker (someone grieving)
- *   - Companion (the AI presence)
- *   - Clinician (therapist / doctor)
- * A small "memory" sits above the Seeker as a continuing-bonds cue.
- * Movement is slow, ease-in-out, and never gamified.
+ * A calm, abstract SVG scene arranged as a triangle:
+ *   - You (the person grieving) at the top
+ *   - Companion (the AI presence) at the lower left
+ *   - Clinician (therapist / doctor) at the lower right
+ * At the very centre sits "A Loved One, Remembered" — a softly glowing,
+ * dotted-outline presence connected first and foremost to You, quietly
+ * reinforcing that the bond with the loved one is central to everything.
+ * Gently breathing bridge arcs echo the infinity/bridge logo. Movement is
+ * slow, ease-in-out, and never gamified.
  */
 
 const NAVY = "hsl(215, 38%, 22%)";
 const TEAL = "hsl(180, 38%, 38%)";
 const TEAL_SOFT = "hsl(180, 38%, 65%)";
-const SAND = "hsl(30, 35%, 70%)";
+const SAND = "hsl(30, 35%, 62%)";
 
 type FigureProps = {
   cx: number;
@@ -125,98 +127,129 @@ function ConnectionArc({ d, delay = 0 }: ArcProps) {
   );
 }
 
-export function BridgeAnimation() {
-  // Layout: three figures across, memory above-left, on a 600x320 viewBox.
-  const seeker = { cx: 130, cy: 200 };
-  const companion = { cx: 300, cy: 200 };
-  const clinician = { cx: 470, cy: 200 };
+/** A soft, dotted-outline thread carrying the continuing bond to the loved one. */
+function BondThread({ d, delay = 0, strong = false }: { d: string; delay?: number; strong?: boolean }) {
+  return (
+    <motion.path
+      d={d}
+      fill="none"
+      stroke={SAND}
+      strokeOpacity={strong ? 0.7 : 0.35}
+      strokeWidth={strong ? 1.4 : 1}
+      strokeDasharray="2 5"
+      strokeLinecap="round"
+      animate={{ strokeDashoffset: [0, -14] }}
+      transition={{ duration: strong ? 6 : 8, repeat: Infinity, ease: "linear", delay }}
+    />
+  );
+}
 
-  // Bridge-shaped arcs between figures
-  const arcSeekerCompanion = `M ${seeker.cx + 22} ${seeker.cy - 18}
-    Q ${(seeker.cx + companion.cx) / 2} ${seeker.cy - 90}
-    ${companion.cx - 22} ${companion.cy - 18}`;
-  const arcCompanionClinician = `M ${companion.cx + 22} ${companion.cy - 18}
-    Q ${(companion.cx + clinician.cx) / 2} ${companion.cy - 90}
-    ${clinician.cx - 22} ${clinician.cy - 18}`;
-  // Subtle direct human-to-human arc underneath the bridge — quietly reinforces
-  // that the human bond is primary; AI sits above as an augment.
-  const humanArc = `M ${seeker.cx + 22} ${seeker.cy + 18}
-    Q ${(seeker.cx + clinician.cx) / 2} ${clinician.cy + 90}
-    ${clinician.cx - 22} ${clinician.cy + 18}`;
+export function BridgeAnimation() {
+  // Triangular layout on a 600x360 viewBox: You at the apex, Companion and
+  // Clinician at the base, the loved one held at the very centre.
+  const you = { cx: 300, cy: 90 };
+  const companion = { cx: 150, cy: 288 };
+  const clinician = { cx: 450, cy: 288 };
+  const loved = { cx: 300, cy: 196 };
+  const lovedR = 30;
+
+  // Bridge-shaped arcs along the triangle edges (echoing the logo).
+  const arcYouCompanion = `M ${you.cx - 12} ${you.cy + 12}
+    Q 205 155 ${companion.cx + 20} ${companion.cy - 24}`;
+  const arcYouClinician = `M ${you.cx + 12} ${you.cy + 12}
+    Q 395 155 ${clinician.cx - 20} ${clinician.cy - 24}`;
+  // The long lower line — a direct link between Companion and Clinician.
+  const arcBase = `M ${companion.cx + 26} ${companion.cy - 4}
+    Q 300 ${companion.cy + 56} ${clinician.cx - 26} ${clinician.cy - 4}`;
+
+  // Continuing-bond threads radiating from the loved one — strongest to You.
+  const bondToYou = `M ${loved.cx} ${loved.cy - lovedR}
+    Q ${loved.cx} ${(loved.cy - lovedR + you.cy + 24) / 2} ${you.cx} ${you.cy + 24}`;
+  const bondToCompanion = `M ${loved.cx - 20} ${loved.cy + 18}
+    Q 235 250 ${companion.cx + 16} ${companion.cy - 30}`;
+  const bondToClinician = `M ${loved.cx + 20} ${loved.cy + 18}
+    Q 365 250 ${clinician.cx - 16} ${clinician.cy - 30}`;
 
   return (
     <div className="w-full">
       <svg
-        viewBox="0 0 600 320"
+        viewBox="0 0 600 360"
         className="w-full h-auto"
         role="img"
-        aria-label="An abstract animation of a person, an AI companion, and a clinician connected by gentle bridge arcs, with a small memory of a loved one floating above."
+        aria-label="An abstract animation arranged as a triangle: you at the top, an AI companion and a clinician at the base, all connected by gentle bridge arcs, with a softly glowing loved one held at the very centre and connected first to you."
       >
-        {/* Soft horizon backdrop */}
         <defs>
           <linearGradient id="horizon" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="hsl(180, 50%, 95%)" stopOpacity="0.7" />
             <stop offset="100%" stopColor="hsl(36, 40%, 98%)" stopOpacity="0" />
           </linearGradient>
           <radialGradient id="memoryGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={SAND} stopOpacity="0.55" />
+            <stop offset="0%" stopColor={SAND} stopOpacity="0.5" />
             <stop offset="100%" stopColor={SAND} stopOpacity="0" />
           </radialGradient>
         </defs>
-        <rect x="0" y="0" width="600" height="320" fill="url(#horizon)" />
+        <rect x="0" y="0" width="600" height="360" fill="url(#horizon)" />
 
-        {/* The continuing-bonds memory — a softly floating presence above the seeker */}
+        {/* Triangle edges */}
+        <ConnectionArc d={arcYouCompanion} delay={0} />
+        <ConnectionArc d={arcYouClinician} delay={1.2} />
+        <ConnectionArc d={arcBase} delay={2.4} />
+
+        {/* Continuing-bond threads to the loved one at the centre */}
+        <BondThread d={bondToCompanion} delay={0.8} />
+        <BondThread d={bondToClinician} delay={1.4} />
+        <BondThread d={bondToYou} delay={0} strong />
+
+        {/* The loved one — a softly glowing, dotted-outline presence at the centre */}
         <g>
           <motion.circle
-            cx={seeker.cx - 20}
-            cy={70}
+            cx={loved.cx}
+            cy={loved.cy}
             fill="url(#memoryGlow)"
-            initial={{ r: 32, opacity: 0.7 }}
-            animate={{ r: [32, 40, 32], opacity: [0.7, 1, 0.7] }}
+            initial={{ r: 46, opacity: 0.7 }}
+            animate={{ r: [46, 56, 46], opacity: [0.7, 1, 0.7] }}
             transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
           />
+          {/* dotted outline — an absence that is still present */}
           <motion.circle
-            cx={seeker.cx - 20}
-            cy={70}
+            cx={loved.cx}
+            cy={loved.cy}
+            r={lovedR}
+            fill="none"
+            stroke={SAND}
+            strokeWidth={1.4}
+            strokeDasharray="3 5"
+            strokeLinecap="round"
+            animate={{ rotate: [0, 360] }}
+            style={{ transformOrigin: `${loved.cx}px ${loved.cy}px` }}
+            transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.circle
+            cx={loved.cx}
+            cy={loved.cy}
             r={5}
             fill={SAND}
             animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           />
-          {/* dotted thread linking memory to seeker */}
-          <motion.path
-            d={`M ${seeker.cx - 20} 80 Q ${seeker.cx - 10} 130 ${seeker.cx} ${seeker.cy - 28}`}
-            stroke={SAND}
-            strokeOpacity={0.5}
-            strokeWidth={1}
-            strokeDasharray="2 5"
-            fill="none"
-            animate={{ strokeDashoffset: [0, -14] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-          />
           <text
-            x={seeker.cx - 20}
-            y={42}
+            x={loved.cx}
+            y={loved.cy + lovedR + 22}
             textAnchor="middle"
             fontFamily="Fraunces, serif"
-            fontSize={11}
+            fontSize={13}
             fontStyle="italic"
             fill="hsl(215, 38%, 30%)"
-            opacity={0.75}
+            opacity={0.92}
           >
-            a loved one, remembered
+            A Loved One, Remembered
           </text>
         </g>
 
-        {/* Connections */}
-        <ConnectionArc d={arcSeekerCompanion} delay={0} />
-        <ConnectionArc d={arcCompanionClinician} delay={1.2} />
-        <ConnectionArc d={humanArc} delay={2.4} />
-
         {/* Figures */}
         <Figure
-          cx={seeker.cx}
-          cy={seeker.cy}
+          cx={you.cx}
+          cy={you.cy}
           color={NAVY}
           label="You"
           sublabel="At your pace"

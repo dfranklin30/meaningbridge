@@ -21,7 +21,7 @@ const SCENES: Scene[] = [
     title: "Bonds",
     body:
       "The people who love us — family, partners, friends — shape who we are. Those bonds do not end.",
-    alt: "An older woman and a younger adult woman sitting close on a couch in soft window light, the younger woman's head gently resting on the older woman's shoulder, hands intertwined.",
+    alt: "An older Black woman and a younger Black adult woman sitting close on a couch in soft window light, the younger woman's head gently resting on the older woman's shoulder, hands intertwined.",
     origin: "30% 40%",
     scale: [1.02, 1.08],
   },
@@ -48,7 +48,7 @@ const SCENES: Scene[] = [
     title: "A companion alongside",
     body:
       "MeaningBridge sits beside you like soft light — a gentle presence, never a replacement for the people who love you or the clinicians who care for you.",
-    alt: "A woman seated in a sunlit window nook holding a warm mug, eyes softly closed, with a golden retriever resting peacefully at her feet.",
+    alt: "An East Asian woman seated in a sunlit window nook holding a warm mug, eyes softly closed, with a golden retriever resting peacefully at her feet.",
     origin: "40% 45%",
     scale: [1.05, 1.0],
   },

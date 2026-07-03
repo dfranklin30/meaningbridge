@@ -3370,6 +3370,15 @@ components:
         aestheticsRating: { type: ["integer", "null"] }
         helpfulnessRating: { type: ["integer", "null"] }
         overallRating: { type: ["integer", "null"] }
+        ratings:
+          type: ["object", "null"]
+          additionalProperties: { type: integer }
+          description: "Site-evaluation dimension -> 0-10 score"
+        comments:
+          type: ["object", "null"]
+          additionalProperties: { type: string }
+          description: "Site-evaluation dimension -> free-text comment"
+        additionalSuggestions: { type: ["string", "null"] }
         narrative: { type: ["string", "null"] }
         name: { type: ["string", "null"] }
         roleLabel: { type: ["string", "null"] }
@@ -3385,6 +3394,15 @@ components:
         aestheticsRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
         helpfulnessRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
         overallRating: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+        ratings:
+          type: ["object", "null"]
+          additionalProperties: { type: integer, minimum: 0, maximum: 10 }
+          description: "Site-evaluation dimension -> 0-10 score"
+        comments:
+          type: ["object", "null"]
+          additionalProperties: { type: string }
+          description: "Site-evaluation dimension -> free-text comment"
+        additionalSuggestions: { type: ["string", "null"] }
         narrative: { type: ["string", "null"] }
         name: { type: ["string", "null"] }
         roleLabel: { type: ["string", "null"] }

@@ -5,6 +5,8 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+import type { SandboxFeedbackComments } from "./sandboxFeedbackComments";
+import type { SandboxFeedbackRatings } from "./sandboxFeedbackRatings";
 
 export interface SandboxFeedback {
   id: number;
@@ -18,6 +20,18 @@ export interface SandboxFeedback {
   helpfulnessRating?: number | null;
   /** @nullable */
   overallRating?: number | null;
+  /**
+   * Site-evaluation dimension -> 0-10 score
+   * @nullable
+   */
+  ratings?: SandboxFeedbackRatings;
+  /**
+   * Site-evaluation dimension -> free-text comment
+   * @nullable
+   */
+  comments?: SandboxFeedbackComments;
+  /** @nullable */
+  additionalSuggestions?: string | null;
   /** @nullable */
   narrative?: string | null;
   /** @nullable */

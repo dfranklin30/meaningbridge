@@ -1563,6 +1563,18 @@ export interface NotifyOptInResult {
   signup: NotifyOptIn;
 }
 
+/**
+ * Site-evaluation dimension -> 0-10 score
+ * @nullable
+ */
+export type SandboxFeedbackRatings = { [key: string]: number } | null;
+
+/**
+ * Site-evaluation dimension -> free-text comment
+ * @nullable
+ */
+export type SandboxFeedbackComments = { [key: string]: string } | null;
+
 export interface SandboxFeedback {
   id: number;
   /** @nullable */
@@ -1575,6 +1587,18 @@ export interface SandboxFeedback {
   helpfulnessRating?: number | null;
   /** @nullable */
   overallRating?: number | null;
+  /**
+   * Site-evaluation dimension -> 0-10 score
+   * @nullable
+   */
+  ratings?: SandboxFeedbackRatings;
+  /**
+   * Site-evaluation dimension -> free-text comment
+   * @nullable
+   */
+  comments?: SandboxFeedbackComments;
+  /** @nullable */
+  additionalSuggestions?: string | null;
   /** @nullable */
   narrative?: string | null;
   /** @nullable */
@@ -1585,6 +1609,18 @@ export interface SandboxFeedback {
   source: string;
   createdAt: string;
 }
+
+/**
+ * Site-evaluation dimension -> 0-10 score
+ * @nullable
+ */
+export type SandboxFeedbackInputRatings = { [key: string]: number } | null;
+
+/**
+ * Site-evaluation dimension -> free-text comment
+ * @nullable
+ */
+export type SandboxFeedbackInputComments = { [key: string]: string } | null;
 
 export interface SandboxFeedbackInput {
   /**
@@ -1616,6 +1652,18 @@ export interface SandboxFeedbackInput {
    * @nullable
    */
   overallRating?: number | null;
+  /**
+   * Site-evaluation dimension -> 0-10 score
+   * @nullable
+   */
+  ratings?: SandboxFeedbackInputRatings;
+  /**
+   * Site-evaluation dimension -> free-text comment
+   * @nullable
+   */
+  comments?: SandboxFeedbackInputComments;
+  /** @nullable */
+  additionalSuggestions?: string | null;
   /** @nullable */
   narrative?: string | null;
   /** @nullable */

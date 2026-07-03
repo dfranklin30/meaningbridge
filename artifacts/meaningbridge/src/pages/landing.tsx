@@ -7,6 +7,7 @@ import { HeroWordmark } from "@/components/hero-wordmark";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
 import { LivingBackground } from "@/components/living-background";
+import { DeckShare } from "@/components/deck-share";
 import photoBonds from "@/assets/photo-bonds.png";
 import neimeyerPortrait from "@assets/image_1782985313122.png";
 import lectureCongress from "@assets/image_1782985283687.png";
@@ -550,6 +551,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        {/* Share the overview deck */}
+        <DeckShare />
+
         {/* Community of interest */}
         <motion.section
           id="community"

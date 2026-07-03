@@ -62,6 +62,8 @@ export * from "./deceasedPhoto";
 export * from "./deceasedPhotoInput";
 export * from "./deceasedProfile";
 export * from "./deceasedProfileInput";
+export * from "./deckShareInput";
+export * from "./deckShareResult";
 export * from "./directoryEntry";
 export * from "./findTherapistsParams";
 export * from "./gisResult";

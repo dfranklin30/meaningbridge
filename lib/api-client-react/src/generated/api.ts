@@ -58,6 +58,8 @@ import type {
   DeceasedPhotoInput,
   DeceasedProfile,
   DeceasedProfileInput,
+  DeckShareInput,
+  DeckShareResult,
   DirectoryEntry,
   FindTherapistsParams,
   GisResult,
@@ -4428,6 +4430,92 @@ export function useListNotifyOptIns<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Email the MeaningBridge overview deck (PDF) to a recipient
+ */
+export const getShareDeckUrl = () => {
+  return `/api/deck/share`;
+};
+
+export const shareDeck = async (
+  deckShareInput: DeckShareInput,
+  options?: RequestInit,
+): Promise<DeckShareResult> => {
+  return customFetch<DeckShareResult>(getShareDeckUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(deckShareInput),
+  });
+};
+
+export const getShareDeckMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof shareDeck>>,
+    TError,
+    { data: BodyType<DeckShareInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof shareDeck>>,
+  TError,
+  { data: BodyType<DeckShareInput> },
+  TContext
+> => {
+  const mutationKey = ["shareDeck"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof shareDeck>>,
+    { data: BodyType<DeckShareInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return shareDeck(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ShareDeckMutationResult = NonNullable<
+  Awaited<ReturnType<typeof shareDeck>>
+>;
+export type ShareDeckMutationBody = BodyType<DeckShareInput>;
+export type ShareDeckMutationError = ErrorType<void>;
+
+/**
+ * @summary Email the MeaningBridge overview deck (PDF) to a recipient
+ */
+export const useShareDeck = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof shareDeck>>,
+    TError,
+    { data: BodyType<DeckShareInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof shareDeck>>,
+  TError,
+  { data: BodyType<DeckShareInput> },
+  TContext
+> => {
+  return useMutation(getShareDeckMutationOptions(options));
+};
 
 /**
  * @summary Submit sandbox experience feedback

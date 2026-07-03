@@ -1326,6 +1326,23 @@ export const ListNotifyOptInsResponseItem = zod.object({
 export const ListNotifyOptInsResponse = zod.array(ListNotifyOptInsResponseItem);
 
 /**
+ * @summary Email the MeaningBridge overview deck (PDF) to a recipient
+ */
+export const shareDeckBodyEmailMax = 254;
+
+export const shareDeckBodyFirstNameMax = 80;
+
+export const ShareDeckBody = zod.object({
+  email: zod.string().email().max(shareDeckBodyEmailMax),
+  firstName: zod.string().max(shareDeckBodyFirstNameMax).nullish(),
+});
+
+export const ShareDeckResponse = zod.object({
+  ok: zod.boolean(),
+  sent: zod.boolean(),
+});
+
+/**
  * @summary Submit sandbox experience feedback
  */
 export const createSandboxFeedbackBodyNavigationRatingMax = 5;

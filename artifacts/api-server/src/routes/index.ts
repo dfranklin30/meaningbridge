@@ -22,6 +22,7 @@ import appointmentsRouter from "./appointments";
 import conciergeRouter from "./concierge";
 import imageryRouter from "./imagery";
 import bookingRouter from "./booking";
+import deckRouter from "./deck";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use("/appointments", appointmentsRouter);
 router.use("/concierge", conciergeRouter);
 router.use("/imagery", imageryRouter);
 router.use("/booking", bookingRouter);
+router.use("/deck", deckRouter);
 
 export default router;

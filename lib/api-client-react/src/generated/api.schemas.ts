@@ -1652,6 +1652,21 @@ export interface NotifyOptInResult {
   signup: NotifyOptIn;
 }
 
+export interface DeckShareInput {
+  /** @maxLength 254 */
+  email: string;
+  /**
+   * @maxLength 80
+   * @nullable
+   */
+  firstName?: string | null;
+}
+
+export interface DeckShareResult {
+  ok: boolean;
+  sent: boolean;
+}
+
 /**
  * Site-evaluation dimension -> 0-10 score
  * @nullable

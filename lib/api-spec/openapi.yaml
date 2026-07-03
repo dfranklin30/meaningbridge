@@ -944,6 +944,31 @@ paths:
                 items:
                   $ref: "#/components/schemas/NotifyOptIn"
 
+  /deck/share:
+    post:
+      operationId: shareDeck
+      tags: [notify]
+      summary: Email the MeaningBridge overview deck (PDF) to a recipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeckShareInput"
+      responses:
+        "200":
+          description: Send attempted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeckShareResult"
+        "429":
+          description: Too many requests (rate limited)
+        "502":
+          description: Email delivery failed
+        "503":
+          description: Overview PDF unavailable
+
   /feedback:
     post:
       operationId: createSandboxFeedback
@@ -3595,6 +3620,19 @@ components:
         signup:
           $ref: "#/components/schemas/NotifyOptIn"
       required: [ok, alreadySubscribed, signup]
+
+    DeckShareInput:
+      type: object
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        firstName: { type: ["string", "null"], maxLength: 80 }
+      required: [email]
+    DeckShareResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        sent: { type: boolean }
+      required: [ok, sent]
 
     SandboxFeedback:
       type: object

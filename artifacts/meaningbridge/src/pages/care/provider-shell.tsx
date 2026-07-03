@@ -113,6 +113,7 @@ export interface AdminProviderItem extends ProviderProfile {
 const NAV: { href: string; label: string; admin?: boolean }[] = [
   { href: "/care/account", label: "Account" },
   { href: "/care/patients", label: "Patients" },
+  { href: "/care/forms", label: "Intake forms" },
   { href: "/care/integrations", label: "Integrations" },
   { href: "/care/directory", label: "Directory" },
   { href: "/care/referrals", label: "Referrals" },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useRoute, Link } from "wouter";
+import { useLocation, useRoute, useSearch, Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Plus, ShieldAlert, X, Loader2 } from "lucide-react";
 import {
@@ -108,6 +108,69 @@ function emptyForm(): IntakeForm {
   };
 }
 
+// Clearly-fictional sample used only for the no-network demo preview.
+const PREVIEW_CAUSES = [
+  "Illness",
+  "Sudden medical event",
+  "Accident",
+  "Overdose",
+  "Suicide",
+  "Homicide",
+  "Other",
+];
+
+const PREVIEW_PROVIDER: ProviderProfile = {
+  id: 0,
+  userId: 0,
+  fullName: "Dr. Sarah Chen",
+  credential: "MD",
+  licenseNumber: "PSY-48213",
+  licenseState: "OR",
+  npi: "1234567893",
+  practiceName: "Riverbend Psychiatric Associates",
+  practiceAddress: "Portland, OR",
+  verificationStatus: "verified",
+  verificationNote: null,
+  verifiedAt: null,
+  directoryOptIn: false,
+  specialtyTags: ["Complicated grief", "Trauma"],
+  statesLicensed: ["OR", "WA"],
+  telehealth: true,
+  acceptingReferrals: true,
+  bio: null,
+};
+
+const PREVIEW_INTAKE: IntakeForm = {
+  identity: {
+    firstName: "Marcus",
+    lastName: "Webb",
+    dob: "1972-03-14",
+    pronouns: "he/him",
+    phone: "(555) 010-4477",
+    email: "marcus.webb@example.com",
+    preferredContact: "Email",
+    emergencyName: "Dana Webb",
+    emergencyPhone: "(555) 010-8890",
+  },
+  loss: { relationship: "Partner or spouse", dateOfLoss: "2025-08-01", causeCategory: "Sudden medical event" },
+  clinical: {
+    pg13r: "34",
+    phq9: "14",
+    gad7: "9",
+    cssrsFlag: false,
+    activeSuicidalIdeation: false,
+    diagnoses: "Prolonged grief disorder",
+    icd10: ["F43.81"],
+    medications: "Sertraline 100 mg",
+    treatments: ["Individual therapy"],
+  },
+  goals: {
+    selected: ["Continuing bonds work", "Narrative & legacy work"],
+    freeText:
+      "Marcus wants a place to talk to and about Elena between sessions; struggles most at night.",
+  },
+};
+
 function fromData(data: Record<string, unknown>): IntakeForm {
   const f = emptyForm();
   const src = data as Partial<IntakeForm>;
@@ -153,6 +216,7 @@ export default function ProviderIntake() {
   const [, params] = useRoute("/care/intake/:id");
   const routeId = params?.id ? Number(params.id) : null;
   const [, setLocation] = useLocation();
+  const isPreview = new URLSearchParams(useSearch()).get("preview") === "1";
   const { guard, challengeElement } = useTwoFactorGate();
 
   const [loading, setLoading] = useState(true);
@@ -170,10 +234,28 @@ export default function ProviderIntake() {
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [previewDone, setPreviewDone] = useState(false);
 
   const riskFlag = form.clinical.cssrsFlag || form.clinical.activeSuicidalIdeation;
 
   useEffect(() => {
+    if (isPreview) {
+      setProvider(PREVIEW_PROVIDER);
+      setCauses(PREVIEW_CAUSES);
+      setForm(PREVIEW_INTAKE);
+      setLoading(false);
+      return;
+    }
+    // Clear any sample data left over from a preview session before any live
+    // save/submit is possible. For an existing intake (routeId set) the load
+    // below overwrites the form; for a new intake we must reset here so preview
+    // sample data can never be persisted to a real record.
+    if (routeId === null) {
+      setForm(emptyForm());
+      setIntakeId(null);
+      setSafetyPlanConfirmed(false);
+    }
+    setPreviewDone(false);
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -214,7 +296,7 @@ export default function ProviderIntake() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeId]);
+  }, [routeId, isPreview]);
 
   function patchForm(section: keyof IntakeForm, values: Partial<IntakeForm[keyof IntakeForm]>) {
     setForm((f) => ({ ...f, [section]: { ...f[section], ...values } }));
@@ -227,6 +309,10 @@ export default function ProviderIntake() {
   );
 
   async function saveDraft(): Promise<number | null> {
+    if (isPreview) {
+      setSavedNote("Saved (preview)");
+      return intakeId ?? 0;
+    }
     setSaving(true);
     setFormError(null);
     try {
@@ -287,6 +373,10 @@ export default function ProviderIntake() {
   }
 
   async function saveAndExit() {
+    if (isPreview) {
+      setLocation("/care/forms");
+      return;
+    }
     const ok = await saveDraft();
     // Only leave once the draft is safely persisted, so partially-entered PHI
     // is never silently lost.
@@ -301,6 +391,10 @@ export default function ProviderIntake() {
     }
     if (riskFlag && !safetyPlanConfirmed) {
       setFormError("Please confirm a safety plan is in place before submitting.");
+      return;
+    }
+    if (isPreview) {
+      setPreviewDone(true);
       return;
     }
     setSubmitting(true);
@@ -322,13 +416,41 @@ export default function ProviderIntake() {
   if (phiCode) return <PhiNotice code={phiCode} onChallenge={() => window.location.reload()} />;
   if (loadError) return <ErrorBanner message={loadError} />;
 
+  if (isPreview && previewDone) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <PreviewBanner />
+        <div className="rounded-xl border border-border bg-card p-8 text-center space-y-4">
+          <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-primary mx-auto">
+            <Check className="w-5 h-5" />
+          </div>
+          <h2 className="font-serif text-xl">Preview complete</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            In real use, the patient would now receive a secure consent invite by email and this
+            enrollment would appear as a draft on your roster. Nothing here was saved.
+          </p>
+          <div className="pt-1">
+            <Link href="/care/forms" className="btn-primary inline-flex items-center gap-1.5">
+              Back to intake forms
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       {challengeElement}
 
+      {isPreview && <PreviewBanner />}
+
       <div className="space-y-2">
-        <Link href="/care/patients" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to patients
+        <Link
+          href={isPreview ? "/care/forms" : "/care/patients"}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> {isPreview ? "Back to intake forms" : "Back to patients"}
         </Link>
         <h1 className="font-serif text-3xl">Enroll a patient</h1>
         <p className="text-sm text-muted-foreground">
@@ -447,6 +569,17 @@ export default function ProviderIntake() {
 }
 
 // --- steps -------------------------------------------------------------------
+
+function PreviewBanner() {
+  return (
+    <div className="rounded-md border border-primary/25 bg-accent/50 px-4 py-3 text-sm text-foreground/80">
+      Preview of the patient enrollment intake — sample data, nothing here is saved.{" "}
+      <Link href="/care/forms" className="text-primary hover:underline">
+        Back to intake forms
+      </Link>
+    </div>
+  );
+}
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="block text-sm text-foreground mb-1.5">{children}</label>;

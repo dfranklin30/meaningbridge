@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Loader2, Check, ShieldCheck, AlertCircle } from "lucide-react";
 import { api, ApiError, ErrorBanner, type ProviderProfile } from "./provider-shell";
 
@@ -40,6 +40,23 @@ const EMPTY: FormState = {
   directoryOptIn: false,
 };
 
+// Clearly-fictional sample used only for the no-network demo preview.
+const PREVIEW_FORM: FormState = {
+  fullName: "Dr. Sarah Chen",
+  credential: "MD",
+  licenseNumber: "PSY-48213",
+  licenseState: "OR",
+  npi: "1234567893",
+  practiceName: "Riverbend Psychiatric Associates",
+  practiceAddress: "1200 Riverbend Way, Portland, OR",
+  specialtyTags: "Complicated grief, Trauma",
+  statesLicensed: "OR, WA",
+  telehealth: true,
+  acceptingReferrals: true,
+  bio: "Board-certified psychiatrist focused on grief and trauma across the lifespan.",
+  directoryOptIn: true,
+};
+
 function toCsv(arr: string[]): string {
   return arr.join(", ");
 }
@@ -52,10 +69,12 @@ function fromCsv(s: string): string[] {
 
 export default function ProviderOnboarding() {
   const [, setLocation] = useLocation();
+  const isPreview = new URLSearchParams(useSearch()).get("preview") === "1";
   const [form, setForm] = useState<FormState>(EMPTY);
   const [existing, setExisting] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [attested, setAttested] = useState(false);
+  const [previewSaved, setPreviewSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [npi, setNpi] = useState<{ checking: boolean; result: NpiResult | null }>({
@@ -65,6 +84,17 @@ export default function ProviderOnboarding() {
   const npiTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (isPreview) {
+      setForm(PREVIEW_FORM);
+      setAttested(true);
+      setLoaded(true);
+      return;
+    }
+    // Clear any sample data left over from a preview session so it can never be
+    // POSTed as a real profile (e.g. a new clinician whose /me lookup 404s).
+    setForm(EMPTY);
+    setAttested(false);
+    setPreviewSaved(false);
     (async () => {
       try {
         const p = await api<ProviderProfile>("/professional/providers/me");
@@ -93,7 +123,7 @@ export default function ProviderOnboarding() {
         setLoaded(true);
       }
     })();
-  }, []);
+  }, [isPreview]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -101,6 +131,7 @@ export default function ProviderOnboarding() {
   const checkNpi = (value: string) => {
     set("npi", value);
     setNpi({ checking: false, result: null });
+    if (isPreview) return;
     if (npiTimer.current) clearTimeout(npiTimer.current);
     const trimmed = value.trim();
     if (trimmed.length !== 10) return;
@@ -118,6 +149,10 @@ export default function ProviderOnboarding() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!attested || !form.fullName.trim()) return;
+    if (isPreview) {
+      setPreviewSaved(true);
+      return;
+    }
     setSaving(true);
     setError(null);
     const payload = {
@@ -165,6 +200,21 @@ export default function ProviderOnboarding() {
           information can be accessed.
         </p>
       </div>
+
+      {isPreview && (
+        <div className="rounded-md border border-primary/25 bg-accent/50 px-4 py-3 text-sm text-foreground/80">
+          Preview of the clinician profile form — sample data, nothing here is saved.{" "}
+          <Link href="/care/forms" className="text-primary hover:underline">
+            Back to intake forms
+          </Link>
+        </div>
+      )}
+
+      {isPreview && previewSaved && (
+        <div className="rounded-md border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-primary">
+          Preview only — in real use this would be submitted for verification. Nothing was saved.
+        </div>
+      )}
 
       {error && <ErrorBanner message={error} />}
 

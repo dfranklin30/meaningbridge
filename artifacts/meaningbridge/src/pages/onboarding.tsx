@@ -80,7 +80,7 @@ export default function Onboarding() {
   };
 
   const finish = async () => {
-    await updateProfile({
+    const updated = await updateProfile({
       data: {
         onboardingComplete: true,
         crisisAcknowledged: true,
@@ -91,7 +91,11 @@ export default function Onboarding() {
         preferredMode: "continuing-bonds",
       },
     });
-    queryClient.invalidateQueries({ queryKey: getGetProfileQueryKey() });
+    // Write the server's updated profile into the cache synchronously so the
+    // onboarding gate in Layout sees onboardingComplete=true immediately.
+    // Without this, navigating to /app can read the stale (false) cache and
+    // bounce the user back to /onboarding, restarting the flow from step one.
+    queryClient.setQueryData(getGetProfileQueryKey(), updated);
     setLocation("/app");
   };
 

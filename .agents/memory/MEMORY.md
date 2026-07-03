@@ -9,3 +9,4 @@
 - [Outreach delivery channels](outreach-delivery-channels.md) — email + SMS use env-var creds (not Replit connectors) with graceful degradation; new channels must log-and-skip on missing config, never crash or fake a send.
 - [Companion bubble personas](companion-bubble-personas.md) — corner chat persona is route+capability based; provider persona MUST stay PHI-free (separate stateless endpoint); reset transcript on persona switch.
 - [Dual-role accounts](dual-role-accounts.md) — users carry additive isSeeker/isProfessional + activeSpace; legacy `role` is an additive grant (never revokes); routing/gating keys off capabilities, not `role`.
+- [Onboarding gate cache race](onboarding-gate-cache-race.md) — completion must setQueryData(profile) before navigating; invalidate alone leaves stale onboardingComplete=false and bounces users back to step one.

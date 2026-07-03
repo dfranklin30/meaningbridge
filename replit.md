@@ -54,7 +54,7 @@ A warm, trauma-informed grief-support web app: Continuing Bonds and Meaning Reco
 ## Product
 
 Public (no onboarding gate, no app chrome):
-- `/` — coming-soon landing: headline, "Brought to you by Dr. Robert Neimeyer", simple hero CTA ("Enter the experience" → `/sign-up`, plus a quiet "Or notify me at launch"), contact line for neimeyer@portlandinstitute.org. Two audience doorways are persistent fixed side rails (lg+): left "For those grieving" → `/sign-up`, right "For professionals" → `/caregiver`, so visitors can swap between the two spaces from any scroll position (mobile menu carries the same two boxes). A "Community of interest" section (anchor `#community`, linked from the nav) invites people to the Portland Institute for Loss and Transition Facebook community at https://www.facebook.com/PortlandInstitute/. The QR code was removed from the homepage (still lives on `/notify` and `/present`).
+- `/` — coming-soon landing: centered hero — headline, then two big horizontal audience doorways front-and-center around the infinity ribbon (left navy "For professionals" → `/caregiver`, right teal "For those grieving" → `/sign-up`), then "Brought to you by Dr. Robert Neimeyer", a quiet "Or notify me at launch", and the contact line for neimeyer@portlandinstitute.org. The doorways use the `brand-navy`/`brand-teal` (primary) tokens to echo the logo's two loops (mobile menu carries the same two boxes). A "Community of interest" section (anchor `#community`, linked from the nav) invites people to the Portland Institute for Loss and Transition Facebook community at https://www.facebook.com/PortlandInstitute/. The QR code was removed from the homepage (still lives on `/notify` and `/present`).
 - `/notify` — public signup form (writes to `notify_opt_ins`). Reads `?src=<label>` for attribution; defaults to `qr`.
 - `/present` — full-screen QR for keynote projection.
 - `/pricing` — subscription tiers mapped to the GIS tiers (Companion / Enhanced / Specialist). Visual prototype, no Stripe wiring; CTAs route to `/onboarding` or `/notify?src=pricing-*`.
@@ -116,7 +116,7 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 - NO emojis anywhere in UI. None.
 - Calm, restful tone. No gamification, no exclamation points.
 - Newsreader (editorial serif) for headings, Inter for body — calm, editorial, Aesop-inspired. (Superseded earlier Nunito/Nunito Sans, Playfair/DM Sans, and Fraunces/Inter.)
-- Palette is derived from the logo (navy→teal infinity-bridge): deep navy (`--brand-navy`) = the professionals loop, bridge teal (`--brand-teal` / `--primary`) = the grieving loop, on cool soft paper. The two brand tokens are exposed as `brand-navy`/`brand-teal` Tailwind utilities. The landing side rails and the animated infinity ribbon use them to express the integration between professionals and those grieving.
+- Palette is derived from the logo (navy→teal infinity-bridge): deep navy (`--brand-navy`) = the professionals loop, bridge teal (`--brand-teal` / `--primary`) = the grieving loop, on cool soft paper. The two brand tokens are exposed as `brand-navy`/`brand-teal` Tailwind utilities. The landing audience doorways and the animated infinity ribbon use them to express the integration between professionals and those grieving.
 - Tasteful slow motion (framer-motion fades). No bounce, no overshoot.
 - Persistent crisis-support affordance on every screen.
 

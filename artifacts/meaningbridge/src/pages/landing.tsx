@@ -30,22 +30,6 @@ export default function LandingPage() {
       {/* Living, slowly-drifting aurora background */}
       <LivingBackground />
 
-      {/* Audience side rails — swap between the two doorways */}
-      <Link
-        href="/caregiver"
-        aria-label="For professionals — enter here"
-        className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-r-sm border border-l-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-brand-navy hover:border-brand-navy/50 transition-colors"
-      >
-        For professionals
-      </Link>
-      <Link
-        href="/sign-up"
-        aria-label="For those grieving — enter here"
-        className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-l-sm border border-r-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-primary hover:border-primary/50 transition-colors"
-      >
-        For those grieving
-      </Link>
-
       <header className="relative z-20 px-5 sm:px-6 py-5 sm:py-6 max-w-6xl mx-auto flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0">
           <Logo variant="lockup" size={44} />
@@ -180,12 +164,12 @@ export default function LandingPage() {
       </AnimatePresence>
 
       <main className="relative z-10 px-6 pb-20">
-        <div className="max-w-2xl mx-auto pt-8 md:pt-16">
+        <div className="max-w-3xl mx-auto pt-8 md:pt-16">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-8"
+            className="space-y-8 text-center"
           >
             <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
               Coming soon
@@ -193,7 +177,38 @@ export default function LandingPage() {
             <h1 className="font-serif text-5xl md:text-6xl leading-[1.05] tracking-tight">
               MeaningBridge <span className="text-primary">is coming to you.</span>
             </h1>
-            <div className="flex items-center gap-3">
+
+            {/* Two doorways — front and center, around the infinity */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto pt-2">
+              <Link
+                href="/caregiver"
+                aria-label="For professionals — enter here"
+                className="group relative overflow-hidden rounded-2xl border border-brand-navy/25 bg-card/80 backdrop-blur px-6 py-8 sm:py-10 transition-colors hover:border-brand-navy/60"
+              >
+                <span className="block font-serif text-3xl md:text-4xl tracking-tight text-brand-navy">
+                  For professionals
+                </span>
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                  Clinicians &amp; care teams
+                  <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+              <Link
+                href="/sign-up"
+                aria-label="For those grieving — enter here"
+                className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-card/80 backdrop-blur px-6 py-8 sm:py-10 transition-colors hover:border-primary/60"
+              >
+                <span className="block font-serif text-3xl md:text-4xl tracking-tight text-primary">
+                  For those grieving
+                </span>
+                <span className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                  Begin gently
+                  <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            </div>
+
+            <div className="flex items-center justify-center gap-3">
               <img
                 src={neimeyerPortrait}
                 alt="Dr. Robert Neimeyer"
@@ -203,20 +218,13 @@ export default function LandingPage() {
                 Brought to you by Dr. Robert Neimeyer.
               </p>
             </div>
-            <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg">
+            <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto">
               A warm, AI-assisted grief companion grounded in Dr. Robert Neimeyer's
               meaning-focused approach to grief and the continuing bonds philosophy.
               A bridge between sessions. A bridge between worlds.
             </p>
 
-            <div className="flex flex-wrap items-center gap-5 pt-2">
-              <Link
-                href="/sign-up"
-                className="group inline-flex items-center gap-2 rounded-sm bg-primary px-7 py-3.5 text-base font-medium text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
-              >
-                Enter the experience
-                <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
-              </Link>
+            <div className="flex justify-center pt-1">
               <Link
                 href="/notify"
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"

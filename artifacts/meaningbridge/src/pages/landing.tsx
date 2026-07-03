@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { Copy, Check, Maximize2, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Copy, Check, Maximize2, ArrowRight, Menu, X } from "lucide-react";
 import { QRCodeImage } from "@/components/qr-code";
 import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
@@ -18,10 +18,20 @@ import lectureStanding from "@assets/image_1783094613403.png";
 export default function LandingPage() {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   const notifyUrl = useMemo(() => (origin ? `${origin}/notify?src=qr` : ""), [origin]);
 
@@ -41,9 +51,13 @@ export default function LandingPage() {
       {/* Living, slowly-drifting aurora background */}
       <LivingBackground />
 
-      <header className="relative z-10 px-6 py-6 max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <Logo variant="lockup" size={48} />
-        <nav className="flex items-center gap-1 sm:gap-2 text-sm font-medium">
+      <header className="relative z-20 px-5 sm:px-6 py-5 sm:py-6 max-w-6xl mx-auto flex items-center justify-between gap-4">
+        <Link href="/" className="shrink-0">
+          <Logo variant="lockup" size={44} />
+        </Link>
+
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium">
           {[
             { href: "/sign-up", label: "For those grieving" },
             { href: "/pricing", label: "Plans" },
@@ -62,13 +76,99 @@ export default function LandingPage() {
           ))}
           <Link
             href="/sign-up"
-            className="group ml-1 sm:ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
+            className="group ml-1 lg:ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
           >
             Enter the experience
             <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
           </Link>
         </nav>
+
+        {/* Mobile menu toggle */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          className="md:hidden inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-card/80 backdrop-blur text-foreground hover:border-primary/40 transition-colors"
+        >
+          {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </header>
+
+      {/* Mobile menu panel */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.nav
+            id="mobile-menu"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="md:hidden relative z-20 px-5"
+          >
+            <div className="rounded-3xl border border-border bg-card/95 backdrop-blur p-4 shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.18)] space-y-3">
+              {/* Utility links */}
+              <div className="flex items-center justify-center gap-5 text-sm font-medium text-foreground/70">
+                <Link
+                  href="/evaluate"
+                  onClick={() => setMenuOpen(false)}
+                  className="hover:text-primary transition-colors"
+                >
+                  Share feedback
+                </Link>
+                <span className="h-3 w-px bg-border" />
+                <Link
+                  href="/notify"
+                  onClick={() => setMenuOpen(false)}
+                  className="hover:text-primary transition-colors"
+                >
+                  Notify me
+                </Link>
+              </div>
+
+              {/* Big audience boxes */}
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/sign-up"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex flex-col justify-between rounded-2xl border border-border bg-background/70 p-4 min-h-[6.5rem] hover:border-primary/40 transition-colors"
+                >
+                  <span className="font-serif text-lg leading-tight">For those grieving</span>
+                  <span className="text-xs text-muted-foreground mt-2">Begin gently</span>
+                </Link>
+                <Link
+                  href="/caregiver"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex flex-col justify-between rounded-2xl border border-border bg-background/70 p-4 min-h-[6.5rem] hover:border-primary/40 transition-colors"
+                >
+                  <span className="font-serif text-lg leading-tight">For professionals</span>
+                  <span className="text-xs text-muted-foreground mt-2">Clinicians &amp; care teams</span>
+                </Link>
+              </div>
+
+              {/* Enter the experience — prominent box */}
+              <Link
+                href="/sign-up"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-between rounded-2xl bg-primary text-primary-foreground px-5 py-4 shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
+              >
+                <span className="font-serif text-lg">Enter the experience</span>
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+
+              {/* Plans — skinny bar */}
+              <Link
+                href="/pricing"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center justify-center rounded-full border border-border bg-background/60 py-2.5 text-sm text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                Plans
+              </Link>
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
 
       <main className="relative z-10 px-6 pb-20">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 md:gap-16 items-center pt-8 md:pt-16">

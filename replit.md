@@ -114,7 +114,7 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 
 - NO emojis anywhere in UI. None.
 - Calm, restful tone. No gamification, no exclamation points.
-- Playfair Display for display, DM Sans for body.
+- Nunito (rounded display, weights 800/900) for headings, Nunito Sans for body — warm, "brought to life" feel inspired by jaspergrief.com. (Superseded earlier Playfair/DM Sans and Fraunces/Inter.)
 - Tasteful slow motion (framer-motion fades). No bounce, no overshoot.
 - Persistent crisis-support affordance on every screen.
 

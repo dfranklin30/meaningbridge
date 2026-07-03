@@ -13,7 +13,7 @@ import lectureCongress from "@assets/image_1782985283687.png";
 import lectureAudience from "@assets/image_1782985270880.png";
 import lectureTie from "@assets/image_1782985295812.png";
 import lectureStanding from "@assets/image_1783094613403.png";
-import heroVideo from "@assets/Runway_timeline_export_a384ca35-6637-42fc-ad55-9d3157a18a9b_1783108564352.mp4";
+import heroVideo from "@/assets/hero-film.mp4";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);

@@ -179,19 +179,40 @@ export default function LandingPage() {
               A bridge between sessions. A bridge between worlds.
             </p>
 
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="pt-2 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Link
+                  href="/sign-up"
+                  className="group flex flex-col justify-between rounded-sm border border-border bg-card p-7 min-h-[9.5rem] hover:border-primary/50 transition-colors"
+                >
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Enter here</p>
+                    <span className="font-serif text-2xl mt-2 block leading-tight">For those grieving</span>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                    Begin gently
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+                <Link
+                  href="/caregiver"
+                  className="group flex flex-col justify-between rounded-sm border border-border bg-card p-7 min-h-[9.5rem] hover:border-primary/50 transition-colors"
+                >
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-primary/70">For clinicians</p>
+                    <span className="font-serif text-2xl mt-2 block leading-tight">For professionals</span>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                    Clinicians &amp; care teams
+                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              </div>
               <Link
                 href="/notify"
-                className="inline-flex items-center justify-center bg-primary text-primary-foreground rounded-full px-6 py-3 text-sm font-medium hover:opacity-90 transition-opacity shadow-sm"
+                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Notify me at launch
-              </Link>
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm text-foreground hover:border-primary/50 hover:text-primary transition-colors"
-              >
-                Enter the experience
-                <ArrowRight className="w-4 h-4" />
+                Or notify me at launch
               </Link>
             </div>
 

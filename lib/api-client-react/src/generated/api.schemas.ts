@@ -5,6 +5,81 @@
  * MeaningBridge API — grief support, continuing bonds, journaling, assessments
  * OpenAPI spec version: 0.1.0
  */
+export interface BookingAppointmentType {
+  id: string;
+  name: string;
+  /** @nullable */
+  length?: number | null;
+  contactTypes: string[];
+  isGroup: boolean;
+}
+
+export interface BookingSlot {
+  providerId: string;
+  /** ISO datetime of the slot start */
+  date: string;
+  /** @nullable */
+  appointmentId?: string | null;
+  isFullyBooked: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type BookingEligibilityReason =
+  | (typeof BookingEligibilityReason)[keyof typeof BookingEligibilityReason]
+  | null;
+
+export const BookingEligibilityReason = {
+  not_linked: "not_linked",
+  forms_incomplete: "forms_incomplete",
+  not_configured: "not_configured",
+} as const;
+
+export interface BookingEligibility {
+  allowed: boolean;
+  /** @nullable */
+  reason?: BookingEligibilityReason;
+  missingFormIds: string[];
+}
+
+export interface BookingRequest {
+  providerId: string;
+  appointmentTypeId: string;
+  contactType: string;
+  /** ISO datetime of the chosen slot */
+  date: string;
+  /** @minLength 1 */
+  firstName: string;
+  /** @minLength 1 */
+  lastName: string;
+  /** @minLength 1 */
+  email: string;
+  /** @minLength 1 */
+  phoneNumber: string;
+  timezone?: string;
+}
+
+export interface BookedAppointment {
+  id: string;
+  /** @nullable */
+  date?: string | null;
+  /** @nullable */
+  start?: string | null;
+  /** @nullable */
+  end?: string | null;
+  /** @nullable */
+  contactType?: string | null;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  providerName?: string | null;
+  /** @nullable */
+  appointmentTypeName?: string | null;
+  /** @nullable */
+  addToGcalLink?: string | null;
+}
+
 export type CompanionMemorySource =
   (typeof CompanionMemorySource)[keyof typeof CompanionMemorySource];
 
@@ -1738,3 +1813,18 @@ export const ListProvidersForAdminStatus = {
   rejected: "rejected",
   all: "all",
 } as const;
+
+export type ListBookingAppointmentTypesParams = {
+  providerId: string;
+};
+
+export type ListBookingAvailableSlotsParams = {
+  providerId: string;
+  appointmentTypeId: string;
+  contactType: string;
+  /**
+   * ISO date (YYYY-MM-DD)
+   */
+  date: string;
+  timezone?: string;
+};

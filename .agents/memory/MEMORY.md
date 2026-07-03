@@ -13,6 +13,7 @@
 - [Onboarding gate cache race](onboarding-gate-cache-race.md) — completion must setQueryData(profile) before navigating; invalidate alone leaves stale onboardingComplete=false and bounces users back to step one.
 - [Anthropic vision message blocks](anthropic-vision-messages.md) — base64 media_type is a strict literal union (not string); validate before building blocks. Companion images are ephemeral (inflight-only render).
 - [Image-chat body limit](image-chat-body-limit.md) — base64 image payloads need a raised express.json limit AND a decoded-size cap in-route; default 100kb rejects them at the parser before route validation runs.
+- [Healthie booking PHI boundary](healthie-booking-phi-boundary.md) — key stays server-side, browser hits fixed /api/booking routes only (no raw GraphQL); gate fails closed; never log Healthie vars/bodies/error text.
 - [OpenRouter integration constraints](openrouter-integration-constraints.md) — managed OpenRouter blocks `:free` models; paid Nemotron is text-only; lazy-load client so config errors fall back not crash boot.
 - [Safety-event routing](safety-event-routing.md) — only crisis/harmful-moderation go in safety_events (they drive user safety feed + clinician counts/nudges); off-topic redirects must NOT; moderation fails open.
 - [Memory-image generation](memory-image-generation.md) — calming-image endpoint is text-only (never the uploaded photos) so no likeness; openai-server `./image` module may be missing—create it + rebuild libs.

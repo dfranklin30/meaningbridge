@@ -50,6 +50,7 @@ import PracticePlayer from "@/pages/practices/player";
 import PracticeEditor from "@/pages/practices/editor";
 import LovedOne from "@/pages/loved-one";
 import Therapists from "@/pages/therapists";
+import Book from "@/pages/book";
 import Crisis from "@/pages/crisis";
 import Settings from "@/pages/settings";
 import CareInvite from "@/pages/care/invite";
@@ -264,6 +265,7 @@ function AppRoutes() {
         <Route path="/practices/:id" component={PracticePlayer} />
         <Route path="/loved-one" component={LovedOne} />
         <Route path="/therapists" component={Therapists} />
+        <Route path="/book" component={Book} />
         <Route path="/care/connect" component={ConnectClinician} />
         <Route path="/crisis" component={Crisis} />
         <Route path="/settings" component={Settings} />

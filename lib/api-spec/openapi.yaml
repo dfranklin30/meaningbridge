@@ -28,6 +28,8 @@ tags:
     description: Safety and crisis events
   - name: notify
     description: Public launch-notification opt-in list
+  - name: booking
+    description: Appointment booking (Healthie-proxied)
   - name: account
     description: Current authenticated account (identity and role)
   - name: voice
@@ -2220,8 +2222,158 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AnthropicError" }
 
+  /booking/appointment-types:
+    get:
+      operationId: listBookingAppointmentTypes
+      tags: [booking]
+      summary: Bookable appointment types for a provider (proxied from Healthie)
+      parameters:
+        - name: providerId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Appointment types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookingAppointmentType"
+
+  /booking/available-slots:
+    get:
+      operationId: listBookingAvailableSlots
+      tags: [booking]
+      summary: Open time slots for a provider on a date (proxied from Healthie)
+      parameters:
+        - name: providerId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: appointmentTypeId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: contactType
+          in: query
+          required: true
+          schema: { type: string }
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, description: "ISO date (YYYY-MM-DD)" }
+        - name: timezone
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Available slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookingSlot"
+
+  /booking/eligibility:
+    get:
+      operationId: getBookingEligibility
+      tags: [booking]
+      summary: Whether the signed-in seeker may book (intake + consent signed)
+      responses:
+        "200":
+          description: Eligibility
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingEligibility"
+
+  /booking/appointments:
+    post:
+      operationId: createBooking
+      tags: [booking]
+      summary: Book an appointment (blocked until intake + consent are signed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingRequest"
+      responses:
+        "200":
+          description: Booked appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookedAppointment"
+
 components:
   schemas:
+    BookingAppointmentType:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        length: { type: ["integer", "null"] }
+        contactTypes:
+          type: array
+          items: { type: string }
+        isGroup: { type: boolean }
+      required: [id, name, contactTypes, isGroup]
+
+    BookingSlot:
+      type: object
+      properties:
+        providerId: { type: string }
+        date: { type: string, description: "ISO datetime of the slot start" }
+        appointmentId: { type: ["string", "null"] }
+        isFullyBooked: { type: boolean }
+      required: [providerId, date, isFullyBooked]
+
+    BookingEligibility:
+      type: object
+      properties:
+        allowed: { type: boolean }
+        reason:
+          type: ["string", "null"]
+          enum: [not_linked, forms_incomplete, not_configured, null]
+        missingFormIds:
+          type: array
+          items: { type: string }
+      required: [allowed, missingFormIds]
+
+    BookingRequest:
+      type: object
+      properties:
+        providerId: { type: string }
+        appointmentTypeId: { type: string }
+        contactType: { type: string }
+        date: { type: string, description: "ISO datetime of the chosen slot" }
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        email: { type: string, minLength: 1 }
+        phoneNumber: { type: string, minLength: 1 }
+        timezone: { type: string }
+      required:
+        [providerId, appointmentTypeId, contactType, date, firstName, lastName, email, phoneNumber]
+
+    BookedAppointment:
+      type: object
+      properties:
+        id: { type: string }
+        date: { type: ["string", "null"] }
+        start: { type: ["string", "null"] }
+        end: { type: ["string", "null"] }
+        contactType: { type: ["string", "null"] }
+        location: { type: ["string", "null"] }
+        providerName: { type: ["string", "null"] }
+        appointmentTypeName: { type: ["string", "null"] }
+        addToGcalLink: { type: ["string", "null"] }
+      required: [id]
+
     CompanionMemory:
       type: object
       properties:

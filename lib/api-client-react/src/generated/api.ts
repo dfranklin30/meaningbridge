@@ -31,6 +31,11 @@ import type {
   AppointmentRespondInput,
   BatchImport,
   BatchImportInput,
+  BookedAppointment,
+  BookingAppointmentType,
+  BookingEligibility,
+  BookingRequest,
+  BookingSlot,
   CalendarChoice,
   ChatMessageInput,
   ChatSession,
@@ -72,6 +77,8 @@ import type {
   JournalPhotoInput,
   JournalPrompt,
   JournalReflectionResult,
+  ListBookingAppointmentTypesParams,
+  ListBookingAvailableSlotsParams,
   ListProvidersForAdminParams,
   LookupNpiParams,
   Me,
@@ -9784,4 +9791,377 @@ export const useRespondToAppointment = <
   TContext
 > => {
   return useMutation(getRespondToAppointmentMutationOptions(options));
+};
+
+/**
+ * @summary Bookable appointment types for a provider (proxied from Healthie)
+ */
+export const getListBookingAppointmentTypesUrl = (
+  params: ListBookingAppointmentTypesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/booking/appointment-types?${stringifiedParams}`
+    : `/api/booking/appointment-types`;
+};
+
+export const listBookingAppointmentTypes = async (
+  params: ListBookingAppointmentTypesParams,
+  options?: RequestInit,
+): Promise<BookingAppointmentType[]> => {
+  return customFetch<BookingAppointmentType[]>(
+    getListBookingAppointmentTypesUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListBookingAppointmentTypesQueryKey = (
+  params?: ListBookingAppointmentTypesParams,
+) => {
+  return [
+    `/api/booking/appointment-types`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListBookingAppointmentTypesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBookingAppointmentTypes>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListBookingAppointmentTypesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBookingAppointmentTypes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBookingAppointmentTypesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBookingAppointmentTypes>>
+  > = ({ signal }) =>
+    listBookingAppointmentTypes(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBookingAppointmentTypes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBookingAppointmentTypesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBookingAppointmentTypes>>
+>;
+export type ListBookingAppointmentTypesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Bookable appointment types for a provider (proxied from Healthie)
+ */
+
+export function useListBookingAppointmentTypes<
+  TData = Awaited<ReturnType<typeof listBookingAppointmentTypes>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListBookingAppointmentTypesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBookingAppointmentTypes>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBookingAppointmentTypesQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Open time slots for a provider on a date (proxied from Healthie)
+ */
+export const getListBookingAvailableSlotsUrl = (
+  params: ListBookingAvailableSlotsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/booking/available-slots?${stringifiedParams}`
+    : `/api/booking/available-slots`;
+};
+
+export const listBookingAvailableSlots = async (
+  params: ListBookingAvailableSlotsParams,
+  options?: RequestInit,
+): Promise<BookingSlot[]> => {
+  return customFetch<BookingSlot[]>(getListBookingAvailableSlotsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBookingAvailableSlotsQueryKey = (
+  params?: ListBookingAvailableSlotsParams,
+) => {
+  return [`/api/booking/available-slots`, ...(params ? [params] : [])] as const;
+};
+
+export const getListBookingAvailableSlotsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBookingAvailableSlots>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListBookingAvailableSlotsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBookingAvailableSlots>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListBookingAvailableSlotsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBookingAvailableSlots>>
+  > = ({ signal }) =>
+    listBookingAvailableSlots(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBookingAvailableSlots>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBookingAvailableSlotsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBookingAvailableSlots>>
+>;
+export type ListBookingAvailableSlotsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Open time slots for a provider on a date (proxied from Healthie)
+ */
+
+export function useListBookingAvailableSlots<
+  TData = Awaited<ReturnType<typeof listBookingAvailableSlots>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListBookingAvailableSlotsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listBookingAvailableSlots>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBookingAvailableSlotsQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Whether the signed-in seeker may book (intake + consent signed)
+ */
+export const getGetBookingEligibilityUrl = () => {
+  return `/api/booking/eligibility`;
+};
+
+export const getBookingEligibility = async (
+  options?: RequestInit,
+): Promise<BookingEligibility> => {
+  return customFetch<BookingEligibility>(getGetBookingEligibilityUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBookingEligibilityQueryKey = () => {
+  return [`/api/booking/eligibility`] as const;
+};
+
+export const getGetBookingEligibilityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBookingEligibility>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBookingEligibility>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetBookingEligibilityQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBookingEligibility>>
+  > = ({ signal }) => getBookingEligibility({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBookingEligibility>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBookingEligibilityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBookingEligibility>>
+>;
+export type GetBookingEligibilityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Whether the signed-in seeker may book (intake + consent signed)
+ */
+
+export function useGetBookingEligibility<
+  TData = Awaited<ReturnType<typeof getBookingEligibility>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getBookingEligibility>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBookingEligibilityQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Book an appointment (blocked until intake + consent are signed)
+ */
+export const getCreateBookingUrl = () => {
+  return `/api/booking/appointments`;
+};
+
+export const createBooking = async (
+  bookingRequest: BookingRequest,
+  options?: RequestInit,
+): Promise<BookedAppointment> => {
+  return customFetch<BookedAppointment>(getCreateBookingUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bookingRequest),
+  });
+};
+
+export const getCreateBookingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBooking>>,
+    TError,
+    { data: BodyType<BookingRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBooking>>,
+  TError,
+  { data: BodyType<BookingRequest> },
+  TContext
+> => {
+  const mutationKey = ["createBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBooking>>,
+    { data: BodyType<BookingRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createBooking(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBooking>>
+>;
+export type CreateBookingMutationBody = BodyType<BookingRequest>;
+export type CreateBookingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Book an appointment (blocked until intake + consent are signed)
+ */
+export const useCreateBooking = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBooking>>,
+    TError,
+    { data: BodyType<BookingRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBooking>>,
+  TError,
+  { data: BodyType<BookingRequest> },
+  TContext
+> => {
+  return useMutation(getCreateBookingMutationOptions(options));
 };

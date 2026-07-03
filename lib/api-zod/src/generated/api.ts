@@ -2741,3 +2741,86 @@ export const RespondToAppointmentResponse = zod
   .describe(
     "The limited, no-login view a patient sees when confirming an appointment.",
   );
+
+/**
+ * @summary Bookable appointment types for a provider (proxied from Healthie)
+ */
+export const ListBookingAppointmentTypesQueryParams = zod.object({
+  providerId: zod.coerce.string(),
+});
+
+export const ListBookingAppointmentTypesResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  length: zod.number().nullish(),
+  contactTypes: zod.array(zod.string()),
+  isGroup: zod.boolean(),
+});
+export const ListBookingAppointmentTypesResponse = zod.array(
+  ListBookingAppointmentTypesResponseItem,
+);
+
+/**
+ * @summary Open time slots for a provider on a date (proxied from Healthie)
+ */
+export const ListBookingAvailableSlotsQueryParams = zod.object({
+  providerId: zod.coerce.string(),
+  appointmentTypeId: zod.coerce.string(),
+  contactType: zod.coerce.string(),
+  date: zod.coerce.string(),
+  timezone: zod.coerce.string().optional(),
+});
+
+export const ListBookingAvailableSlotsResponseItem = zod.object({
+  providerId: zod.string(),
+  date: zod.string().describe("ISO datetime of the slot start"),
+  appointmentId: zod.string().nullish(),
+  isFullyBooked: zod.boolean(),
+});
+export const ListBookingAvailableSlotsResponse = zod.array(
+  ListBookingAvailableSlotsResponseItem,
+);
+
+/**
+ * @summary Whether the signed-in seeker may book (intake + consent signed)
+ */
+export const GetBookingEligibilityResponse = zod.object({
+  allowed: zod.boolean(),
+  reason: zod
+    .union([
+      zod.literal("not_linked"),
+      zod.literal("forms_incomplete"),
+      zod.literal("not_configured"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  missingFormIds: zod.array(zod.string()),
+});
+
+/**
+ * @summary Book an appointment (blocked until intake + consent are signed)
+ */
+
+export const CreateBookingBody = zod.object({
+  providerId: zod.string(),
+  appointmentTypeId: zod.string(),
+  contactType: zod.string(),
+  date: zod.string().describe("ISO datetime of the chosen slot"),
+  firstName: zod.string().min(1),
+  lastName: zod.string().min(1),
+  email: zod.string().min(1),
+  phoneNumber: zod.string().min(1),
+  timezone: zod.string().optional(),
+});
+
+export const CreateBookingResponse = zod.object({
+  id: zod.string(),
+  date: zod.string().nullish(),
+  start: zod.string().nullish(),
+  end: zod.string().nullish(),
+  contactType: zod.string().nullish(),
+  location: zod.string().nullish(),
+  providerName: zod.string().nullish(),
+  appointmentTypeName: zod.string().nullish(),
+  addToGcalLink: zod.string().nullish(),
+});

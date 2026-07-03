@@ -21,6 +21,10 @@ export const usersTable = pgTable(
     email: text("email"),
     firstName: text("first_name"),
     role: text("role"), // legacy mirror of activeSpace: null | "seeker" | "professional"
+    // Non-PHI foreign key to the Healthie user (the HIPAA system of record for
+    // clinical data). Storing only the id keeps PHI out of our database. Null
+    // until the account is provisioned in Healthie.
+    healthieUserId: text("healthie_user_id"),
     // Additive capabilities — an account can hold both at once.
     isSeeker: boolean("is_seeker").notNull().default(false),
     isProfessional: boolean("is_professional").notNull().default(false),

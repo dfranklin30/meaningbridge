@@ -2523,6 +2523,23 @@ export const EditAppointmentResponse = zod.object({
   location: zod.string().nullish(),
   notes: zod.string().nullish(),
   googleEventId: zod.string().nullish(),
+  calendarSyncStatus: zod
+    .union([
+      zod.literal("synced"),
+      zod.literal("fallback"),
+      zod.literal("failed"),
+      zod.literal(null),
+    ])
+    .nullish()
+    .describe(
+      "Outcome of the last attempt to mirror this session onto the provider's Google Calendar. null when sync was off or not connected.",
+    ),
+  calendarSyncMessage: zod
+    .string()
+    .nullish()
+    .describe(
+      'A calm, provider-facing explanation shown when calendarSyncStatus is \"fallback\" or \"failed\". null otherwise.',
+    ),
   createdAt: zod.coerce.date(),
 });
 

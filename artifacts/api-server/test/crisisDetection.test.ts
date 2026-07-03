@@ -36,9 +36,24 @@ vi.mock("@clerk/express", () => ({
   clerkClient: { users: { getUser: async () => ({}) } },
 }));
 
-// Stub Anthropic so the route's streaming step is deterministic and offline.
-// The crisis affordance + safety_event are written BEFORE the model is called,
-// so this stub never influences what we assert.
+// Stub the AI providers so the route's streaming step is deterministic and
+// offline. The companion streams from OpenRouter (Nemotron) first for text-only
+// turns; the crisis affordance + safety_event are written BEFORE the model is
+// called, so these stubs never influence what we assert.
+vi.mock("@workspace/integrations-openrouter-ai", () => ({
+  openrouter: {
+    chat: {
+      completions: {
+        create: async () => ({
+          async *[Symbol.asyncIterator]() {
+            yield { choices: [{ delta: { content: "I'm here with you." } }] };
+          },
+        }),
+      },
+    },
+  },
+}));
+
 vi.mock("@workspace/integrations-anthropic-ai", () => ({
   anthropic: {
     messages: {

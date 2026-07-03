@@ -26,8 +26,24 @@ vi.mock("@clerk/express", () => ({
     next(),
 }));
 
-// Keep the route-import chain harmless: the chat route pulls in the Anthropic
-// integration at module load, and we never want a real network client here.
+// Keep the route-import chain harmless: the chat route pulls in the OpenRouter
+// and Anthropic integrations at module load, and we never want a real network
+// client here. (This case returns 404 before any AI call, but the clients are
+// still constructed at import time.)
+vi.mock("@workspace/integrations-openrouter-ai", () => ({
+  openrouter: {
+    chat: {
+      completions: {
+        create: async () => ({
+          async *[Symbol.asyncIterator]() {
+            yield { choices: [{ delta: { content: "ok" } }] };
+          },
+        }),
+      },
+    },
+  },
+}));
+
 vi.mock("@workspace/integrations-anthropic-ai", () => ({
   anthropic: {
     messages: {

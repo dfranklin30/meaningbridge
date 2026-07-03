@@ -14,11 +14,17 @@ import {
 /**
  * Guards the companion vision contract. Base64 images are only meaningful to
  * the model when (a) unsupported / malformed data URLs are dropped before they
- * reach Anthropic, and (b) valid images are injected into the FINAL user turn
+ * reach the model, and (b) valid images are injected into the FINAL user turn
  * only — never into an earlier turn. A silent regression here would either send
- * garbage to the model or silently stop images from reaching it. The route is
- * exercised end-to-end with a stubbed Clerk auth and a stubbed Anthropic stream
- * whose call args we capture and assert against.
+ * garbage to the model or silently stop images from reaching it.
+ *
+ * Routing depends on whether a VALID image survives validation:
+ *   - a turn with a valid image goes to Anthropic (the only vision-capable
+ *     provider; the paid Nemotron models accept text only), so we assert against
+ *     the Anthropic message shape (image blocks with `source.media_type`);
+ *   - a turn whose image was dropped becomes text-only and goes to OpenRouter
+ *     (Nemotron), so we assert its final content is a plain string.
+ * Both providers are stubbed and their call args captured.
  */
 
 const authState = vi.hoisted(() => ({ clerkUserId: "" }));
@@ -28,15 +34,35 @@ vi.mock("@clerk/express", () => ({
   clerkClient: { users: { getUser: async () => ({}) } },
 }));
 
-// Capture the exact args passed to anthropic.messages.stream so we can assert
-// on the shape of the final `messages` array the route builds.
-const captured = vi.hoisted(() => ({ streamArgs: null as unknown }));
+// Capture the exact args passed to each provider so we can assert on the shape
+// of the final `messages` array the seam builds per routing path.
+const captured = vi.hoisted(() => ({
+  anthropicArgs: null as unknown,
+  openrouterArgs: null as unknown,
+}));
+
+vi.mock("@workspace/integrations-openrouter-ai", () => ({
+  openrouter: {
+    chat: {
+      completions: {
+        create: async (args: unknown) => {
+          captured.openrouterArgs = args;
+          return {
+            async *[Symbol.asyncIterator]() {
+              yield { choices: [{ delta: { content: "ok" } }] };
+            },
+          };
+        },
+      },
+    },
+  },
+}));
 
 vi.mock("@workspace/integrations-anthropic-ai", () => ({
   anthropic: {
     messages: {
       stream: async (args: unknown) => {
-        captured.streamArgs = args;
+        captured.anthropicArgs = args;
         return {
           async *[Symbol.asyncIterator]() {
             yield {
@@ -56,13 +82,19 @@ vi.mock("@workspace/integrations-anthropic-ai", () => ({
 const PNG_1PX =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
-type StreamArgs = {
+// Anthropic vision turns keep image blocks with a `source.media_type`.
+type AnthropicArgs = {
   messages: Array<{
     role: string;
     content:
       | string
       | Array<{ type: string; source?: { media_type: string } }>;
   }>;
+};
+// OpenRouter (text-only) turns carry plain-string content; the first message is
+// the Nemotron system directive, so the final user turn is the last entry.
+type OpenRouterArgs = {
+  messages: Array<{ role: string; content: string }>;
 };
 
 function makeApp() {
@@ -112,12 +144,13 @@ describe("chat route image validation + final-turn injection", () => {
   });
 
   beforeEach(async () => {
-    captured.streamArgs = null;
+    captured.anthropicArgs = null;
+    captured.openrouterArgs = null;
     // Reset the transcript before each case so "final turn" is unambiguous.
     await db.delete(chatMessagesTable).where(eq(chatMessagesTable.sessionId, sessionId));
   });
 
-  it("injects a valid image into the final user turn as an image block", async () => {
+  it("injects a valid image into the final user turn as an image block (Anthropic)", async () => {
     const res = await request(app)
       .post(`/chat/sessions/${sessionId}/messages`)
       .send({
@@ -126,7 +159,9 @@ describe("chat route image validation + final-turn injection", () => {
       });
     expect(res.status).toBe(200);
 
-    const args = captured.streamArgs as StreamArgs;
+    // A valid image routes to Anthropic (vision); OpenRouter is not called.
+    expect(captured.openrouterArgs).toBeNull();
+    const args = captured.anthropicArgs as AnthropicArgs;
     const last = args.messages[args.messages.length - 1]!;
     expect(last.role).toBe("user");
     expect(Array.isArray(last.content)).toBe(true);
@@ -138,7 +173,7 @@ describe("chat route image validation + final-turn injection", () => {
     expect(blocks.some((b) => b.type === "text")).toBe(true);
   });
 
-  it("drops an unsupported media type so no image block reaches the model", async () => {
+  it("drops an unsupported media type so the turn is text-only (OpenRouter)", async () => {
     const res = await request(app)
       .post(`/chat/sessions/${sessionId}/messages`)
       .send({
@@ -148,9 +183,10 @@ describe("chat route image validation + final-turn injection", () => {
       });
     expect(res.status).toBe(200);
 
-    const args = captured.streamArgs as StreamArgs;
+    // No valid image -> text-only -> OpenRouter, final turn is a plain string.
+    expect(captured.anthropicArgs).toBeNull();
+    const args = captured.openrouterArgs as OpenRouterArgs;
     const last = args.messages[args.messages.length - 1]!;
-    // With no valid image, the final turn is a plain text string, not an array.
     expect(typeof last.content).toBe("string");
   });
 
@@ -163,7 +199,8 @@ describe("chat route image validation + final-turn injection", () => {
       });
     expect(res.status).toBe(200);
 
-    const args = captured.streamArgs as StreamArgs;
+    expect(captured.anthropicArgs).toBeNull();
+    const args = captured.openrouterArgs as OpenRouterArgs;
     const last = args.messages[args.messages.length - 1]!;
     expect(typeof last.content).toBe("string");
   });
@@ -181,9 +218,10 @@ describe("chat route image validation + final-turn injection", () => {
       });
     expect(res.status).toBe(200);
 
-    const args = captured.streamArgs as StreamArgs;
+    // The oversized image is dropped, so the turn is text-only -> OpenRouter.
+    expect(captured.anthropicArgs).toBeNull();
+    const args = captured.openrouterArgs as OpenRouterArgs;
     const last = args.messages[args.messages.length - 1]!;
-    // The oversized image is dropped, so the final turn stays a plain string.
     expect(typeof last.content).toBe("string");
   });
 
@@ -210,7 +248,7 @@ describe("chat route image validation + final-turn injection", () => {
       });
     expect(res.status).toBe(200);
 
-    const args = captured.streamArgs as StreamArgs;
+    const args = captured.anthropicArgs as AnthropicArgs;
     // Earlier turns stay as plain strings; only the last carries an image array.
     const earlier = args.messages.slice(0, -1);
     for (const m of earlier) {
@@ -231,7 +269,7 @@ describe("chat route image validation + final-turn injection", () => {
       });
     expect(res.status).toBe(200);
 
-    const args = captured.streamArgs as StreamArgs;
+    const args = captured.anthropicArgs as AnthropicArgs;
     const last = args.messages[args.messages.length - 1]!;
     const blocks = last.content as Array<{ type: string }>;
     expect(blocks.every((b) => b.type === "image")).toBe(true);

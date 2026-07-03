@@ -8,12 +8,12 @@ import {
   safetyEventsTable,
   profileTable,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
 import {
   CreateChatSessionBody,
   GetChatSessionParams,
   SendChatMessageBody,
 } from "@workspace/api-zod";
+import { companionStream, parseImages, type ChatTurn } from "../lib/aiProvider";
 import { detectCrisis } from "../lib/crisis";
 import {
   meaningSystemPrompt,
@@ -136,59 +136,22 @@ router.post("/sessions/:id/messages", async (req, res) => {
   // Vision: the user may attach one or more base64 image data URLs alongside
   // the newest message. Images are not persisted (companion is ephemeral); they
   // are only injected into the final user turn for this single request.
-  const ALLOWED_MEDIA_TYPES = ["image/gif", "image/jpeg", "image/png", "image/webp"] as const;
-  type AllowedMediaType = (typeof ALLOWED_MEDIA_TYPES)[number];
-  type ImageBlock = {
-    type: "image";
-    source: { type: "base64"; media_type: AllowedMediaType; data: string };
-  };
-  // Server-side size cap. The browser also limits attachments to 5 MB, but a
-  // direct API caller could bypass that, so we independently drop any image
-  // whose decoded payload exceeds the cap rather than forwarding a huge request
-  // to the model.
-  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-  const imageBlocks: ImageBlock[] = [];
-  for (const dataUrl of body.images ?? []) {
-    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s.exec(dataUrl);
-    if (!match) continue;
-    const mediaType = match[1] as AllowedMediaType;
-    if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) continue;
-    // Decoded (not base64) byte length is the payload that reaches the model.
-    const decodedBytes = Buffer.from(match[2], "base64").length;
-    if (decodedBytes === 0 || decodedBytes > MAX_IMAGE_BYTES) continue;
-    imageBlocks.push({
-      type: "image",
-      source: { type: "base64", media_type: mediaType, data: match[2] },
-    });
-  }
+  const images = parseImages(body.images);
 
-  const messages = history.map((m, i) => {
-    const isLastUserTurn =
-      i === history.length - 1 && m.role === "user" && imageBlocks.length > 0;
-    if (isLastUserTurn) {
-      // Append the text block only when there is text; an image-only turn is a
-      // valid Anthropic content array on its own.
-      const content = m.content.trim()
-        ? [...imageBlocks, { type: "text" as const, text: m.content }]
-        : [...imageBlocks];
-      return { role: "user" as const, content };
-    }
-    return { role: m.role as "user" | "assistant", content: m.content };
-  });
+  const turns: ChatTurn[] = history.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
 
   try {
     let assistant = "";
-    const stream = await anthropic.messages.stream({
-      model: "claude-sonnet-4-5",
-      max_tokens: 4096,
+    for await (const delta of companionStream({
       system: systemPrompt,
-      messages,
-    });
-    for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        assistant += event.delta.text;
-        send({ type: "delta", text: event.delta.text });
-      }
+      history: turns,
+      images,
+    })) {
+      assistant += delta;
+      send({ type: "delta", text: delta });
     }
     await db.insert(chatMessagesTable).values({
       sessionId: id,

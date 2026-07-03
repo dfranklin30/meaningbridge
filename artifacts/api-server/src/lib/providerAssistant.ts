@@ -9,7 +9,7 @@ import {
   checkinsTable,
   safetyEventsTable,
 } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { professionalComplete } from "./aiProvider";
 import { providerAssistantSystemPrompt } from "./prompts";
 
 /**
@@ -137,20 +137,9 @@ export async function answerProviderQuestion(input: {
   question: string;
 }): Promise<string> {
   const metadata = engagementSummary(input.engagement, input.patientLabel);
-  const msg = await anthropic.messages.create({
-    model: "claude-sonnet-4-5",
-    max_tokens: 700,
+  return professionalComplete({
     system: providerAssistantSystemPrompt(),
-    messages: [
-      {
-        role: "user",
-        content: `Engagement metadata for this patient (this is ALL you can see — no session content is available to you):\n\n${metadata}\n\nClinician question: ${input.question}`,
-      },
-    ],
+    user: `Engagement metadata for this patient (this is ALL you can see — no session content is available to you):\n\n${metadata}\n\nClinician question: ${input.question}`,
+    maxTokens: 700,
   });
-  return msg.content
-    .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
-    .map((b) => b.text)
-    .join("")
-    .trim();
 }

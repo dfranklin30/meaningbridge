@@ -223,10 +223,13 @@ export default function EvaluatePage() {
       return;
     }
 
-    // Only send comments that belong to a rated dimension and hold text.
+    // Only send comments that belong to a rated dimension and hold text. A
+    // comment typed without moving that dimension's slider has no rating to
+    // annotate, and an opened-but-empty comment is nothing to keep. Any comment
+    // that IS attached to a rating must always survive here.
     const trimmedComments: Record<string, string> = {};
     for (const [k, v] of Object.entries(comments)) {
-      if (v.trim()) trimmedComments[k] = v.trim();
+      if (scores[k] != null && v.trim()) trimmedComments[k] = v.trim();
     }
 
     const role =

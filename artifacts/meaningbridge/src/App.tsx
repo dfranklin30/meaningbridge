@@ -66,6 +66,7 @@ import ProviderImport from "@/pages/care/import";
 import ProviderIntegrations from "@/pages/care/integrations";
 import AdminProviders from "@/pages/admin/providers";
 import AdminAudit from "@/pages/admin/audit";
+import AdminSiteEvals from "@/pages/admin/site-evals";
 import { ProviderShell, type Me } from "@/pages/care/provider-shell";
 import ConsentPage from "@/pages/consent";
 import ConsentWithdrawPage from "@/pages/consent-withdraw";
@@ -428,6 +429,7 @@ function AppRouterSwitch() {
       <Route path="/appointments/:token" component={AppointmentConfirm} />
       <Route path="/sandbox" component={Sandbox} />
       <Route path="/evaluate" component={EvaluatePage} />
+      <Route path="/admin/site-evals" component={AdminSiteEvals} />
       <Route path="/care/invite" component={CareInvite} />
       <Route path="/care/account" component={ProfessionalPortalGate} />
       <Route path="/care/onboarding" component={ProfessionalPortalGate} />

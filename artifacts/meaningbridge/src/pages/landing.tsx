@@ -32,18 +32,18 @@ export default function LandingPage() {
 
       {/* Audience side rails — swap between the two doorways */}
       <Link
-        href="/sign-up"
-        aria-label="For those grieving — enter here"
-        className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-r-sm border border-l-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-foreground/70 hover:text-primary hover:border-primary/50 transition-colors"
-      >
-        For those grieving
-      </Link>
-      <Link
         href="/caregiver"
         aria-label="For professionals — enter here"
-        className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-l-sm border border-r-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-foreground/70 hover:text-primary hover:border-primary/50 transition-colors"
+        className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-r-sm border border-l-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-brand-navy hover:border-brand-navy/50 transition-colors"
       >
         For professionals
+      </Link>
+      <Link
+        href="/sign-up"
+        aria-label="For those grieving — enter here"
+        className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-l-sm border border-r-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-primary hover:border-primary/50 transition-colors"
+      >
+        For those grieving
       </Link>
 
       <header className="relative z-20 px-5 sm:px-6 py-5 sm:py-6 max-w-6xl mx-auto flex items-center justify-between gap-4">

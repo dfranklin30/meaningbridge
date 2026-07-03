@@ -104,6 +104,7 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 
 ## Brand assets
 
+- The homepage background (`components/living-background.tsx`) draws navy/teal aurora orbs plus a faint animated infinity ribbon (lemniscate SVG path) with two soft lights travelling its loops — the continuing bond / bridge between two worlds. Honors `prefers-reduced-motion` (renders at rest).
 - Source PNG with whitespace trimmed: `artifacts/meaningbridge/src/assets/brand/meaningbridge-mark.png` (infinity-bridge mark, 787x340) and `artifacts/meaningbridge/src/assets/brand/meaningbridge-lockup.png` (mark + wordmark, 957x535). Both are RGBA with transparent background.
 - `<Logo variant="lockup" size={N} />` renders the full lockup at height `N`. `<Logo />` (default) renders just the infinity mark; pass `withWordmark` to append the serif text wordmark instead of the image lockup.
 - Favicon: `artifacts/meaningbridge/public/favicon.png` + `favicon.ico` (multi-size 16/32/48/64), generated from the mark. The legacy `favicon.svg` is no longer linked.
@@ -114,7 +115,8 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 
 - NO emojis anywhere in UI. None.
 - Calm, restful tone. No gamification, no exclamation points.
-- Nunito (rounded display, weights 800/900) for headings, Nunito Sans for body — warm, "brought to life" feel inspired by jaspergrief.com. (Superseded earlier Playfair/DM Sans and Fraunces/Inter.)
+- Newsreader (editorial serif) for headings, Inter for body — calm, editorial, Aesop-inspired. (Superseded earlier Nunito/Nunito Sans, Playfair/DM Sans, and Fraunces/Inter.)
+- Palette is derived from the logo (navy→teal infinity-bridge): deep navy (`--brand-navy`) = the professionals loop, bridge teal (`--brand-teal` / `--primary`) = the grieving loop, on cool soft paper. The two brand tokens are exposed as `brand-navy`/`brand-teal` Tailwind utilities. The landing side rails and the animated infinity ribbon use them to express the integration between professionals and those grieving.
 - Tasteful slow motion (framer-motion fades). No bounce, no overshoot.
 - Persistent crisis-support affordance on every screen.
 

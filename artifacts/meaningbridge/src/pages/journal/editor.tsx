@@ -22,6 +22,8 @@ import { VoiceInput } from "../../components/voice-input";
 
 type Privacy = "private" | "shared" | "share-later";
 
+type PendingPhoto = { id: string; file: File; url: string };
+
 const PRIVACY_OPTIONS: { value: Privacy; label: string; hint: string }[] = [
   { value: "private", label: "Private", hint: "Only you can read this." },
   { value: "shared", label: "Shared with your care team", hint: "Visible to a therapist you are working with." },
@@ -58,12 +60,52 @@ export default function JournalEditor() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
+  // On a brand-new entry there is no id to bind photos to yet, so chosen images
+  // are held locally (preview + remove) and uploaded the moment the entry is
+  // first saved. Nothing is uploaded until save, so abandoning leaves no orphans.
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+  const pendingPhotosRef = useRef<PendingPhoto[]>([]);
+  pendingPhotosRef.current = pendingPhotos;
+
+  useEffect(
+    () => () => {
+      pendingPhotosRef.current.forEach((p) => URL.revokeObjectURL(p.url));
+    },
+    [],
+  );
+
   const refreshPhotos = () =>
     queryClient.invalidateQueries({ queryKey: getListJournalPhotosQueryKey(entryId) });
 
+  const uploadAndAttach = async (file: File, targetEntryId: number) => {
+    const result = await uploadFile(file);
+    if (!result) throw new Error("upload failed");
+    await addPhoto({ entryId: targetEntryId, data: { objectPath: result.objectPath } });
+  };
+
   const handlePhotoFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0 || isNew) return;
+    if (!files || files.length === 0) return;
     setPhotoError(null);
+
+    if (isNew) {
+      const accepted: PendingPhoto[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > 10 * 1024 * 1024) {
+          setPhotoError("That image is larger than 10 MB. Please choose a smaller one.");
+          continue;
+        }
+        accepted.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          file,
+          url: URL.createObjectURL(file),
+        });
+      }
+      if (accepted.length) setPendingPhotos((prev) => [...prev, ...accepted]);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+      return;
+    }
+
     try {
       for (const file of Array.from(files)) {
         if (!file.type.startsWith("image/")) continue;
@@ -71,9 +113,7 @@ export default function JournalEditor() {
           setPhotoError("That image is larger than 10 MB. Please choose a smaller one.");
           continue;
         }
-        const result = await uploadFile(file);
-        if (!result) throw new Error("upload failed");
-        await addPhoto({ entryId, data: { objectPath: result.objectPath } });
+        await uploadAndAttach(file, entryId);
       }
       await refreshPhotos();
     } catch {
@@ -81,6 +121,14 @@ export default function JournalEditor() {
     } finally {
       if (photoInputRef.current) photoInputRef.current.value = "";
     }
+  };
+
+  const removePendingPhoto = (pid: string) => {
+    setPendingPhotos((prev) => {
+      const target = prev.find((p) => p.id === pid);
+      if (target) URL.revokeObjectURL(target.url);
+      return prev.filter((p) => p.id !== pid);
+    });
   };
 
   const handlePhotoDelete = async (photoId: number) => {
@@ -155,6 +203,21 @@ export default function JournalEditor() {
     try {
       if (isNew) {
         const res = await createEntry({ data: buildData() });
+        if (pendingPhotos.length) {
+          const remaining: PendingPhoto[] = [];
+          for (const p of pendingPhotos) {
+            try {
+              await uploadAndAttach(p.file, res.id);
+              URL.revokeObjectURL(p.url);
+            } catch {
+              remaining.push(p);
+            }
+          }
+          setPendingPhotos(remaining);
+          if (remaining.length) {
+            setPhotoError("Some photos could not be attached. You can add them again from the entry.");
+          }
+        }
         queryClient.invalidateQueries({ queryKey: getListJournalEntriesQueryKey() });
         setLocation(`/journal/${res.id}`, { replace: true });
       } else {
@@ -303,9 +366,9 @@ export default function JournalEditor() {
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}
-            disabled={isNew || isUploading}
+            disabled={isUploading}
             aria-label="Attach a photo"
-            title={isNew ? "Save your entry first to attach a photo" : "Attach a photo"}
+            title="Attach a photo"
             className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
           >
             {isUploading ? (
@@ -324,7 +387,7 @@ export default function JournalEditor() {
           />
           <p className="text-xs text-muted-foreground mt-2.5">
             {isNew
-              ? "Speak a memory to add it here. Save the entry to attach photos."
+              ? "Speak a memory, or add photos now — they attach when you save."
               : "Speak a memory, or attach photos to keep alongside your words."}
           </p>
         </div>
@@ -374,6 +437,50 @@ export default function JournalEditor() {
                 </motion.div>
               ))}
             </AnimatePresence>
+          </div>
+        )}
+
+        {pendingPhotos.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-3">
+              <AnimatePresence>
+                {pendingPhotos.map((photo) => (
+                  <motion.div
+                    key={photo.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="group relative h-24 w-24 overflow-hidden rounded-lg border border-border bg-secondary/30"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setLightbox(photo.url)}
+                      className="h-full w-full"
+                      aria-label="View photo full size"
+                    >
+                      <img
+                        src={photo.url}
+                        alt="A photograph to add to this entry"
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removePendingPhoto(photo.id)}
+                      aria-label="Remove photo"
+                      title="Remove photo"
+                      className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              These photos will be added to your entry when you save.
+            </p>
           </div>
         )}
 

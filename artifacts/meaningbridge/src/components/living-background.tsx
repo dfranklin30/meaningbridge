@@ -24,7 +24,7 @@ export function LivingBackground() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at 50% -12%, hsl(38 74% 90% / 0.5) 0%, transparent 55%), radial-gradient(ellipse at 50% 0%, hsl(180 50% 96%) 0%, hsl(36 40% 98%) 60%, hsl(36 40% 98%) 100%)",
+            "radial-gradient(ellipse at 50% -12%, hsl(38 55% 90% / 0.45) 0%, transparent 55%), radial-gradient(ellipse at 50% 0%, hsl(80 30% 95%) 0%, hsl(44 32% 97%) 60%, hsl(44 32% 97%) 100%)",
         }}
       />
 
@@ -37,7 +37,7 @@ export function LivingBackground() {
           left: "-10vw",
           top: "-10vw",
           background:
-            "radial-gradient(circle at center, hsl(180 50% 70% / 0.55), hsl(180 50% 70% / 0) 70%)",
+            "radial-gradient(circle at center, hsl(90 24% 68% / 0.45), hsl(90 24% 68% / 0) 70%)",
         }}
         animate={shouldReduce ? undefined : { x: [0, 60, -40, 0], y: [0, 40, -20, 0] }}
         transition={shouldReduce ? undefined : { duration: 48, repeat: Infinity, ease: "easeInOut" }}
@@ -67,7 +67,7 @@ export function LivingBackground() {
           left: "20vw",
           top: "60vh",
           background:
-            "radial-gradient(circle at center, hsl(215 50% 60% / 0.18), hsl(215 50% 60% / 0) 70%)",
+            "radial-gradient(circle at center, hsl(88 20% 52% / 0.16), hsl(88 20% 52% / 0) 70%)",
         }}
         animate={shouldReduce ? undefined : { x: [0, -40, 50, 0], y: [0, -30, 20, 0] }}
         transition={shouldReduce ? undefined : { duration: 64, repeat: Infinity, ease: "easeInOut" }}
@@ -82,7 +82,7 @@ export function LivingBackground() {
           right: "-15vw",
           bottom: "-20vw",
           background:
-            "radial-gradient(circle at center, hsl(180 38% 50% / 0.28), hsl(180 38% 50% / 0) 70%)",
+            "radial-gradient(circle at center, hsl(88 22% 44% / 0.24), hsl(88 22% 44% / 0) 70%)",
         }}
         animate={shouldReduce ? undefined : { x: [0, 40, -30, 0], y: [0, -50, 20, 0] }}
         transition={shouldReduce ? undefined : { duration: 52, repeat: Infinity, ease: "easeInOut" }}

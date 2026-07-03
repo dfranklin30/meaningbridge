@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, Check, Maximize2, ArrowRight, Menu, X } from "lucide-react";
-import { QRCodeImage } from "@/components/qr-code";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
@@ -15,13 +14,7 @@ import lectureTie from "@assets/image_1782985295812.png";
 import lectureStanding from "@assets/image_1783094613403.png";
 
 export default function LandingPage() {
-  const [origin, setOrigin] = useState("");
-  const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -31,19 +24,6 @@ export default function LandingPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
-
-  const notifyUrl = useMemo(() => (origin ? `${origin}/notify?src=qr` : ""), [origin]);
-
-  const handleCopy = async () => {
-    if (!notifyUrl) return;
-    try {
-      await navigator.clipboard.writeText(notifyUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // ignore
-    }
-  };
 
   return (
     <div className="min-h-[100dvh] text-foreground font-sans relative overflow-hidden isolate">
@@ -170,7 +150,7 @@ export default function LandingPage() {
       </AnimatePresence>
 
       <main className="relative z-10 px-6 pb-20">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 md:gap-16 items-center pt-8 md:pt-16">
+        <div className="max-w-2xl mx-auto pt-8 md:pt-16">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -213,13 +193,6 @@ export default function LandingPage() {
                 Enter the experience
                 <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link
-                href="/present"
-                className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Maximize2 className="w-4 h-4" />
-                Present QR full screen
-              </Link>
             </div>
 
             <div className="text-sm text-muted-foreground pt-6 space-y-2">
@@ -245,39 +218,6 @@ export default function LandingPage() {
                 </a>
                 .
               </p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col items-center gap-5"
-          >
-            <div className="rounded-3xl bg-card border border-border p-8 md:p-10 shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.18)]">
-              {notifyUrl ? (
-                <QRCodeImage value={notifyUrl} size={300} />
-              ) : (
-                <div style={{ width: 300, height: 300 }} />
-              )}
-            </div>
-
-            <p className="text-sm text-muted-foreground text-center max-w-xs">
-              Scan to get notified when MeaningBridge launches.
-            </p>
-
-            <div className="w-full max-w-sm space-y-2">
-              <div className="flex items-center gap-2 bg-card border border-border rounded-full px-4 py-2">
-                <span className="text-xs text-muted-foreground truncate flex-1">{notifyUrl}</span>
-                <button
-                  onClick={handleCopy}
-                  className="text-xs text-foreground hover:text-primary inline-flex items-center gap-1 shrink-0"
-                  aria-label="Copy link"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "Copied" : "Copy link"}
-                </button>
-              </div>
             </div>
           </motion.div>
         </div>

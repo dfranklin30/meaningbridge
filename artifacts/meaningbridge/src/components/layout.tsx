@@ -68,6 +68,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link href="/reflections" className={navLinkCls("/reflections")}>Reflections</Link>
             <Link href="/dashboard" className={navLinkCls("/dashboard")}>Insights</Link>
             <Link href="/loved-one" className={navLinkCls("/loved-one")}>Loved One</Link>
+            <Link href="/book" className={navLinkCls("/book")}>Book</Link>
           </nav>
           
           <div className="flex items-center gap-4">
@@ -104,6 +105,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <Link href="/journal" className={mobileLinkCls("/journal")}><span className="font-serif">Journal</span></Link>
         <Link href="/practices" className={mobileLinkCls("/practices")}><span className="font-serif">Practices</span></Link>
         <Link href="/dashboard" className={mobileLinkCls("/dashboard")}><span className="font-serif">Insights</span></Link>
+        <Link href="/book" className={mobileLinkCls("/book")}><span className="font-serif">Book</span></Link>
       </div>
 
       <main className="flex-1 container max-w-4xl mx-auto px-4 py-8 md:py-12 pb-24 md:pb-12">

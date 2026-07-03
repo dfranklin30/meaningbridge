@@ -1,0 +1,130 @@
+# MeaningBridge — Exact Upgrade Instructions for Replit Agent
+
+Paste each phase below into Replit Agent **one at a time**, in order. Each phase is self-contained. Add the secrets listed in Phase 0 first (Replit → Tools → Secrets).
+
+---
+
+## Phase 0 — Get keys and add Secrets (you do this, not the agent)
+
+1. **NVIDIA API key** (powers the AI, guardrails, and image generation):
+   Go to https://build.nvidia.com → sign in → any model page → "Get API Key". Free trial credits included; pay-as-you-go after.
+2. **Zoom** (optional, for Zoom scheduling): https://marketplace.zoom.us → Develop → Build App → **Server-to-Server OAuth** → note Account ID, Client ID, Client Secret. Add scope `meeting:write:meeting`.
+3. **Google** (for Google Meet links): https://console.cloud.google.com → create project → enable **Google Calendar API** → create OAuth 2.0 credentials (web app).
+
+Add to Replit Secrets:
+
+```
+NVIDIA_API_KEY=nvapi-xxxx
+ZOOM_ACCOUNT_ID=...
+ZOOM_CLIENT_ID=...
+ZOOM_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+---
+
+## Phase 1 — Upgrade the AI model (Nemotron, multimodal, one model)
+
+> **PASTE INTO REPLIT AGENT:**
+>
+> Replace the current AI backend with NVIDIA's Nemotron models, called via NVIDIA's hosted API. Do not run models locally.
+>
+> 1. All AI calls go through our **server** (never expose the API key to the browser). Use the OpenAI-compatible endpoint:
+>    - Base URL: `https://integrate.api.nvidia.com/v1`
+>    - Auth header: `Authorization: Bearer ${NVIDIA_API_KEY}` (read from Secrets)
+> 2. **Primary companion model (client side chat): `nvidia/nemotron-3-nano-omni-30b-a3b`** — check the exact model string on its build.nvidia.com model page and use what's listed there. This model natively accepts **text, images, audio, and video** in one call, which fixes our broken multimodal intake. Send images/audio as base64 or URLs in the standard OpenAI multimodal `content` array format shown in the model's API docs.
+> 3. **Professional/clinician-side model (deeper reasoning, case summaries): `nvidia/nemotron-3-super-120b-a12b`** via the same endpoint. Enable its reasoning mode per the model card.
+> 4. **Stream all responses** (`stream: true`) token-by-token to the UI so the companion feels alive and interactive. Show a typing indicator while streaming.
+> 5. Build a single server module `server/ai.ts` (or `.js/.py` matching our stack) with functions: `companionChat(messages, attachments)`, `professionalChat(messages)`, each with retry + timeout + graceful error message ("I'm having trouble connecting right now").
+> 6. Keep **conversation memory**: persist each user's chat history in the database and send the last ~20 turns as context. Add a short rolling summary of older turns so the companion remembers the person's loss, their loved one's name, and prior themes across sessions.
+> 7. System prompt for the companion: warm, meaning-oriented, continuing-bonds grief companionship consistent with Dr. Neimeyer's approach. It must always clarify it is an AI companion, **not a therapist**, and encourage professional support when appropriate.
+> 8. Add a fallback: if the NVIDIA API errors, retry once, then fall back to the previous model provider so the app never goes silent.
+
+**Cost note:** Nano Omni is the cost-effective default (30B total / 3B active — very cheap per token, and currently free-tier on OpenRouter as `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` if you want a $0 dev/test path). Only route professional-side or complex requests to the bigger Super model.
+
+---
+
+## Phase 2 — Safety guardrails (NemoGuard) — do not skip; this is a grief app
+
+> **PASTE INTO REPLIT AGENT:**
+>
+> Add an AI safety layer that runs on **every user message and every AI reply**, using NVIDIA NemoGuard models on the same endpoint (`https://integrate.api.nvidia.com/v1`, same `NVIDIA_API_KEY`):
+>
+> 1. **Content safety check:** model `nvidia/llama-3.1-nemoguard-8b-content-safety`. Classify each user prompt and each companion response as safe/unsafe with violation categories, following the model card's prompt format.
+> 2. **Topic control:** model `nvidia/llama-3.1-nemoguard-8b-topic-control` with a policy keeping conversation within: grief, loss, memory, meaning-making, coping, self-care, and app help. Gently redirect anything else.
+> 3. **Crisis escalation (most important):** if a message indicates suicidal thoughts, self-harm, or acute crisis, do NOT let the companion improvise. Show a compassionate fixed response with crisis resources (in the US: call or text **988**, the Suicide & Crisis Lifeline), encourage reaching out to their professional or a trusted person, and flag the session for the professional side (with the user's knowledge — show them a notice that their clinician can see flagged sessions, if they have one).
+> 4. Run the checks in parallel with generation where possible to keep latency low; cache identical checks.
+> 5. Log guardrail events server-side for the professional dashboard.
+
+(If our backend is Python, implement this with NVIDIA's open-source **NeMo Guardrails** library — `pip install nemoguardrails` — configured to use those two NemoGuard NIM models. If Node, call the models directly as described.)
+
+---
+
+## Phase 3 — Fix multimodal intake + voice + higher-fidelity images
+
+> **PASTE INTO REPLIT AGENT:**
+>
+> 1. **Image & audio upload:** add attachment buttons (photo, voice note) to the chat. Validate type/size (images ≤10MB: jpg/png/webp; audio ≤25MB: mp3/wav/m4a/webm). Upload to server, then include in the Nemotron Nano Omni request as multimodal content — the model reads them directly; no separate OCR/transcription service needed. Typical uses: a user shares a photo of their loved one and the companion responds to it; a user records a voice note instead of typing.
+> 2. **Voice input:** add a mic button using the browser `MediaRecorder` API; send the recorded audio to the same endpoint. (Free — no extra API.)
+> 3. **Voice output (cost-effective):** use the browser's built-in `speechSynthesis` for spoken replies with an on/off toggle. No API cost.
+> 4. **Higher-fidelity generated imagery:** add a "memory image" feature using an NVIDIA-hosted image model — **`black-forest-labs/flux.1-dev`** or **`stabilityai/stable-diffusion-3.5-large`** from build.nvidia.com (both have hosted API endpoints; use whichever the docs show as available on our key). Use it for gentle, user-requested imagery only (memorial scenes, calming visuals) — always user-initiated, never generate images of the deceased's face from photos. Show a confirmation step before generating.
+
+---
+
+## Phase 4 — AIM-style community chat rooms
+
+> **PASTE INTO REPLIT AGENT:**
+>
+> Build real-time community chat rooms with a retro AOL-Instant-Messenger-inspired look (buddy list sidebar, sign-on sound optional, classic message window styling) but modern under the hood:
+>
+> 1. Use **Socket.IO** (WebSockets) on our existing server. Rooms: "General Support", "Loss of a Parent", "Loss of a Partner", "Loss of a Child", "Pet Loss", plus professional-created rooms.
+> 2. Features: buddy/presence list (online/away), join/leave notices, typing indicator, direct messages between consenting members, and screen names (never real names by default).
+> 3. **Moderation is mandatory:** run every chat-room message through the Phase 2 content-safety check before broadcast; block unsafe messages; auto-surface crisis resources on crisis language; give professionals a moderator view with mute/remove.
+> 4. Persist message history per room in the database; load last 50 on join.
+> 5. Community guidelines shown on first join; report button on every message.
+
+---
+
+## Phase 5 — Scheduling + Zoom / Google Meet
+
+> **PASTE INTO REPLIT AGENT:**
+>
+> Add session scheduling connecting clients and professionals:
+>
+> 1. **Availability & booking:** professionals set weekly availability; clients book from open slots. Store in database; show upcoming sessions on both dashboards; email/in-app reminders 24h and 1h before.
+> 2. **Zoom:** server-side Server-to-Server OAuth. Get token: `POST https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${ZOOM_ACCOUNT_ID}` with Basic auth from `ZOOM_CLIENT_ID:ZOOM_CLIENT_SECRET`. Create meeting: `POST https://api.zoom.us/v2/users/me/meetings` with topic, start_time (ISO 8601), duration, timezone. Save the returned `join_url` on the booking.
+> 3. **Google Meet:** professional connects their Google account via OAuth (Calendar scope). Create the event with `POST https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1` including `conferenceData.createRequest` with `conferenceSolutionKey.type: "hangoutsMeet"` — the response contains the Meet link. Save it on the booking and invite the client's email.
+> 4. Let each professional choose a default (Zoom or Meet) in settings. Group community events (e.g., monthly support circle) use the same flow and post the link in the matching chat room.
+> 5. All tokens/credentials stay server-side in Secrets. Never expose them to the browser.
+
+---
+
+## Phase 6 — Tell the agent to verify
+
+> **PASTE INTO REPLIT AGENT:**
+>
+> Test end-to-end and show me results: (1) send a text message and confirm streamed Nemotron reply; (2) upload a photo and a voice note and confirm the companion responds to their content; (3) send a crisis-language test message and confirm the 988 crisis response appears instead of a normal reply; (4) send an off-topic message and confirm gentle redirect; (5) two browser windows in a chat room exchanging live messages; (6) book a test session and confirm a working Zoom join URL and Google Meet link are created; (7) confirm no API keys appear in any client-side code or network response.
+
+---
+
+## Quick reference — exact model strings
+
+| Purpose | Model | Endpoint |
+|---|---|---|
+| Companion chat + images/audio/video in | `nvidia/nemotron-3-nano-omni-30b-a3b` | `https://integrate.api.nvidia.com/v1` (OpenAI-compatible) |
+| Professional-side deep reasoning | `nvidia/nemotron-3-super-120b-a12b` | same |
+| Content safety guardrail | `nvidia/llama-3.1-nemoguard-8b-content-safety` | same |
+| Topic control guardrail | `nvidia/llama-3.1-nemoguard-8b-topic-control` | same |
+| Image generation | `black-forest-labs/flux.1-dev` or `stabilityai/stable-diffusion-3.5-large` | build.nvidia.com hosted API |
+| Free dev/test alternative | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` | OpenRouter (`https://openrouter.ai/api/v1`) |
+
+Model strings can shift as NVIDIA updates releases — if the agent gets a "model not found" error, tell it to check the model's page on build.nvidia.com for the current ID.
+
+## Cost strategy (cheapest path that's still best-in-class)
+
+- One multimodal model (Nano Omni, 3B active params) handles chat + image + audio → no separate vision/transcription/OCR bills.
+- Browser mic + browser speech synthesis → $0 voice.
+- Route only professional-side/complex work to the larger Super model.
+- Guardrail models are small 8B calls — pennies, and they can be cached.
+- Dev/test on OpenRouter's free Nano Omni tier; production on NVIDIA's API.

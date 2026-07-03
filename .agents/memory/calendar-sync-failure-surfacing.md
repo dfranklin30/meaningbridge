@@ -18,7 +18,7 @@ the primary calendar (status `fallback`) instead of erroring; a genuine write
 refusal (403 = access lost, 404/410 = calendar gone) is caught and mapped to a
 specific sentence, never a raw Google payload.
 
-**Why:** Task #38 let clinicians choose which calendar syncs. If they later lose
+**Why:** clinicians can choose which calendar syncs. If they later lose
 access, event creation used to fail with only a `req.log.warn`, so the clinician
 kept believing sessions were on their calendar. Persisting the outcome is what
 makes the warning survive a page reload and stay tied to the specific session.

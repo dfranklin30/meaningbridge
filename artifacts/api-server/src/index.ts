@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { isPhiKeyConfigured } from "./lib/phi";
 import { startOutreachScheduler } from "./lib/scheduler";
+import { backfillCapabilities } from "./lib/backfillCapabilities";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +25,8 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  void backfillCapabilities();
 
   startOutreachScheduler();
 

@@ -3,43 +3,47 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, AlertTriangle, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 
 const API = `${import.meta.env.BASE_URL}api`;
 
 type Persona = "concierge" | "seeker" | "provider";
 type Turn = { role: "user" | "assistant"; content: string };
 
-// Routes where a floating companion would intrude on a focused flow.
-const HIDDEN_PREFIXES = [
-  "/onboarding",
-  "/select-role",
-  "/sign-in",
-  "/sign-up",
-  "/present",
-];
+// The bubble is present on every screen. It is only suppressed until Clerk has
+// resolved the session, so the persona (which depends on signed-in state) does
+// not flicker on first paint.
+const OPEN_KEY = "mb.bubble.open";
 
 const PERSONA_COPY: Record<
   Persona,
-  { title: string; intro: string; placeholder: string }
+  {
+    title: string;
+    intro: string;
+    placeholder: string;
+    deepLink: { href: string; label: string };
+  }
 > = {
   concierge: {
     title: "Ask about MeaningBridge",
     intro:
       "Hello. I can tell you how MeaningBridge works, who it is for, and how to begin. What would you like to know?",
     placeholder: "Ask a question...",
+    deepLink: { href: "/sign-up", label: "Enter the full experience" },
   },
   seeker: {
     title: "A companion, here with you",
     intro:
       "Hello. I am here whenever you would like to talk. There is nothing you need to prepare — share whatever is present for you.",
     placeholder: "Write here...",
+    deepLink: { href: "/companion", label: "Open the full companion" },
   },
   provider: {
     title: "Portal help",
     intro:
       "Hello. I can help you find your way around the portal and answer general questions about how it works. How can I help?",
     placeholder: "Ask about the portal...",
+    deepLink: { href: "/care", label: "Go to the portal" },
   },
 };
 
@@ -67,7 +71,11 @@ export function CompanionBubble() {
     query: { enabled: !!isSignedIn, queryKey: getGetMeQueryKey() },
   });
 
-  const [open, setOpen] = useState(false);
+  // Restore the collapsed/expanded state across navigations and reloads.
+  const [open, setOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(OPEN_KEY) === "1";
+  });
   const [messages, setMessages] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -80,8 +88,18 @@ export function CompanionBubble() {
   const persona = resolvePersona(isSignedIn, me?.isProfessional ?? false, location);
   const copy = PERSONA_COPY[persona];
 
-  const hidden =
-    !isLoaded || HIDDEN_PREFIXES.some((p) => location.startsWith(p));
+  // Present on every screen; only wait for Clerk to resolve the session so the
+  // persona does not flicker before we know whether someone is signed in.
+  const hidden = !isLoaded;
+
+  // Persist the collapsed/expanded state so it survives navigation and reloads.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(OPEN_KEY, open ? "1" : "0");
+    } catch {
+      // Ignore storage failures (private mode, quota).
+    }
+  }, [open]);
 
   // Reset the conversation whenever the persona changes (e.g. switching spaces
   // or signing in/out) so a provider never sees a seeker transcript and vice
@@ -330,6 +348,17 @@ export function CompanionBubble() {
               )}
 
               <div ref={bottomRef} />
+            </div>
+
+            <div className="px-4 pt-2 pb-1">
+              <Link
+                href={copy.deepLink.href}
+                onClick={() => setOpen(false)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                {copy.deepLink.label}
+                <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
 
             <div className="p-3 border-t border-border/60">

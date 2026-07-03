@@ -63,6 +63,25 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    // Self-healing backfill: a legacy account may carry only the old `role`
+    // column with no additive capability set. Derive capabilities from it so an
+    // existing single-role user keeps working even if the startup backfill has
+    // not run against this database yet. Only writes when actually stale.
+    if (user.role && !user.isSeeker && !user.isProfessional) {
+      const isSeeker = user.role === "seeker";
+      const isProfessional = user.role === "professional";
+      const [healed] = await db
+        .update(usersTable)
+        .set({
+          isSeeker,
+          isProfessional,
+          activeSpace: user.activeSpace ?? user.role,
+        })
+        .where(eq(usersTable.id, user.id))
+        .returning();
+      if (healed) user = healed;
+    }
+
     req.appUser = user;
     req.userId = user.id;
     next();

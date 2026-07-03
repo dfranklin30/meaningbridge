@@ -11,7 +11,6 @@ import photoBonds from "@/assets/photo-bonds.png";
 import neimeyerPortrait from "@assets/image_1782985313122.png";
 import lectureCongress from "@assets/image_1782985283687.png";
 import lectureAudience from "@assets/image_1782985270880.png";
-import lectureGreen from "@assets/image_1782985276701.png";
 import lectureTie from "@assets/image_1782985295812.png";
 import lectureStanding from "@assets/image_1783094613403.png";
 
@@ -483,8 +482,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-10">
-              {[lectureStanding, lectureCongress, lectureAudience, lectureGreen, lectureTie].map(
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-10">
+              {[lectureStanding, lectureCongress, lectureAudience, lectureTie].map(
                 (src, i) => (
                   <div
                     key={i}

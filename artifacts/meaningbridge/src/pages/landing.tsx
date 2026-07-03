@@ -57,6 +57,7 @@ export default function LandingPage() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium">
           {[
+            { href: "/demo", label: "See the demo" },
             { href: "/pricing", label: "Plans" },
             { href: "/evaluate", label: "Share feedback" },
             { href: "/notify", label: "Notify me" },
@@ -113,6 +114,14 @@ export default function LandingPage() {
             <div className="rounded-3xl border border-border bg-card/95 backdrop-blur p-4 shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.18)] space-y-3">
               {/* Utility links */}
               <div className="flex items-center justify-center gap-5 text-sm font-medium text-foreground/70">
+                <Link
+                  href="/demo"
+                  onClick={() => setMenuOpen(false)}
+                  className="hover:text-primary transition-colors"
+                >
+                  See the demo
+                </Link>
+                <span className="h-3 w-px bg-border" />
                 <Link
                   href="/evaluate"
                   onClick={() => setMenuOpen(false)}

@@ -29,6 +29,7 @@ import Landing from "@/pages/landing";
 import NotifyPage from "@/pages/notify";
 import PresentPage from "@/pages/present";
 import Pricing from "@/pages/pricing";
+import Demo from "@/pages/demo";
 import Caregiver from "@/pages/caregiver";
 import Sandbox from "@/pages/sandbox";
 import EvaluatePage from "@/pages/evaluate";
@@ -427,6 +428,7 @@ function AppRouterSwitch() {
       <Route path="/notify" component={NotifyPage} />
       <Route path="/present" component={PresentPage} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/demo" component={Demo} />
       <Route path="/caregiver" component={Caregiver} />
       <Route path="/consent/withdraw/:token" component={ConsentWithdrawPage} />
       <Route path="/consent/:token" component={ConsentPage} />

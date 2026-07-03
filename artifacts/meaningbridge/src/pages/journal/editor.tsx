@@ -7,11 +7,16 @@ import {
   useDeleteJournalEntry,
   useListJournalPrompts,
   useReflectOnJournalEntry,
+  useListJournalPhotos,
+  useAddJournalPhoto,
+  useDeleteJournalPhoto,
+  getListJournalPhotosQueryKey,
   getListJournalEntriesQueryKey,
   getGetJournalEntryQueryKey,
 } from "@workspace/api-client-react";
+import { useUpload } from "@workspace/object-storage-web";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Save, Trash2, Check, Sparkle, Lock, LifeBuoy } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Check, Sparkle, Lock, LifeBuoy, ImagePlus, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
 
@@ -40,6 +45,53 @@ export default function JournalEditor() {
   const { mutateAsync: updateEntry } = useUpdateJournalEntry();
   const { mutateAsync: deleteEntry } = useDeleteJournalEntry();
   const { mutateAsync: reflect } = useReflectOnJournalEntry();
+
+  const { data: photos } = useListJournalPhotos(entryId, {
+    query: { enabled: !isNew, queryKey: getListJournalPhotosQueryKey(entryId) },
+  });
+  const { mutateAsync: addPhoto } = useAddJournalPhoto();
+  const { mutateAsync: removePhoto } = useDeleteJournalPhoto();
+  const { uploadFile, isUploading } = useUpload({
+    basePath: `${import.meta.env.BASE_URL}api/storage`,
+  });
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  const refreshPhotos = () =>
+    queryClient.invalidateQueries({ queryKey: getListJournalPhotosQueryKey(entryId) });
+
+  const handlePhotoFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0 || isNew) return;
+    setPhotoError(null);
+    try {
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith("image/")) continue;
+        if (file.size > 10 * 1024 * 1024) {
+          setPhotoError("That image is larger than 10 MB. Please choose a smaller one.");
+          continue;
+        }
+        const result = await uploadFile(file);
+        if (!result) throw new Error("upload failed");
+        await addPhoto({ entryId, data: { objectPath: result.objectPath } });
+      }
+      await refreshPhotos();
+    } catch {
+      setPhotoError("That image could not be added. Please try again when you are ready.");
+    } finally {
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  const handlePhotoDelete = async (photoId: number) => {
+    setPhotoError(null);
+    try {
+      await removePhoto({ photoId });
+      await refreshPhotos();
+    } catch {
+      setPhotoError("That image could not be removed. Please try again when you are ready.");
+    }
+  };
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -248,10 +300,82 @@ export default function JournalEditor() {
               setBody((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text))
             }
           />
+          <button
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+            disabled={isNew || isUploading}
+            aria-label="Attach a photo"
+            title={isNew ? "Save your entry first to attach a photo" : "Attach a photo"}
+            className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+          >
+            {isUploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ImagePlus className="w-4 h-4" />
+            )}
+          </button>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => void handlePhotoFiles(e.target.files)}
+          />
           <p className="text-xs text-muted-foreground mt-2.5">
-            Speak a memory and it will appear here for you to review before saving.
+            {isNew
+              ? "Speak a memory to add it here. Save the entry to attach photos."
+              : "Speak a memory, or attach photos to keep alongside your words."}
           </p>
         </div>
+
+        {photoError && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {photoError}
+          </div>
+        )}
+
+        {photos && photos.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            <AnimatePresence>
+              {photos.map((photo) => (
+                <motion.div
+                  key={photo.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="group relative h-24 w-24 overflow-hidden rounded-lg border border-border bg-secondary/30"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLightbox(`${import.meta.env.BASE_URL}api/storage${photo.objectPath}`)
+                    }
+                    className="h-full w-full"
+                    aria-label="View photo full size"
+                  >
+                    <img
+                      src={`${import.meta.env.BASE_URL}api/storage${photo.objectPath}`}
+                      alt="A photograph in this entry"
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handlePhotoDelete(photo.id)}
+                    aria-label="Remove photo"
+                    title="Remove photo"
+                    className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 backdrop-blur flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
 
         <div className="space-y-3 pt-4 border-t border-border/40">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -381,6 +505,34 @@ export default function JournalEditor() {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => setLightbox(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur p-6"
+          >
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              aria-label="Close photo"
+              className="absolute top-5 right-5 w-10 h-10 rounded-full bg-secondary/70 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={lightbox}
+              alt="A photograph in this entry"
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[85vh] max-w-full rounded-lg object-contain shadow-xl"
+            />
           </motion.div>
         )}
       </AnimatePresence>

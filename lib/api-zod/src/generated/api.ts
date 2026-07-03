@@ -404,7 +404,17 @@ export const SendChatMessageParams = zod.object({
 });
 
 export const SendChatMessageBody = zod.object({
-  content: zod.string().min(1),
+  content: zod
+    .string()
+    .describe(
+      "Message text. May be empty when one or more images are attached.",
+    ),
+  images: zod
+    .array(zod.string())
+    .optional()
+    .describe(
+      "Optional base64 data URLs (data:image\/...;base64,...) to send to the vision-capable companion. Not persisted.",
+    ),
 });
 
 /**
@@ -585,6 +595,41 @@ export const ReflectOnJournalEntryResponse = zod.object({
     .describe(
       "True when it may help to offer a one-tap share with the care team",
     ),
+});
+
+/**
+ * @summary List photos attached to a journal entry
+ */
+export const ListJournalPhotosParams = zod.object({
+  entryId: zod.coerce.number(),
+});
+
+export const ListJournalPhotosResponseItem = zod.object({
+  id: zod.number(),
+  journalEntryId: zod.number(),
+  objectPath: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListJournalPhotosResponse = zod.array(
+  ListJournalPhotosResponseItem,
+);
+
+/**
+ * @summary Attach an uploaded photo to a journal entry
+ */
+export const AddJournalPhotoParams = zod.object({
+  entryId: zod.coerce.number(),
+});
+
+export const AddJournalPhotoBody = zod.object({
+  objectPath: zod.string().min(1),
+});
+
+/**
+ * @summary Remove a photo from a journal entry
+ */
+export const DeleteJournalPhotoParams = zod.object({
+  photoId: zod.coerce.number(),
 });
 
 /**

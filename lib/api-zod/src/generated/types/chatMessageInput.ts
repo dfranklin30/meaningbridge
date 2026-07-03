@@ -7,6 +7,8 @@
  */
 
 export interface ChatMessageInput {
-  /** @minLength 1 */
+  /** Message text. May be empty when one or more images are attached. */
   content: string;
+  /** Optional base64 data URLs (data:image/...;base64,...) to send to the vision-capable companion. Not persisted. */
+  images?: string[];
 }

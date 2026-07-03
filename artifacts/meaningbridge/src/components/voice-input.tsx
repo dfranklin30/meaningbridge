@@ -53,6 +53,7 @@ export function VoiceInput({ onTranscript, disabled, className }: VoiceInputProp
       const res = await fetch(`${import.meta.env.BASE_URL}api/voice/transcribe`, {
         method: "POST",
         body: form,
+        credentials: "include",
       });
       if (!res.ok) throw new Error("transcription failed");
       const data = (await res.json()) as { text?: string };

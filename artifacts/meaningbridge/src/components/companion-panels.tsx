@@ -15,6 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import type { CompanionTask } from "@workspace/api-client-react";
 import { Sparkles, Plus, X, Check, Leaf } from "lucide-react";
+import { VoiceInput } from "./voice-input";
 
 // The two durable surfaces of the patient companion: what it remembers about
 // the person, and the gentle practices it has invited them into. Both are calm,
@@ -92,6 +93,11 @@ function MemoryPanel() {
       )}
 
       <div className="flex items-center gap-2 pt-1">
+        <VoiceInput
+          onTranscript={(text) =>
+            setDraft((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+          }
+        />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -230,6 +236,11 @@ function TasksPanel() {
       )}
 
       <div className="flex items-center gap-2 pt-1">
+        <VoiceInput
+          onTranscript={(text) =>
+            setDraft((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
+          }
+        />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

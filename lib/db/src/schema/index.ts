@@ -6,6 +6,7 @@ export * from "./deceased";
 export * from "./deceasedPhotos";
 export * from "./chat";
 export * from "./journal";
+export * from "./journalPhotos";
 export * from "./checkins";
 export * from "./practices";
 export * from "./therapists";

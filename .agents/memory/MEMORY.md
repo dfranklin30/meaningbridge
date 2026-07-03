@@ -11,3 +11,4 @@
 - [Dual-role accounts](dual-role-accounts.md) — users carry additive isSeeker/isProfessional + activeSpace; legacy `role` is an additive grant (never revokes); routing/gating keys off capabilities, not `role`.
 - [Preview-mode state reset](preview-mode-state-reset.md) — query-param preview sharing a mounted component with the live form must reset seeded sample state on mode switch, or sample data leaks into real writes.
 - [Onboarding gate cache race](onboarding-gate-cache-race.md) — completion must setQueryData(profile) before navigating; invalidate alone leaves stale onboardingComplete=false and bounces users back to step one.
+- [Anthropic vision message blocks](anthropic-vision-messages.md) — base64 media_type is a strict literal union (not string); validate before building blocks. Companion images are ephemeral (inflight-only render).

@@ -87,6 +87,8 @@ export * from "./journalEntry";
 export * from "./journalEntryInput";
 export * from "./journalEntryInputPrivacyStatus";
 export * from "./journalEntryPrivacyStatus";
+export * from "./journalPhoto";
+export * from "./journalPhotoInput";
 export * from "./journalPrompt";
 export * from "./journalReflectionResult";
 export * from "./listProvidersForAdminParams";

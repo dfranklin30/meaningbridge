@@ -68,6 +68,8 @@ import type {
   IntegrationConnectionInput,
   JournalEntry,
   JournalEntryInput,
+  JournalPhoto,
+  JournalPhotoInput,
   JournalPrompt,
   JournalReflectionResult,
   ListProvidersForAdminParams,
@@ -2488,6 +2490,265 @@ export const useReflectOnJournalEntry = <
   TContext
 > => {
   return useMutation(getReflectOnJournalEntryMutationOptions(options));
+};
+
+/**
+ * @summary List photos attached to a journal entry
+ */
+export const getListJournalPhotosUrl = (entryId: number) => {
+  return `/api/journal/${entryId}/photos`;
+};
+
+export const listJournalPhotos = async (
+  entryId: number,
+  options?: RequestInit,
+): Promise<JournalPhoto[]> => {
+  return customFetch<JournalPhoto[]>(getListJournalPhotosUrl(entryId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListJournalPhotosQueryKey = (entryId: number) => {
+  return [`/api/journal/${entryId}/photos`] as const;
+};
+
+export const getListJournalPhotosQueryOptions = <
+  TData = Awaited<ReturnType<typeof listJournalPhotos>>,
+  TError = ErrorType<AnthropicError>,
+>(
+  entryId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJournalPhotos>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListJournalPhotosQueryKey(entryId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listJournalPhotos>>
+  > = ({ signal }) => listJournalPhotos(entryId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!entryId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listJournalPhotos>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListJournalPhotosQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listJournalPhotos>>
+>;
+export type ListJournalPhotosQueryError = ErrorType<AnthropicError>;
+
+/**
+ * @summary List photos attached to a journal entry
+ */
+
+export function useListJournalPhotos<
+  TData = Awaited<ReturnType<typeof listJournalPhotos>>,
+  TError = ErrorType<AnthropicError>,
+>(
+  entryId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJournalPhotos>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListJournalPhotosQueryOptions(entryId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Attach an uploaded photo to a journal entry
+ */
+export const getAddJournalPhotoUrl = (entryId: number) => {
+  return `/api/journal/${entryId}/photos`;
+};
+
+export const addJournalPhoto = async (
+  entryId: number,
+  journalPhotoInput: JournalPhotoInput,
+  options?: RequestInit,
+): Promise<JournalPhoto> => {
+  return customFetch<JournalPhoto>(getAddJournalPhotoUrl(entryId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(journalPhotoInput),
+  });
+};
+
+export const getAddJournalPhotoMutationOptions = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addJournalPhoto>>,
+    TError,
+    { entryId: number; data: BodyType<JournalPhotoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addJournalPhoto>>,
+  TError,
+  { entryId: number; data: BodyType<JournalPhotoInput> },
+  TContext
+> => {
+  const mutationKey = ["addJournalPhoto"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addJournalPhoto>>,
+    { entryId: number; data: BodyType<JournalPhotoInput> }
+  > = (props) => {
+    const { entryId, data } = props ?? {};
+
+    return addJournalPhoto(entryId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddJournalPhotoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addJournalPhoto>>
+>;
+export type AddJournalPhotoMutationBody = BodyType<JournalPhotoInput>;
+export type AddJournalPhotoMutationError = ErrorType<AnthropicError>;
+
+/**
+ * @summary Attach an uploaded photo to a journal entry
+ */
+export const useAddJournalPhoto = <
+  TError = ErrorType<AnthropicError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addJournalPhoto>>,
+    TError,
+    { entryId: number; data: BodyType<JournalPhotoInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addJournalPhoto>>,
+  TError,
+  { entryId: number; data: BodyType<JournalPhotoInput> },
+  TContext
+> => {
+  return useMutation(getAddJournalPhotoMutationOptions(options));
+};
+
+/**
+ * @summary Remove a photo from a journal entry
+ */
+export const getDeleteJournalPhotoUrl = (photoId: number) => {
+  return `/api/journal/photos/${photoId}`;
+};
+
+export const deleteJournalPhoto = async (
+  photoId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteJournalPhotoUrl(photoId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteJournalPhotoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteJournalPhoto>>,
+    TError,
+    { photoId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteJournalPhoto>>,
+  TError,
+  { photoId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteJournalPhoto"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteJournalPhoto>>,
+    { photoId: number }
+  > = (props) => {
+    const { photoId } = props ?? {};
+
+    return deleteJournalPhoto(photoId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteJournalPhotoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteJournalPhoto>>
+>;
+
+export type DeleteJournalPhotoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove a photo from a journal entry
+ */
+export const useDeleteJournalPhoto = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteJournalPhoto>>,
+    TError,
+    { photoId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteJournalPhoto>>,
+  TError,
+  { photoId: number },
+  TContext
+> => {
+  return useMutation(getDeleteJournalPhotoMutationOptions(options));
 };
 
 /**

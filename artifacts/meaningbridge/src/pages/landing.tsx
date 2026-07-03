@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Menu, X, Users } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { HeroWordmark } from "@/components/hero-wordmark";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
 import { LivingBackground } from "@/components/living-background";
@@ -174,8 +175,18 @@ export default function LandingPage() {
             <p className="text-sm uppercase tracking-[0.25em] text-primary/80">
               Coming soon
             </p>
-            <h1 className="font-serif text-5xl md:text-6xl leading-[1.05] tracking-tight">
-              MeaningBridge <span className="text-primary">is coming to you.</span>
+            <h1 className="space-y-1">
+              <span className="sr-only">MeaningBridge is coming to you.</span>
+              <HeroWordmark
+                aria-hidden="true"
+                className="mx-auto w-full max-w-md md:max-w-lg"
+              />
+              <span
+                aria-hidden="true"
+                className="block font-serif text-3xl md:text-4xl leading-[1.05] tracking-tight text-primary"
+              >
+                is coming to you.
+              </span>
             </h1>
 
             {/* Two doorways — front and center, around the infinity */}

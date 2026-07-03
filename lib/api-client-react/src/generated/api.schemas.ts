@@ -854,6 +854,18 @@ export interface DeceasedPhotoInput {
   objectPath: string;
 }
 
+export interface JournalPhoto {
+  id: number;
+  journalEntryId: number;
+  objectPath: string;
+  createdAt: string;
+}
+
+export interface JournalPhotoInput {
+  /** @minLength 1 */
+  objectPath: string;
+}
+
 export interface AnthropicConversation {
   id: number;
   title: string;
@@ -1293,8 +1305,10 @@ export interface ChatSessionWithMessages {
 }
 
 export interface ChatMessageInput {
-  /** @minLength 1 */
+  /** Message text. May be empty when one or more images are attached. */
   content: string;
+  /** Optional base64 data URLs (data:image/...;base64,...) to send to the vision-capable companion. Not persisted. */
+  images?: string[];
 }
 
 /**

@@ -73,6 +73,11 @@ router.post("/sessions/:id/messages", async (req, res) => {
     .where(and(eq(chatSessionsTable.id, id), eq(chatSessionsTable.userId, req.userId!)));
   if (!session) { res.status(404).json({ error: "Not found" }); return; }
 
+  if (!body.content.trim() && (body.images ?? []).length === 0) {
+    res.status(400).json({ error: "A message needs text or at least one image." });
+    return;
+  }
+
   const crisis = detectCrisis(body.content);
   await db.insert(chatMessagesTable).values({
     sessionId: id,
@@ -128,13 +133,48 @@ router.post("/sessions/:id/messages", async (req, res) => {
     send({ type: "crisis" });
   }
 
+  // Vision: the user may attach one or more base64 image data URLs alongside
+  // the newest message. Images are not persisted (companion is ephemeral); they
+  // are only injected into the final user turn for this single request.
+  const ALLOWED_MEDIA_TYPES = ["image/gif", "image/jpeg", "image/png", "image/webp"] as const;
+  type AllowedMediaType = (typeof ALLOWED_MEDIA_TYPES)[number];
+  type ImageBlock = {
+    type: "image";
+    source: { type: "base64"; media_type: AllowedMediaType; data: string };
+  };
+  const imageBlocks: ImageBlock[] = [];
+  for (const dataUrl of body.images ?? []) {
+    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s.exec(dataUrl);
+    if (!match) continue;
+    const mediaType = match[1] as AllowedMediaType;
+    if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) continue;
+    imageBlocks.push({
+      type: "image",
+      source: { type: "base64", media_type: mediaType, data: match[2] },
+    });
+  }
+
+  const messages = history.map((m, i) => {
+    const isLastUserTurn =
+      i === history.length - 1 && m.role === "user" && imageBlocks.length > 0;
+    if (isLastUserTurn) {
+      // Append the text block only when there is text; an image-only turn is a
+      // valid Anthropic content array on its own.
+      const content = m.content.trim()
+        ? [...imageBlocks, { type: "text" as const, text: m.content }]
+        : [...imageBlocks];
+      return { role: "user" as const, content };
+    }
+    return { role: m.role as "user" | "assistant", content: m.content };
+  });
+
   try {
     let assistant = "";
     const stream = await anthropic.messages.stream({
       model: "claude-sonnet-4-5",
       max_tokens: 4096,
       system: systemPrompt,
-      messages: history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+      messages,
     });
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {

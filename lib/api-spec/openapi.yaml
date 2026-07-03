@@ -538,6 +538,71 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AnthropicError" }
 
+  /journal/{entryId}/photos:
+    get:
+      operationId: listJournalPhotos
+      tags: [journal]
+      summary: List photos attached to a journal entry
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Photos for the entry
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalPhoto"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+    post:
+      operationId: addJournalPhoto
+      tags: [journal]
+      summary: Attach an uploaded photo to a journal entry
+      parameters:
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalPhotoInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalPhoto"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnthropicError" }
+  /journal/photos/{photoId}:
+    delete:
+      operationId: deleteJournalPhoto
+      tags: [journal]
+      summary: Remove a photo from a journal entry
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
   /assessments/gis:
     post:
       operationId: submitGisScreener
@@ -2785,6 +2850,20 @@ components:
         objectPath: { type: string, minLength: 1 }
       required: [objectPath]
 
+    JournalPhoto:
+      type: object
+      properties:
+        id: { type: integer }
+        journalEntryId: { type: integer }
+        objectPath: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, journalEntryId, objectPath, createdAt]
+    JournalPhotoInput:
+      type: object
+      properties:
+        objectPath: { type: string, minLength: 1 }
+      required: [objectPath]
+
     AnthropicConversation:
       type: object
       properties:
@@ -3107,7 +3186,11 @@ components:
     ChatMessageInput:
       type: object
       properties:
-        content: { type: string, minLength: 1 }
+        content: { type: string, description: "Message text. May be empty when one or more images are attached." }
+        images:
+          type: array
+          description: "Optional base64 data URLs (data:image/...;base64,...) to send to the vision-capable companion. Not persisted."
+          items: { type: string }
       required: [content]
 
     JournalEntry:

@@ -48,8 +48,12 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Companion chat can carry up to four base64 image attachments (each capped at
+// 5 MB decoded ~= 6.7 MB base64 in the route). The default express.json limit is
+// 100 kb, which would reject those payloads at the body parser before the chat
+// route's own validation runs, so the limit is raised to comfortably fit them.
+app.use(express.json({ limit: "30mb" }));
+app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 
 // Resolve the publishable key from the incoming request host so the same
 // server can serve multiple Clerk custom domains. Falls back to

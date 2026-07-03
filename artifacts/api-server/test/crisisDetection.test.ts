@@ -71,6 +71,16 @@ vi.mock("@workspace/integrations-anthropic-ai", () => ({
   },
 }));
 
+// Content moderation augments the regex crisis net. Stub it to never flag so
+// these tests assert the regex detect -> log -> stream contract in isolation.
+vi.mock("@workspace/integrations-openai-ai-server", () => ({
+  openai: {
+    moderations: {
+      create: async () => ({ results: [{ flagged: false, categories: {} }] }),
+    },
+  },
+}));
+
 function makeApp() {
   const app = express();
   app.use((req, _res, next) => {

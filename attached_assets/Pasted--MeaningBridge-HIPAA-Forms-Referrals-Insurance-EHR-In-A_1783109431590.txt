@@ -1,0 +1,146 @@
+# MeaningBridge — HIPAA, Forms, Referrals, Insurance, EHR & In-App Sessions
+## Exact Replit Agent Instructions (Part 2)
+
+---
+
+## ⚠️ Read this first — the compliance reality
+
+**Replit does not sign a Business Associate Agreement (BAA).** Under HIPAA, every vendor that stores or transmits Protected Health Information (PHI) on your behalf must sign a BAA. That means you **cannot legally store real patient data on Replit's database or hosting**.
+
+The architecture that solves this (and is what real telehealth startups do):
+
+```
+┌────────────────────────────────────────────┐
+│  REPLIT  (no PHI stored here)              │
+│  UI, chat companion, community rooms,      │
+│  marketing pages, session tokens           │
+└──────────────┬─────────────────────────────┘
+               │ server-side API calls only
+┌──────────────▼─────────────────────────────┐
+│  BAA-COVERED VENDORS (all PHI lives here)  │
+│  • Healthie — headless EHR/CRM system of   │
+│    record: patients, charts, forms,        │
+│    scheduling, insurance billing (BAA ✓)   │
+│  • Daily.co — embedded HIPAA video +       │
+│    recording + transcription (BAA ✓)       │
+│  • Stedi / Nirvana / Sohar — insurance     │
+│    eligibility checks (BAA ✓)              │
+└────────────────────────────────────────────┘
+```
+
+Rules that follow from this: Replit's own database holds only non-PHI (accounts, screen names, community chat, app settings). Everything clinical is created/read via API from the BAA vendors and rendered in your UI. When you outgrow this, redeploy the same code to AWS/GCP/Azure (all sign BAAs). Also required regardless of vendors: sign BAAs with **every** vendor touching PHI, run a security risk assessment, and have a healthcare attorney review before real patients use it. I'm not a lawyer — treat this as engineering guidance, not legal advice.
+
+**Note on the AI companion:** NVIDIA's standard API is not BAA-covered either. Keep the companion clearly separated from the clinical side (no PHI from charts sent to it), or move inference to a BAA-covered host (e.g., AWS Bedrock-style hosting of the open Nemotron weights) when you're ready.
+
+---
+
+## Sites to model (what "good" looks like)
+
+| Platform | What to copy for MeaningBridge |
+|---|---|
+| **Zocdoc** | Referral/booking marketplace: search providers by specialty, insurance accepted, state, availability; instant booking; verified reviews |
+| **Headway / Alma / Grow Therapy** | Therapist joins network → platform handles insurance credentialing, eligibility check at booking, client sees copay estimate up front |
+| **SimplePractice / TherapyNotes** | All-in-one practice portal: intake forms, notes, scheduling, telehealth, billing in one login for both therapist and client |
+| **IntakeQ** | Best-in-class electronic intake forms with e-signature, conditional logic, auto-reminders |
+| **Talkiatry** | Fully in-app telehealth visits with automated insurance eligibility (uses Sohar) |
+
+MeaningBridge = these patterns, specialized for grief care.
+
+---
+
+## The forms catalog (build all of these)
+
+Each form: electronic, e-signed, timestamped, versioned, stored in the EHR (Healthie), with an audit trail of who viewed/edited it.
+
+1. **Client Intake** — demographics, emergency contact, relationship to the deceased, date/nature of loss, current supports, medications, prior mental-health care.
+   *Example step flow:* Welcome → About you → About your loss (gentle wording, optional fields) → Health history → Review & e-sign.
+2. **Consent to Treatment** — provider name/license, scope of grief counseling, risks/benefits, right to withdraw. Signature + date required before first session.
+3. **Telehealth Informed Consent** — video-session risks, tech requirements, what happens if the connection drops, emergency plan with client's physical address at session time.
+4. **HIPAA Notice of Privacy Practices (NPP) acknowledgment** — display full NPP, capture acknowledgment signature.
+5. **Recording Consent** — separate, explicit opt-in for session recording; either party can decline; logged per session.
+6. **Insurance & Payment** — payer, member ID, group number, card-photo upload (front/back), payment method, sliding-scale request option.
+7. **Release of Information (ROI)** — who may receive records (e.g., referring physician), what may be shared, expiration date, revocable.
+8. **Grief screening instruments** (professional assigns, client completes in-portal): PG-13-R (Prolonged Grief), PHQ-9, GAD-7 — auto-scored, trended on the professional dashboard. *(Have your clinical lead confirm licensing/permission for each instrument.)*
+9. **Referral form** (professional → professional): reason, urgency, records attached via ROI.
+
+---
+
+## Backend structure (leveraging existing, working systems)
+
+**System of record: Healthie** — an API-first, ONC-certified EHR used by 30k+ clinicians. HIPAA-compliant with **BAA included on paid plans**, GraphQL API, React SDKs, and it can run fully **headless** — your UI, their backend. It already has working: patient records, provider management, scheduling, charting/note templates, intake forms with e-signature, secure messaging, document storage, and **insurance billing (CMS-1500 claims)**. This is the "existing known working CRM-type system" to execute off of — don't rebuild it.
+
+Entity mapping:
+
+| MeaningBridge concept | Healthie object (GraphQL) | Replit DB (non-PHI) |
+|---|---|---|
+| Client/patient | `User` (patient) | auth account ↔ healthie_user_id |
+| Licensed professional | `User` (provider/org member) | auth account ↔ healthie_user_id |
+| Intake/consent forms | `CustomModuleForm` / `FormAnswerGroup` | — |
+| Appointment | `Appointment` | — |
+| Session note | `FormAnswerGroup` (charting note) | — |
+| Documents/ROI | `Document` | — |
+| Insurance policy | `Policy` / billing objects | — |
+| Community chat, screen names | — | Replit DB |
+| AI companion chats (non-clinical) | — | Replit DB |
+
+**Insurance eligibility:** start with **Stedi** (API-first clearinghouse, real-time 270/271 eligibility JSON API, 1000+ payers, developer-friendly) — or **Nirvana**/**Sohar** if you want behavioral-health-specialized checks with copay estimates (Sohar: ~95% of checks return in seconds; it's what Talkiatry uses). Flow: client enters payer + member ID → server calls eligibility API → show "Your estimated copay: $X / Covered: yes" before booking, Headway-style.
+
+**In-app video: Daily.co** — embeddable HIPAA video rooms (BAA; healthcare add-on ~$500/mo) with API-controlled recording and HIPAA-compliant transcription. Sessions happen **inside MeaningBridge** — no leaving to Zoom. (Zoom Workplace for Healthcare + its SDK is the alternative if you prefer Zoom; requires their healthcare plan + BAA.)
+
+---
+
+## PASTE INTO REPLIT AGENT — Phase A: PHI boundary
+
+> Restructure the app for HIPAA: our Replit database must contain **no PHI**. Create a `server/phi-boundary.md` doc and enforce: Replit DB stores only auth accounts, screen names, community chat, app settings, and foreign keys (`healthie_user_id`). All clinical data (patient records, forms, notes, appointments, insurance, documents) is read/written via the Healthie GraphQL API at request time and never cached to our DB or logs. Add a logging middleware that redacts request/response bodies on all `/api/clinical/*` routes. All secrets server-side only: `HEALTHIE_API_KEY`, `DAILY_API_KEY`, `STEDI_API_KEY`. Add session timeout (15 min idle), and require re-auth for clinical pages.
+
+## Phase B: Healthie integration (patients, professionals, forms)
+
+> Integrate Healthie as our headless EHR via its GraphQL API (`HEALTHIE_API_KEY` in Secrets; use their sandbox environment first).
+>
+> 1. On signup, create the matching Healthie user (patient or provider); store only the returned ID in our DB.
+> 2. **Professional onboarding:** license number, state(s), license type, NPI; admin verification step before they can accept clients.
+> 3. **Forms:** create these in Healthie as custom forms and render them in our UI via API — Client Intake, Consent to Treatment, Telehealth Consent, HIPAA NPP Acknowledgment, Recording Consent, Insurance & Payment (with card image upload), Release of Information, PG-13-R, PHQ-9, GAD-7. Multi-step wizard UI, save-and-resume, e-signature capture, completed PDFs stored in Healthie.
+> 4. **Client dashboard:** upcoming sessions, assigned forms (with status), messages, my documents. **Professional dashboard:** caseload list, incomplete-form alerts, assessment score trends, session notes due, referrals.
+> 5. Block booking a first session until intake + consents are signed (like SimplePractice).
+
+## Phase C: Insurance eligibility at booking
+
+> Add real-time insurance verification using Stedi's eligibility API (`POST` their healthcare eligibility endpoint with payer ID, member ID, provider NPI; `STEDI_API_KEY` server-side). During booking: client selects payer + member ID → we run the check → display coverage status and estimated copay before confirming, like Headway does. Store the eligibility result in Healthie on the client's policy record. Handle failures gracefully: "We couldn't verify automatically — you can proceed and our team will verify manually." Add a self-pay / sliding-scale path that skips this.
+
+## Phase D: In-app video sessions (recorded, tracked, all in one place)
+
+> Replace external Zoom/Meet links for clinical sessions with embedded in-app video using Daily.co (HIPAA plan, `DAILY_API_KEY`):
+>
+> 1. When a session is booked, server creates a private Daily room (random name, `exp` expiry, knock-to-enter) and stores the room ref on the Healthie appointment.
+> 2. "Join Session" opens the call **inside MeaningBridge** via Daily's prebuilt embed — waiting room, mute, screen share, chat.
+> 3. **Recording:** only if the Recording Consent form is signed AND both parties confirm in a pre-call dialog; start/stop via Daily's recording API; recording + HIPAA transcription saved as a Document on the appointment in Healthie; visible to both parties.
+> 4. **Tracking:** log join/leave times, duration, completion status → appointment record; auto-open the session-note template for the professional at call end; client gets a post-session check-in prompt.
+> 5. No-show handling and reschedule flow included.
+
+## Phase E: Zocdoc-style referrals directory
+
+> Build a "Find a Grief Professional" directory: search/filter by state (must match professional's license states), specialty (loss type), insurance accepted, telehealth availability, next available slot; profile pages with bio, credentials, fees; instant booking into their real availability. Add professional-to-professional referrals: referral form (reason, urgency), optional records attached via a signed ROI, status tracking (sent → accepted → scheduled), notifications both sides. Show "In network — est. copay $X" on results using Phase C checks.
+
+## Phase F: Verify
+
+> Demonstrate: (1) a test patient signs up → Healthie user created → completes intake + consents with e-signature → PDFs visible in Healthie sandbox; (2) booking blocked until forms signed; (3) eligibility check returns and displays a copay for a test payer; (4) full in-app video session between test patient and test provider with consented recording + transcript attached to the appointment; (5) join/leave times logged; (6) referral sent and accepted between two test providers; (7) confirm our Replit DB contains zero clinical fields (dump schema) and no PHI in logs; (8) idle session logs out at 15 minutes.
+
+---
+
+## Costs (approx.)
+
+| Item | Cost |
+|---|---|
+| Healthie (with BAA) | paid plans from ~low hundreds $/mo; API/Plus tiers scale up |
+| Daily.co HIPAA add-on | ~$500/mo + usage |
+| Stedi eligibility | per-check pricing (cents per check) |
+| Nirvana / Sohar | quote-based, behavioral-health-specialized |
+| Healthcare attorney review | one-time — do not skip |
+
+## Order of operations
+
+1. Sign up: Healthie sandbox, Daily dev account, Stedi dev keys → add Secrets.
+2. Run Phases A → F in order, testing each in sandbox with **fake data only**.
+3. Sign BAAs with Healthie, Daily, and your eligibility vendor.
+4. Attorney + security risk assessment.
+5. Only then enroll real professionals/clients.

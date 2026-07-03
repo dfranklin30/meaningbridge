@@ -13,6 +13,7 @@ import lectureCongress from "@assets/image_1782985283687.png";
 import lectureAudience from "@assets/image_1782985270880.png";
 import lectureTie from "@assets/image_1782985295812.png";
 import lectureStanding from "@assets/image_1783094613403.png";
+import heroVideo from "@assets/Runway_timeline_export_a384ca35-6637-42fc-ad55-9d3157a18a9b_1783108564352.mp4";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -165,6 +166,26 @@ export default function LandingPage() {
       </AnimatePresence>
 
       <main className="relative z-10 px-6 pb-20">
+        {/* Opening film — a quiet, atmospheric welcome */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-4xl mx-auto pt-4 md:pt-8"
+        >
+          <div className="rounded-3xl overflow-hidden border border-border bg-card shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.2)]">
+            <video
+              src={heroVideo}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              className="block w-full aspect-video object-cover"
+            />
+          </div>
+        </motion.div>
+
         <div className="max-w-3xl mx-auto pt-8 md:pt-16">
           <motion.div
             initial={{ opacity: 0, y: 14 }}

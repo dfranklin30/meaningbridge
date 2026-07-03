@@ -7,7 +7,7 @@ import {
   getListDeceasedPhotosQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
 
@@ -72,12 +72,55 @@ export default function CompanionSession() {
   // keyed by their index in session.messages. Not persisted server-side, so
   // they survive stream completion within the session but clear on reload.
   const [sentImages, setSentImages] = useState<Record<number, string[]>>({});
+  // Read replies aloud with the browser's built-in speech synthesis. Opt-in and
+  // remembered across sessions. No network, no data leaves the device.
+  const ttsSupported =
+    typeof window !== "undefined" && "speechSynthesis" in window;
+  const [voiceOutput, setVoiceOutput] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("mb-voice-output") === "on";
+  });
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const pendingRef = useRef("");
   const revealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const doneRef = useRef(false);
+  // Full assistant reply accumulated across deltas, for reading aloud once done.
+  const fullReplyRef = useRef("");
+  const voiceOutputRef = useRef(voiceOutput);
+  voiceOutputRef.current = voiceOutput;
+
+  const speakReply = (text: string) => {
+    if (!ttsSupported || !text.trim()) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Speech synthesis is best-effort; never let it interrupt the conversation.
+    }
+  };
+
+  const toggleVoiceOutput = () => {
+    setVoiceOutput((on) => {
+      const next = !on;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("mb-voice-output", next ? "on" : "off");
+      }
+      if (!next && ttsSupported) window.speechSynthesis.cancel();
+      return next;
+    });
+  };
+
+  // Stop any speech when leaving the conversation.
+  useEffect(() => {
+    return () => {
+      if (ttsSupported) window.speechSynthesis.cancel();
+    };
+  }, [ttsSupported]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -96,6 +139,7 @@ export default function CompanionSession() {
     stopReveal();
     doneRef.current = false;
     pendingRef.current = "";
+    if (voiceOutputRef.current) speakReply(fullReplyRef.current);
     queryClient.invalidateQueries({ queryKey: getGetChatSessionQueryKey(id) });
     setIsStreaming(false);
     setIsThinking(false);
@@ -163,6 +207,8 @@ export default function CompanionSession() {
     setStreamError(false);
     pendingRef.current = "";
     doneRef.current = false;
+    fullReplyRef.current = "";
+    if (ttsSupported) window.speechSynthesis.cancel();
 
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}api/chat/sessions/${id}/messages`, {
@@ -196,6 +242,7 @@ export default function CompanionSession() {
               if (data.type === "delta" && data.text) {
                 setIsThinking(false);
                 pendingRef.current += data.text;
+                fullReplyRef.current += data.text;
                 startReveal();
               } else if (data.type === "crisis") {
                 setCrisisAlert(true);
@@ -256,6 +303,22 @@ export default function CompanionSession() {
             {session.conversationType ? `, ${CONVERSATION_LABELS[session.conversationType] ?? session.conversationType}` : ""}
           </p>
         </div>
+        {ttsSupported && (
+          <button
+            type="button"
+            onClick={toggleVoiceOutput}
+            aria-pressed={voiceOutput}
+            aria-label={voiceOutput ? "Turn off reading replies aloud" : "Read replies aloud"}
+            title={voiceOutput ? "Reading replies aloud" : "Read replies aloud"}
+            className={`ml-auto w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+              voiceOutput
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary/50"
+            }`}
+          >
+            {voiceOutput ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
+        )}
       </div>
 
       <AnimatePresence>

@@ -78,6 +78,16 @@ vi.mock("@workspace/integrations-anthropic-ai", () => ({
   },
 }));
 
+// Content moderation runs on every message; stub it to never flag so image
+// routing is asserted in isolation.
+vi.mock("@workspace/integrations-openai-ai-server", () => ({
+  openai: {
+    moderations: {
+      create: async () => ({ results: [{ flagged: false, categories: {} }] }),
+    },
+  },
+}));
+
 // A 1x1 transparent PNG (valid base64) used as the "good" image.
 const PNG_1PX =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";

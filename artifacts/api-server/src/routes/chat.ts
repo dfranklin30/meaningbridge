@@ -16,6 +16,12 @@ import {
 import { companionStream, parseImages, type ChatTurn } from "../lib/aiProvider";
 import { detectCrisis } from "../lib/crisis";
 import {
+  moderate,
+  classifyTopic,
+  OFF_TOPIC_REDIRECT,
+  BOUNDARY_REDIRECT,
+} from "../lib/safety";
+import {
   meaningSystemPrompt,
   continuingBondsSystemPrompt,
   type ConversationType,
@@ -78,7 +84,10 @@ router.post("/sessions/:id/messages", async (req, res) => {
     return;
   }
 
-  const crisis = detectCrisis(body.content);
+  // Safety layer: the regex net catches explicit phrasing; moderation catches
+  // self-harm the regex misses. Either one routes to the warm crisis path.
+  const moderation = await moderate(body.content);
+  const crisis = detectCrisis(body.content) || moderation.selfHarm;
   await db.insert(chatMessagesTable).values({
     sessionId: id,
     role: "user",
@@ -129,8 +138,46 @@ router.post("/sessions/:id/messages", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   const send = (e: object) => res.write(`data: ${JSON.stringify(e)}\n\n`);
 
+  // Stream a fixed, on-brand reply (no model call), persist it, and close the
+  // stream. Used by the guardrail short-circuits below.
+  const streamCannedReply = async (message: string) => {
+    send({ type: "delta", text: message });
+    await db.insert(chatMessagesTable).values({
+      sessionId: id,
+      role: "assistant",
+      content: message,
+      crisisFlag: false,
+    });
+    send({ type: "done" });
+    res.end();
+  };
+
   if (crisis) {
+    // Crisis stays on the warm path: surface the calm affordance AND let the
+    // companion respond with care (never a cold cutoff).
     send({ type: "crisis" });
+  } else if (moderation.flagged) {
+    // Harmful content that is not self-harm: log a guardrail event and hold a
+    // gentle boundary rather than passing it to the model.
+    await db.insert(safetyEventsTable).values({
+      userId: req.userId!,
+      source: "guardrail",
+      severity: "warning",
+      note: `Blocked input categories: ${moderation.categories.join(", ")}`,
+    });
+    await streamCannedReply(BOUNDARY_REDIRECT);
+    return;
+  } else if (classifyTopic(body.content) === "off_topic") {
+    // Clearly out-of-scope utility request: warmly redirect, no model call.
+    // Deliberately NOT a safety_event — off-topic is benign, and the safety feed
+    // (the user's settings view and the clinician-facing safety counts/nudges)
+    // must not be polluted with non-safety noise. Logged for observability only.
+    req.log.info(
+      { guardrail: "off_topic_redirect", sessionId: id },
+      "off-topic request redirected",
+    );
+    await streamCannedReply(OFF_TOPIC_REDIRECT);
+    return;
   }
 
   // Vision: the user may attach one or more base64 image data URLs alongside
@@ -168,6 +215,19 @@ router.post("/sessions/:id/messages", async (req, res) => {
       assistantText: assistant,
       existing: memories.map((m) => m.content),
     });
+    // Fire-and-forget output guardrail: moderate what the model produced and log
+    // a guardrail event if anything slipped through. Never blocks the response.
+    void moderate(assistant)
+      .then((m) => {
+        if (!m.flagged) return;
+        return db.insert(safetyEventsTable).values({
+          userId: req.userId!,
+          source: "guardrail",
+          severity: m.selfHarm ? "critical" : "warning",
+          note: `Model output flagged: ${m.categories.join(", ")}`,
+        });
+      })
+      .catch((err) => req.log.error({ err }, "output moderation failed"));
   } catch (err) {
     req.log.error({ err }, "chat stream error");
     send({ type: "error", message: err instanceof Error ? err.message : "stream failed" });

@@ -20,6 +20,7 @@ import consentRouter from "./consent";
 import companionRouter from "./companion";
 import appointmentsRouter from "./appointments";
 import conciergeRouter from "./concierge";
+import imageryRouter from "./imagery";
 
 const router: IRouter = Router();
 
@@ -44,5 +45,6 @@ router.use("/consent", consentRouter);
 router.use("/companion", companionRouter);
 router.use("/appointments", appointmentsRouter);
 router.use("/concierge", conciergeRouter);
+router.use("/imagery", imageryRouter);
 
 export default router;

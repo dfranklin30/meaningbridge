@@ -7,7 +7,7 @@ import {
   getListDeceasedPhotosQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
 
@@ -66,6 +66,14 @@ export default function CompanionSession() {
   const [streamError, setStreamError] = useState(false);
   const [attachments, setAttachments] = useState<PendingImage[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imagineOpen, setImagineOpen] = useState(false);
+  const [imaginePrompt, setImaginePrompt] = useState("");
+  const [imagineOrientation, setImagineOrientation] = useState<
+    "square" | "landscape" | "portrait"
+  >("square");
+  const [imagineLoading, setImagineLoading] = useState(false);
+  const [imagineError, setImagineError] = useState<string | null>(null);
+  const [memoryImages, setMemoryImages] = useState<string[]>([]);
   const [inflightMessage, setInflightMessage] = useState<string | null>(null);
   const [inflightImages, setInflightImages] = useState<string[]>([]);
   // Ephemeral: image thumbnails for user turns sent in this browser session,
@@ -125,6 +133,15 @@ export default function CompanionSession() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [session?.messages, streamedResponse]);
+
+  // Ephemeral memory images and the composer are scoped to one conversation; reset
+  // them when navigating between sessions so nothing bleeds across.
+  useEffect(() => {
+    setMemoryImages([]);
+    setImagineOpen(false);
+    setImaginePrompt("");
+    setImagineError(null);
+  }, [id]);
 
   const stopReveal = () => {
     if (revealTimerRef.current !== null) {
@@ -272,6 +289,36 @@ export default function CompanionSession() {
       setIsStreaming(false);
       setIsThinking(false);
       setStreamError(true);
+    }
+  };
+
+  const generateMemoryImage = async () => {
+    const prompt = imaginePrompt.trim();
+    if (!prompt || imagineLoading) return;
+    setImagineLoading(true);
+    setImagineError(null);
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/imagery/memory`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, orientation: imagineOrientation }),
+      });
+      if (!res.ok) {
+        setImagineError(
+          res.status === 422
+            ? "Let us keep the image gentle. Please try describing a calming, peaceful scene."
+            : "The image could not be created just now. Please try again in a moment.",
+        );
+        return;
+      }
+      const data = (await res.json()) as { b64_json: string };
+      setMemoryImages((prev) => [...prev, `data:image/png;base64,${data.b64_json}`]);
+      setImaginePrompt("");
+      setImagineOpen(false);
+    } catch {
+      setImagineError("The image could not be created just now. Please try again in a moment.");
+    } finally {
+      setImagineLoading(false);
     }
   };
 
@@ -439,6 +486,18 @@ export default function CompanionSession() {
           </div>
         )}
 
+        {memoryImages.map((src, i) => (
+          <div key={`mem-${i}`} className="flex justify-start">
+            <div className="max-w-[80%] rounded-2xl p-2 bg-card border border-border">
+              <img
+                src={src}
+                alt="A calming image created for your reflection"
+                className="rounded-xl w-full max-w-sm object-cover"
+              />
+            </div>
+          </div>
+        ))}
+
         <div ref={bottomRef} />
       </div>
 
@@ -466,6 +525,73 @@ export default function CompanionSession() {
             ))}
           </div>
         )}
+        <AnimatePresence>
+          {imagineOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-2"
+            >
+              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                <div>
+                  <h2 className="font-serif text-base">A calming image</h2>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    Describe a gentle, restful scene and one will be created for your reflection.
+                    Images are kept soft and abstract, and never show faces or a likeness of the
+                    person you are remembering.
+                  </p>
+                </div>
+                <textarea
+                  value={imaginePrompt}
+                  onChange={(e) => setImaginePrompt(e.target.value)}
+                  placeholder="A quiet shoreline at dawn, soft light over still water..."
+                  disabled={imagineLoading}
+                  className="w-full min-h-[72px] max-h-40 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:ring-1 focus:ring-primary/50"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  {(["square", "landscape", "portrait"] as const).map((o) => (
+                    <button
+                      key={o}
+                      type="button"
+                      onClick={() => setImagineOrientation(o)}
+                      disabled={imagineLoading}
+                      className={`px-3 py-1.5 rounded-full text-xs capitalize transition-colors ${
+                        imagineOrientation === o
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      {o}
+                    </button>
+                  ))}
+                </div>
+                {imagineError && <p className="text-xs text-destructive">{imagineError}</p>}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void generateMemoryImage()}
+                    disabled={!imaginePrompt.trim() || imagineLoading}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm disabled:opacity-50 transition-opacity"
+                  >
+                    {imagineLoading ? "Creating..." : "Create image"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImagineOpen(false);
+                      setImagineError(null);
+                    }}
+                    disabled={imagineLoading}
+                    className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2 bg-background border border-border rounded-xl p-2 shadow-sm focus-within:ring-1 focus-within:ring-primary/50 transition-shadow">
           <VoiceInput
             className="mb-0.5"
@@ -483,6 +609,21 @@ export default function CompanionSession() {
             className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors disabled:opacity-50 mb-0.5"
           >
             <ImagePlus className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setImagineOpen((v) => !v)}
+            disabled={isStreaming}
+            aria-expanded={imagineOpen}
+            aria-label="Create a calming image"
+            title="Create a calming image"
+            className={`w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 mb-0.5 ${
+              imagineOpen
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+            }`}
+          >
+            <Palette className="w-4 h-4" />
           </button>
           <input
             ref={imageInputRef}

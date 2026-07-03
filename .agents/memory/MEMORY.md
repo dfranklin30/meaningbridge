@@ -15,3 +15,4 @@
 - [Image-chat body limit](image-chat-body-limit.md) — base64 image payloads need a raised express.json limit AND a decoded-size cap in-route; default 100kb rejects them at the parser before route validation runs.
 - [OpenRouter integration constraints](openrouter-integration-constraints.md) — managed OpenRouter blocks `:free` models; paid Nemotron is text-only; lazy-load client so config errors fall back not crash boot.
 - [Safety-event routing](safety-event-routing.md) — only crisis/harmful-moderation go in safety_events (they drive user safety feed + clinician counts/nudges); off-topic redirects must NOT; moderation fails open.
+- [Memory-image generation](memory-image-generation.md) — calming-image endpoint is text-only (never the uploaded photos) so no likeness; openai-server `./image` module may be missing—create it + rebuild libs.

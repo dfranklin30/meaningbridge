@@ -54,7 +54,7 @@ A warm, trauma-informed grief-support web app: Continuing Bonds and Meaning Reco
 ## Product
 
 Public (no onboarding gate, no app chrome):
-- `/` — coming-soon landing: headline, "Brought to you by Dr. Robert Neimeyer", QR code linking to `/notify?src=qr`, copy-link, contact line for neimeyer@portlandinstitute.org, link to `/present`.
+- `/` — coming-soon landing: headline, "Brought to you by Dr. Robert Neimeyer", simple hero CTA ("Enter the experience" → `/sign-up`, plus a quiet "Or notify me at launch"), contact line for neimeyer@portlandinstitute.org. Two audience doorways are persistent fixed side rails (lg+): left "For those grieving" → `/sign-up`, right "For professionals" → `/caregiver`, so visitors can swap between the two spaces from any scroll position (mobile menu carries the same two boxes). A "Community of interest" section (anchor `#community`, linked from the nav) invites people to the Portland Institute for Loss and Transition Facebook community at https://www.facebook.com/PortlandInstitute/. The QR code was removed from the homepage (still lives on `/notify` and `/present`).
 - `/notify` — public signup form (writes to `notify_opt_ins`). Reads `?src=<label>` for attribution; defaults to `qr`.
 - `/present` — full-screen QR for keynote projection.
 - `/pricing` — subscription tiers mapped to the GIS tiers (Companion / Enhanced / Specialist). Visual prototype, no Stripe wiring; CTAs route to `/onboarding` or `/notify?src=pricing-*`.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X, Users } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
@@ -30,6 +30,22 @@ export default function LandingPage() {
       {/* Living, slowly-drifting aurora background */}
       <LivingBackground />
 
+      {/* Audience side rails — swap between the two doorways */}
+      <Link
+        href="/sign-up"
+        aria-label="For those grieving — enter here"
+        className="hidden lg:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-r-sm border border-l-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-foreground/70 hover:text-primary hover:border-primary/50 transition-colors"
+      >
+        For those grieving
+      </Link>
+      <Link
+        href="/caregiver"
+        aria-label="For professionals — enter here"
+        className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 [writing-mode:vertical-rl] items-center justify-center rounded-l-sm border border-r-0 border-border bg-card/90 backdrop-blur px-2.5 py-6 text-xs uppercase tracking-[0.25em] text-foreground/70 hover:text-primary hover:border-primary/50 transition-colors"
+      >
+        For professionals
+      </Link>
+
       <header className="relative z-20 px-5 sm:px-6 py-5 sm:py-6 max-w-6xl mx-auto flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0">
           <Logo variant="lockup" size={44} />
@@ -38,9 +54,7 @@ export default function LandingPage() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium">
           {[
-            { href: "/sign-up", label: "For those grieving" },
             { href: "/pricing", label: "Plans" },
-            { href: "/caregiver", label: "For professionals" },
             { href: "/evaluate", label: "Share feedback" },
             { href: "/notify", label: "Notify me" },
           ].map((item) => (
@@ -53,6 +67,13 @@ export default function LandingPage() {
               <span className="pointer-events-none absolute left-3 right-3 -bottom-0.5 h-px origin-left scale-x-0 bg-primary/60 transition-transform duration-300 group-hover:scale-x-100" />
             </Link>
           ))}
+          <a
+            href="#community"
+            className="group relative inline-flex items-center px-3 py-2 rounded-full text-foreground/70 hover:text-foreground hover:bg-foreground/[0.04] transition-colors"
+          >
+            Community
+            <span className="pointer-events-none absolute left-3 right-3 -bottom-0.5 h-px origin-left scale-x-0 bg-primary/60 transition-transform duration-300 group-hover:scale-x-100" />
+          </a>
           <Link
             href="/sign-up"
             className="group ml-1 lg:ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
@@ -136,14 +157,23 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
-              {/* Plans — skinny bar */}
-              <Link
-                href="/pricing"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center justify-center rounded-full border border-border bg-background/60 py-2.5 text-sm text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors"
-              >
-                Plans
-              </Link>
+              {/* Plans + Community — skinny bars */}
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/pricing"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center rounded-full border border-border bg-background/60 py-2.5 text-sm text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors"
+                >
+                  Plans
+                </Link>
+                <a
+                  href="#community"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center justify-center rounded-full border border-border bg-background/60 py-2.5 text-sm text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors"
+                >
+                  Community
+                </a>
+              </div>
             </div>
           </motion.nav>
         )}
@@ -179,35 +209,14 @@ export default function LandingPage() {
               A bridge between sessions. A bridge between worlds.
             </p>
 
-            <div className="pt-2 space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Link
-                  href="/sign-up"
-                  className="group flex flex-col justify-between rounded-sm border border-border bg-card p-7 min-h-[9.5rem] hover:border-primary/50 transition-colors"
-                >
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Enter here</p>
-                    <span className="font-serif text-2xl mt-2 block leading-tight">For those grieving</span>
-                  </div>
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                    Begin gently
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                  </span>
-                </Link>
-                <Link
-                  href="/caregiver"
-                  className="group flex flex-col justify-between rounded-sm border border-border bg-card p-7 min-h-[9.5rem] hover:border-primary/50 transition-colors"
-                >
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-primary/70">For clinicians</p>
-                    <span className="font-serif text-2xl mt-2 block leading-tight">For professionals</span>
-                  </div>
-                  <span className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                    Clinicians &amp; care teams
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                  </span>
-                </Link>
-              </div>
+            <div className="flex flex-wrap items-center gap-5 pt-2">
+              <Link
+                href="/sign-up"
+                className="group inline-flex items-center gap-2 rounded-sm bg-primary px-7 py-3.5 text-base font-medium text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
+              >
+                Enter the experience
+                <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </Link>
               <Link
                 href="/notify"
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -462,6 +471,45 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+        {/* Community of interest */}
+        <motion.section
+          id="community"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-5xl mx-auto mt-24 md:mt-32 scroll-mt-24"
+        >
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-card/70 backdrop-blur p-8 md:p-14 text-center shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.15)]">
+            <div className="absolute -top-24 -left-16 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+            <div className="relative">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Users className="w-6 h-6 text-primary" />
+              </div>
+              <p className="text-sm uppercase tracking-[0.25em] text-primary/80 mt-6">
+                A community of interest
+              </p>
+              <h2 className="font-serif text-3xl md:text-4xl tracking-tight mt-3">
+                You are not alone in this.
+              </h2>
+              <p className="text-muted-foreground leading-relaxed max-w-xl mx-auto mt-4">
+                Around Dr. Neimeyer's work gathers a wide community — people grieving,
+                clinicians, and researchers. The Portland Institute for Loss and Transition
+                hosts an active community on Facebook, where conversation, learning, and
+                support continue between sessions.
+              </p>
+              <a
+                href="https://www.facebook.com/PortlandInstitute/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 rounded-sm bg-primary px-8 py-4 text-base font-medium text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity mt-8"
+              >
+                Join the community on Facebook
+                <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              </a>
+            </div>
+          </div>
+        </motion.section>
       </main>
 
       <footer className="border-t border-border/40 py-6 text-center text-xs text-muted-foreground">

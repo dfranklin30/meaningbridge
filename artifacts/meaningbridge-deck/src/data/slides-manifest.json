@@ -1,0 +1,82 @@
+[
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d01",
+    "position": 1,
+    "filepath": "src/pages/slides/Cover.tsx",
+    "title": "Cover",
+    "description": "MeaningBridge title and tagline",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d02",
+    "position": 2,
+    "filepath": "src/pages/slides/Need.tsx",
+    "title": "The need",
+    "description": "Why lasting grief support is scarce",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d03",
+    "position": 3,
+    "filepath": "src/pages/slides/Philosophy.tsx",
+    "title": "Philosophy",
+    "description": "Grief as a bond to carry forward",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d04",
+    "position": 4,
+    "filepath": "src/pages/slides/Companions.tsx",
+    "title": "The companions",
+    "description": "Continuing Bonds and Meaning Reconstruction",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d05",
+    "position": 5,
+    "filepath": "src/pages/slides/Features.tsx",
+    "title": "Features",
+    "description": "Ways to tend to grief in the app",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d06",
+    "position": 6,
+    "filepath": "src/pages/slides/GentleDesign.tsx",
+    "title": "Gentle by design",
+    "description": "Trauma-informed, calm, safe design ethos",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d07",
+    "position": 7,
+    "filepath": "src/pages/slides/ClinicalScience.tsx",
+    "title": "Clinical science",
+    "description": "Neimeyer grounding and care tiers",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d08",
+    "position": 8,
+    "filepath": "src/pages/slides/Professionals.tsx",
+    "title": "For professionals",
+    "description": "Clinician portal and care-team tools",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d09",
+    "position": 9,
+    "filepath": "src/pages/slides/Plans.tsx",
+    "title": "Plans",
+    "description": "Care-tiered plans overview",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1a7c3e2-1f4d-4a2b-9c8e-0d1a2b3c4d10",
+    "position": 10,
+    "filepath": "src/pages/slides/Closing.tsx",
+    "title": "Closing",
+    "description": "Call to action and contact",
+    "speakerNotes": ""
+  }
+]

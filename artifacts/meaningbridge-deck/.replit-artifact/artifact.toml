@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/meaningbridge-deck/"
+title = "MeaningBridge Deck"
+version = "1.0.0"
+id = "artifacts/meaningbridge-deck"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/meaningbridge-deck/" ]
+localPort = 24986
+
+[services.development]
+run = "pnpm --filter @workspace/meaningbridge-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/meaningbridge-deck", "run", "build" ]
+publicDir = "artifacts/meaningbridge-deck/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24986"
+BASE_PATH = "/meaningbridge-deck/"

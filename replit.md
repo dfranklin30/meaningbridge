@@ -64,16 +64,16 @@ Public (no onboarding gate, no app chrome):
 
 The /pricing and /caregiver routes are in the public-routes set in `layout.tsx` so they bypass the onboarding gate, and link to each other plus `/notify` for waitlists.
 
-App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/reflections`, `/reflections/gmri`, `/reflections/idwl`, `/dashboard`, `/loved-one`, `/therapists`, `/crisis`, `/settings`, 404.
+App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/reflections`, `/reflections/gmri`, `/dashboard`, `/loved-one`, `/therapists`, `/crisis`, `/settings`, 404.
 
-## Reflective inventories (GMRI + IDWL)
+## Reflective inventories (GMRI)
 
-- Two public-domain inventories are offered as interactive, reflective self-reflections under `/reflections`. They are REFLECTIVE only: they do NOT reassign the GIS care tier and do NOT fire safety events. GIS remains the sole triage/safety instrument.
-- Both reuse the `screener_results` table (instrument + `itemResponses` + `subscaleScores`) — no schema change. Scoring is the server's job (`artifacts/api-server/src/lib/clinical.ts`); the client (`artifacts/meaningbridge/src/lib/clinical.ts`) mirrors item wording + narratives for rendering.
-- Endpoints: `POST/GET /api/assessments/gmri` and `POST/GET /api/assessments/idwl` (auth-gated, in `routes/assessments.ts`).
-- GMRI (Grief & Meaning Reconstruction Inventory, Neimeyer, Appendix 9.1): 29 items, 1-5. Five factors — continuingBonds, personalGrowth, senseOfPeace, emptiness (reverse-scored 6−raw), valuingLife. Submits `{responses:int[29]}`; result returns factor means (1-5, all oriented higher=healthier) + total (29-145). Results view: animated recharts Radar + per-factor warm narrative bands (`gmriBand`).
-- IDWL (Inventory of Daily Widowed Life, Caserta & Lund, Appendix 10.1): 22 items, 1-4, for spouse/partner loss. LO=sum(1-11), RO=sum(12-22), oscillation balance=RO−LO. Companion items C1/C2/C4 (1-5) + C3 (index 0-4) submitted in `companion`; C5 (free-text intent) is NOT persisted — surfaced as a journaling prompt linking to `/journal/new`. Results view: dual-process balance bar + `idwlBalanceNarrative`.
-- Shared runner: `components/inventory-runner.tsx` (one-item-at-a-time, framer-motion fades, progress, back nav). Dashboard shows compact GMRI radar + IDWL balance snapshots when data exists.
+- GMRI is offered as an interactive, reflective self-reflection under `/reflections`. It is REFLECTIVE only: it does NOT reassign the GIS care tier and does NOT fire safety events. GIS remains the sole triage/safety instrument.
+- It reuses the `screener_results` table (instrument + `itemResponses` + `subscaleScores`) — no schema change. Scoring is the server's job (`artifacts/api-server/src/lib/clinical.ts`); the client (`artifacts/meaningbridge/src/lib/clinical.ts`) mirrors item wording + narratives for rendering.
+- Endpoints: `POST/GET /api/assessments/gmri` (auth-gated, in `routes/assessments.ts`).
+- GMRI (Grief & Meaning Reconstruction Inventory, Neimeyer, Appendix 9.1): 29 items, 1-5. Five factors — continuingBonds, personalGrowth, senseOfPeace, emptiness (reverse-scored 6−raw), valuingLife. Submits `{responses:int[29]}`; result returns factor means (1-5, all oriented higher=healthier) + total (29-145). Results view: animated recharts Radar + per-factor warm narrative bands (`gmriBand`). Item 16 ("I've lost my innocence") carries the author's clarifying second sentence: "I am less naive about life as a result of this loss."
+- Shared runner: `components/inventory-runner.tsx` (one-item-at-a-time, framer-motion fades, progress, back nav). Dashboard shows a compact GMRI radar snapshot when data exists.
+- IDWL (Inventory of Daily Widowed Life) was removed at the author's request — it is not the team's instrument to distribute. Per Dr. Neimeyer, GIS and the ISLES-SF are the intended basic "outcome" measures, with the Grief Attack Questionnaire (GAQ) and Unfinished Business in Bereavement Scale (UBBS) as candidate additions (possibly Premium-gated). None of these are wired yet — they require the authors' exact validated item wording and response scales before implementation; do NOT fabricate clinical items.
 
 ## Notify signups
 

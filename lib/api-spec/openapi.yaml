@@ -669,38 +669,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/GmriResult"
 
-  /assessments/idwl:
-    post:
-      operationId: submitIdwl
-      tags: [assessments]
-      summary: Submit the 22-item Inventory of Daily Widowed Life (Caserta & Lund, public domain). Scores loss- vs restoration-oriented subscales and oscillation balance; reflective only.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/IdwlSubmission"
-      responses:
-        "200":
-          description: IDWL result
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IdwlResult"
-    get:
-      operationId: listIdwlResults
-      tags: [assessments]
-      summary: History of IDWL reflections (most recent first)
-      responses:
-        "200":
-          description: IDWL history
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/IdwlResult"
-
   /assessments/checkins:
     get:
       operationId: listCheckIns
@@ -3253,40 +3221,6 @@ components:
           items: { type: integer }
         completedAt: { type: string, format: date-time }
       required: [id, total, factors, responses, completedAt]
-
-    IdwlCompanion:
-      type: object
-      description: IDWL companion items on the Dual Process oscillation.
-      properties:
-        awarenessLoss: { type: integer, minimum: 1, maximum: 5, description: "C1 attention to grief/emotions" }
-        awarenessRestoration: { type: integer, minimum: 1, maximum: 5, description: "C2 attention to new responsibilities" }
-        oscillationFrequency: { type: integer, minimum: 0, maximum: 4, description: "C3 how often gone back and forth (0=only one issue .. 4=several times each day)" }
-        control: { type: integer, minimum: 1, maximum: 5, description: "C4 control over going back and forth" }
-      required: [awarenessLoss, awarenessRestoration, oscillationFrequency, control]
-    IdwlSubmission:
-      type: object
-      description: 22 integers (1-4) in item order plus companion items.
-      properties:
-        responses:
-          type: array
-          items: { type: integer, minimum: 1, maximum: 4 }
-          minItems: 22
-          maxItems: 22
-        companion: { $ref: "#/components/schemas/IdwlCompanion" }
-      required: [responses, companion]
-    IdwlResult:
-      type: object
-      properties:
-        id: { type: integer }
-        lossOriented: { type: integer, description: "Sum of items 1-11 (11-44)" }
-        restorationOriented: { type: integer, description: "Sum of items 12-22 (11-44)" }
-        balance: { type: integer, description: "restorationOriented - lossOriented (-33..33)" }
-        companion: { $ref: "#/components/schemas/IdwlCompanion" }
-        responses:
-          type: array
-          items: { type: integer }
-        completedAt: { type: string, format: date-time }
-      required: [id, lossOriented, restorationOriented, balance, companion, responses, completedAt]
 
     DeceasedProfile:
       type: object

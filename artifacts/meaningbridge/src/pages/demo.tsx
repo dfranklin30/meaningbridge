@@ -163,24 +163,6 @@ function MiniRadar() {
   );
 }
 
-function BalanceBar() {
-  return (
-    <div>
-      <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-        <span>Loss-oriented</span>
-        <span>Restoration-oriented</span>
-      </div>
-      <div className="h-3 rounded-full overflow-hidden flex">
-        <div className="bg-brand-navy/60" style={{ width: "45%" }} />
-        <div className="bg-brand-teal/60" style={{ width: "55%" }} />
-      </div>
-      <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-        A gentle balance between remembering and rebuilding.
-      </p>
-    </div>
-  );
-}
-
 function BreathPacer() {
   return (
     <div className="flex flex-col items-center justify-center py-2">
@@ -300,15 +282,18 @@ const grieving: Feature[] = [
   },
   {
     n: 5,
-    title: "Reflective inventories",
+    title: "Reflective inventory",
     blurb:
-      "Deeper, public-domain reflections (GMRI and IDWL) rendered as a living radar and a dual-process balance — a way to notice where you are, never a test to pass.",
+      "A deeper, reflective self-reflection (the Grief & Meaning Reconstruction Inventory) rendered as a living radar across five facets of meaning — a way to notice where you are, never a test to pass.",
     example: (
       <Frame>
         <div className="flex items-center gap-5">
           <MiniRadar />
           <div className="flex-1">
-            <BalanceBar />
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Five facets of meaning after loss, from continuing bonds to a
+              renewed sense of peace.
+            </p>
           </div>
         </div>
       </Frame>

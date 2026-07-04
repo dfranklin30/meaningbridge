@@ -115,7 +115,7 @@ export const GMRI_ITEMS: { id: number; prompt: string }[] = [
   { id: 13, prompt: "Since this loss, I've changed my lifestyle for the better" },
   { id: 14, prompt: "Memories of my loved one bring me a sense of peace and solace" },
   { id: 15, prompt: "This death brought my loved one peace" },
-  { id: 16, prompt: "I've lost my innocence" },
+  { id: 16, prompt: "I've lost my innocence. I am less naive about life as a result of this loss." },
   { id: 17, prompt: "This death ended my loved one's suffering" },
   { id: 18, prompt: "I miss my loved one" },
   { id: 19, prompt: "Since this loss, I make more effort to help others" },
@@ -197,108 +197,4 @@ export function gmriBand(mean: number): "high" | "mid" | "low" {
   if (mean >= 3.5) return "high";
   if (mean <= 2.5) return "low";
   return "mid";
-}
-
-/* ------------------------------------------------------------------ *
- * IDWL — Inventory of Daily Widowed Life (Caserta & Lund).
- * 22 items, 1-4, plus companion items. Public domain with citation.
- * For those who have lost a spouse or partner. Reflective (Dual Process).
- * ------------------------------------------------------------------ */
-
-export const IDWL_INSTRUCTIONS =
-  "Below are activities, tasks, and issues that people who have lost a spouse or partner sometimes confront in daily life. For each one, notice how frequently you have done it during the past week.";
-
-export const IDWL_SCALE: { value: 1 | 2 | 3 | 4; label: string }[] = [
-  { value: 1, label: "Rarely or not at all" },
-  { value: 2, label: "Once in a while" },
-  { value: 3, label: "Fairly often" },
-  { value: 4, label: "Almost always" },
-];
-
-/** IDWL items in order (id 1-22). Items 1-11 loss-oriented, 12-22 restoration. */
-export const IDWL_ITEMS: { id: number; prompt: string }[] = [
-  { id: 1, prompt: "Thinking about how much I miss my spouse/partner" },
-  { id: 2, prompt: "Thinking about the circumstances or events associated with my spouse/partner's death" },
-  { id: 3, prompt: "Yearning for my spouse/partner" },
-  { id: 4, prompt: "Looking at old photographs and other reminders of my spouse/partner" },
-  { id: 5, prompt: "Imagining how my spouse/partner would react to my behavior" },
-  { id: 6, prompt: "Imagining how my spouse/partner would react to the way I handled tasks or problems I faced" },
-  { id: 7, prompt: "Crying or feeling sad about the death of my spouse/partner" },
-  { id: 8, prompt: "Being preoccupied with my situation" },
-  { id: 9, prompt: "Engaging in fond or happy memories about my spouse/partner" },
-  { id: 10, prompt: "Feeling a bond with my spouse/partner" },
-  { id: 11, prompt: "Dealing with feeling lonely" },
-  { id: 12, prompt: "Visiting or doing things with others" },
-  { id: 13, prompt: "Finding ways to keep busy or occupied" },
-  { id: 14, prompt: "Dealing with financial matters" },
-  { id: 15, prompt: "Engaging in leisure activities (hobbies, recreation, physical activity, etc.)" },
-  { id: 16, prompt: "Attending to my own health-related needs" },
-  { id: 17, prompt: "Engaging in employment or volunteer work" },
-  { id: 18, prompt: "Watching TV, listening to music, listening to the radio, reading" },
-  { id: 19, prompt: "Attending to legal, insurance or property matters" },
-  { id: 20, prompt: "Attending to the maintenance of my household or automobile" },
-  { id: 21, prompt: "Focusing on other things besides grieving" },
-  { id: 22, prompt: "Learning to do new things" },
-];
-
-export const IDWL_LOSS_ITEM_IDS = Array.from({ length: 11 }, (_, i) => i + 1);
-export const IDWL_RESTORATION_ITEM_IDS = Array.from({ length: 11 }, (_, i) => i + 12);
-
-/** Companion items C1, C2, C4 (1-5) and C3 (a five-option frequency, index 0-4). */
-export const IDWL_COMPANION_INTRO =
-  "Sometimes when people adjust to the loss of a spouse or partner they focus their attention on two different kinds of issues. One is dealing with grief, emotions, and feelings; the other is dealing with new responsibilities and activities, and having time away from grieving. These last questions ask how you have moved between the two this past week.";
-
-export const IDWL_C1 = {
-  key: "awarenessLoss" as const,
-  prompt:
-    "During the past week, to what extent have you focused your attention on dealing with your grief, emotions and feelings?",
-  low: "Very little",
-  high: "A great deal",
-};
-export const IDWL_C2 = {
-  key: "awarenessRestoration" as const,
-  prompt:
-    "During the past week, to what extent have you focused your attention on dealing with new responsibilities and activities, and/or having time away from grieving?",
-  low: "Very little",
-  high: "A great deal",
-};
-export const IDWL_C4 = {
-  key: "control" as const,
-  prompt:
-    "If you have given attention to both of these issues at least once this past week, were you able to go back and forth as you wanted to?",
-  low: "I have no control",
-  high: "Full control over this",
-};
-
-/** C3 — how often you have gone back and forth (index 0-4). */
-export const IDWL_C3_OPTIONS: { value: number; label: string }[] = [
-  { value: 0, label: "I have focused on only one issue, not both" },
-  { value: 1, label: "Gone back and forth once or twice this past week" },
-  { value: 2, label: "Gone back and forth several times this week" },
-  { value: 3, label: "Gone back and forth a few times each day" },
-  { value: 4, label: "Gone back and forth several times each day" },
-];
-
-/** C5 — the "intent" reflection is carried into the journal rather than scored. */
-export const IDWL_C5_PROMPT =
-  "When I move back and forth between grieving and the rest of life, I usually do it because I…";
-
-/** A warm reading of the oscillation balance (restoration minus loss, -33..33). */
-export function idwlBalanceNarrative(balance: number): { title: string; body: string } {
-  if (balance <= -8) {
-    return {
-      title: "This week leaned toward grief",
-      body: "Much of your attention has been with the loss itself — the missing, the remembering, the ache. That is not a wrong place to be. Grief needs its own time, and leaning in is part of how it moves.",
-    };
-  }
-  if (balance >= 8) {
-    return {
-      title: "This week leaned toward daily life",
-      body: "Much of your attention has been on the tasks and rhythms of daily life — keeping things going, tending to what is in front of you. Restoration is grief work too. It is also okay to let the loss back in when it asks.",
-    };
-  }
-  return {
-    title: "This week moved between both",
-    body: "Your attention has moved between grieving and the rest of life. That back-and-forth — leaning into the loss, then stepping toward daily living — is exactly how the dual process of grieving tends to work.",
-  };
 }

@@ -11,14 +11,12 @@ import {
   CreateCheckInBody,
   SubmitGisScreenerBody,
   SubmitGmriBody,
-  SubmitIdwlBody,
 } from "@workspace/api-zod";
 import {
   tierFromGisScore,
   gisSafetySignal,
   GIS_CLINICAL_CUTPOINT,
   scoreGmri,
-  scoreIdwl,
   type GmriFactorKey,
 } from "../lib/clinical";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -45,29 +43,6 @@ function gmriResultView(r: ScreenerRow) {
       senseOfPeace: factors.senseOfPeace ?? 0,
       emptiness: factors.emptiness ?? 0,
       valuingLife: factors.valuingLife ?? 0,
-    },
-    responses,
-    completedAt: r.completedAt,
-  };
-}
-
-/** Shape a stored IDWL row into the API result contract. */
-function idwlResultView(r: ScreenerRow) {
-  const responses = Array.from(
-    { length: 22 },
-    (_, i) => r.itemResponses[`item${i + 1}`] ?? 0,
-  );
-  const sub = (r.subscaleScores ?? {}) as Record<string, number>;
-  return {
-    id: r.id,
-    lossOriented: sub.lossOriented ?? 0,
-    restorationOriented: sub.restorationOriented ?? 0,
-    balance: sub.balance ?? 0,
-    companion: {
-      awarenessLoss: r.itemResponses.awarenessLoss ?? 0,
-      awarenessRestoration: r.itemResponses.awarenessRestoration ?? 0,
-      oscillationFrequency: r.itemResponses.oscillationFrequency ?? 0,
-      control: r.itemResponses.control ?? 0,
     },
     responses,
     completedAt: r.completedAt,
@@ -252,50 +227,6 @@ router.post("/gmri", async (req, res) => {
     .returning();
 
   res.status(200).json(gmriResultView(row));
-});
-
-/**
- * IDWL — Inventory of Daily Widowed Life (Caserta & Lund, public domain).
- * Reflective Dual Process instrument: loss- vs restoration-oriented subscales
- * and oscillation balance. Does not affect care tier or safety.
- */
-router.get("/idwl", async (req, res) => {
-  const rows = await db
-    .select()
-    .from(screenerResultsTable)
-    .where(
-      and(
-        eq(screenerResultsTable.userId, req.userId!),
-        eq(screenerResultsTable.instrument, "IDWL"),
-      ),
-    )
-    .orderBy(desc(screenerResultsTable.completedAt));
-  res.json(rows.map(idwlResultView));
-});
-
-router.post("/idwl", async (req, res) => {
-  const body = SubmitIdwlBody.parse(req.body);
-  const { lossOriented, restorationOriented, balance } = scoreIdwl(body.responses);
-  const itemResponses: Record<string, number> = Object.fromEntries(
-    body.responses.map((v, i) => [`item${i + 1}`, v]),
-  );
-  itemResponses.awarenessLoss = body.companion.awarenessLoss;
-  itemResponses.awarenessRestoration = body.companion.awarenessRestoration;
-  itemResponses.oscillationFrequency = body.companion.oscillationFrequency;
-  itemResponses.control = body.companion.control;
-
-  const [row] = await db
-    .insert(screenerResultsTable)
-    .values({
-      userId: req.userId!,
-      instrument: "IDWL",
-      itemResponses,
-      score: balance,
-      subscaleScores: { lossOriented, restorationOriented, balance },
-    })
-    .returning();
-
-  res.status(200).json(idwlResultView(row));
 });
 
 export default router;

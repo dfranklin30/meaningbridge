@@ -24,7 +24,8 @@ export default function Professionals() {
           <div className="flex items-baseline gap-[1.8vw]">
             <span className="text-teal text-[2.6vw]">—</span>
             <p className="text-[2.4vw] leading-snug text-ink">
-              A consented patient roster with care-tier badges
+              A consented patient roster with{" "}
+              <span className="whitespace-nowrap">care-tier badges</span>
             </p>
           </div>
           <div className="flex items-baseline gap-[1.8vw]">

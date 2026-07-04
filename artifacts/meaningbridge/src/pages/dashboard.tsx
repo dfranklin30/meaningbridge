@@ -5,9 +5,7 @@ import {
   useGetDashboardTrends,
   useGetProfile,
   useListGmriResults,
-  useListIdwlResults,
   type GmriResult,
-  type IdwlResult,
 } from "@workspace/api-client-react";
 import {
   LineChart,
@@ -28,7 +26,6 @@ import {
   type Tier,
   GMRI_FACTORS,
   GMRI_FACTOR_ORDER,
-  idwlBalanceNarrative,
   type GmriFactorKey,
 } from "../lib/clinical";
 import { ArrowRight } from "lucide-react";
@@ -38,10 +35,8 @@ export default function Dashboard() {
   const { data: trends } = useGetDashboardTrends();
   const { data: profile } = useGetProfile();
   const { data: gmri } = useListGmriResults();
-  const { data: idwl } = useListIdwlResults();
   const tier = (profile?.tier ?? null) as Tier | null;
   const latestGmri = gmri?.[0] ?? null;
-  const latestIdwl = idwl?.[0] ?? null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -74,10 +69,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {(latestGmri || latestIdwl) && (
-        <div className="grid md:grid-cols-2 gap-6">
-          {latestGmri && <GmriSnapshot result={latestGmri} />}
-          {latestIdwl && <IdwlSnapshot result={latestIdwl} />}
+      {latestGmri && (
+        <div className="grid gap-6">
+          <GmriSnapshot result={latestGmri} />
         </div>
       )}
 
@@ -135,40 +129,6 @@ function GmriSnapshot({ result }: { result: GmriResult }) {
               />
             </RadarChart>
           </ResponsiveContainer>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function IdwlSnapshot({ result }: { result: IdwlResult }) {
-  const narrative = idwlBalanceNarrative(result.balance);
-  const total = result.lossOriented + result.restorationOriented;
-  const lossPct = total > 0 ? (result.lossOriented / total) * 100 : 50;
-  return (
-    <Link href="/reflections/idwl">
-      <div className="bg-card border border-border p-6 rounded-xl space-y-4 h-full hover:bg-secondary/10 transition-colors cursor-pointer">
-        <div className="flex items-center justify-between">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Grief and daily life
-          </p>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground/80">
-            <span>Loss</span>
-            <span>Daily life</span>
-          </div>
-          <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-secondary/40">
-            <div className="h-full bg-primary/40" style={{ width: `${lossPct}%` }} />
-            <div className="h-full bg-primary/70" style={{ width: `${100 - lossPct}%` }} />
-          </div>
-        </div>
-        <div className="space-y-1">
-          <p className="font-serif text-base text-foreground">{narrative.title}</p>
-          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-            {narrative.body}
-          </p>
         </div>
       </div>
     </Link>

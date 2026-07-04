@@ -1235,61 +1235,6 @@ export interface GmriResult {
   completedAt: string;
 }
 
-/**
- * IDWL companion items on the Dual Process oscillation.
- */
-export interface IdwlCompanion {
-  /**
-   * C1 attention to grief/emotions
-   * @minimum 1
-   * @maximum 5
-   */
-  awarenessLoss: number;
-  /**
-   * C2 attention to new responsibilities
-   * @minimum 1
-   * @maximum 5
-   */
-  awarenessRestoration: number;
-  /**
-   * C3 how often gone back and forth (0=only one issue .. 4=several times each day)
-   * @minimum 0
-   * @maximum 4
-   */
-  oscillationFrequency: number;
-  /**
-   * C4 control over going back and forth
-   * @minimum 1
-   * @maximum 5
-   */
-  control: number;
-}
-
-/**
- * 22 integers (1-4) in item order plus companion items.
- */
-export interface IdwlSubmission {
-  /**
-   * @minItems 22
-   * @maxItems 22
-   */
-  responses: number[];
-  companion: IdwlCompanion;
-}
-
-export interface IdwlResult {
-  id: number;
-  /** Sum of items 1-11 (11-44) */
-  lossOriented: number;
-  /** Sum of items 12-22 (11-44) */
-  restorationOriented: number;
-  /** restorationOriented - lossOriented (-33..33) */
-  balance: number;
-  companion: IdwlCompanion;
-  responses: number[];
-  completedAt: string;
-}
-
 export interface DeceasedProfile {
   id: number;
   name: string;

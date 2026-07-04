@@ -17,3 +17,4 @@
 - [OpenRouter integration constraints](openrouter-integration-constraints.md) — managed OpenRouter blocks `:free` models; paid Nemotron is text-only; lazy-load client so config errors fall back not crash boot.
 - [Safety-event routing](safety-event-routing.md) — only crisis/harmful-moderation go in safety_events (they drive user safety feed + clinician counts/nudges); off-topic redirects must NOT; moderation fails open.
 - [Memory-image generation](memory-image-generation.md) — calming-image endpoint is text-only (never the uploaded photos) so no likeness; openai-server `./image` module may be missing—create it + rebuild libs.
+- [rg vs grep for removal sweeps](rg-symbol-removal-crosscheck.md) — rg has silently missed tracked-source matches when sweeping a removed symbol here; cross-check with grep + rebuild lib/dist.

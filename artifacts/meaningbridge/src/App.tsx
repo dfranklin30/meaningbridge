@@ -41,7 +41,6 @@ import CheckIn from "@/pages/checkin";
 import Dashboard from "@/pages/dashboard";
 import Reflections from "@/pages/reflections/index";
 import GmriPage from "@/pages/reflections/gmri";
-import IdwlPage from "@/pages/reflections/idwl";
 import CompanionList from "@/pages/companion/index";
 import CompanionSession from "@/pages/companion/session";
 import JournalList from "@/pages/journal/index";
@@ -253,7 +252,6 @@ function AppRoutes() {
         <Route path="/checkin" component={CheckIn} />
         <Route path="/reflections" component={Reflections} />
         <Route path="/reflections/gmri" component={GmriPage} />
-        <Route path="/reflections/idwl" component={IdwlPage} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/companion" component={CompanionList} />
         <Route path="/companion/:sessionId" component={CompanionSession} />

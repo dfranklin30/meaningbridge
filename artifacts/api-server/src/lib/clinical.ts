@@ -175,36 +175,3 @@ export function scoreGmri(responses: number[]): GmriScore {
   }
   return { total, factors };
 }
-
-/* ------------------------------------------------------------------ *
- * IDWL — Inventory of Daily Widowed Life (Caserta & Lund).
- * 22 items, 1-4, plus companion items. Public domain with citation.
- * Loss-oriented (1-11) and restoration-oriented (12-22) subscales measure the
- * Dual Process Model; oscillation balance = RO - LO. Reflective only.
- * ------------------------------------------------------------------ */
-
-export const IDWL_ITEM_COUNT = 22;
-export const IDWL_LOSS_ITEMS = Array.from({ length: 11 }, (_, i) => i + 1); // 1-11
-export const IDWL_RESTORATION_ITEMS = Array.from({ length: 11 }, (_, i) => i + 12); // 12-22
-
-export interface IdwlCompanionInput {
-  awarenessLoss: number;
-  awarenessRestoration: number;
-  oscillationFrequency: number;
-  control: number;
-}
-
-export interface IdwlScore {
-  lossOriented: number;
-  restorationOriented: number;
-  /** restorationOriented - lossOriented (-33..33). */
-  balance: number;
-}
-
-/** Score the IDWL from an ordered array of 22 responses (1-4). */
-export function scoreIdwl(responses: number[]): IdwlScore {
-  const sum = (ids: number[]) => ids.reduce((acc, id) => acc + (responses[id - 1] ?? 0), 0);
-  const lossOriented = sum(IDWL_LOSS_ITEMS);
-  const restorationOriented = sum(IDWL_RESTORATION_ITEMS);
-  return { lossOriented, restorationOriented, balance: restorationOriented - lossOriented };
-}

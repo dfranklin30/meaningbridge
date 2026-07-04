@@ -1,11 +1,7 @@
 import { Link } from "wouter";
 import { format } from "date-fns";
-import {
-  useListGmriResults,
-  useListIdwlResults,
-  useListDeceasedProfiles,
-} from "@workspace/api-client-react";
-import { Compass, Waves, ArrowRight } from "lucide-react";
+import { useListGmriResults } from "@workspace/api-client-react";
+import { Compass, ArrowRight } from "lucide-react";
 
 function lastTaken(dates: string | undefined): string {
   if (!dates) return "Not yet explored";
@@ -14,12 +10,6 @@ function lastTaken(dates: string | undefined): string {
 
 export default function Reflections() {
   const { data: gmri } = useListGmriResults();
-  const { data: idwl } = useListIdwlResults();
-  const { data: deceased } = useListDeceasedProfiles();
-
-  const partnerLoss = (deceased ?? []).some((d) =>
-    /spouse|partner|husband|wife|wife|widow/i.test(d.relationship ?? ""),
-  );
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -42,26 +32,11 @@ export default function Reflections() {
           meta={lastTaken(gmri?.[0]?.completedAt)}
           cta={gmri && gmri.length > 0 ? "Reflect again" : "Begin"}
         />
-
-        <ReflectionCard
-          href="/reflections/idwl"
-          icon={<Waves className="w-5 h-5" />}
-          title="Moving between grief and life"
-          subtitle="Inventory of Daily Widowed Life"
-          description="A reflection for those grieving a spouse or partner, on how you move between leaning into the loss and tending to daily life — the natural rhythm of grieving."
-          meta={
-            partnerLoss
-              ? lastTaken(idwl?.[0]?.completedAt)
-              : "Designed for the loss of a spouse or partner"
-          }
-          cta={idwl && idwl.length > 0 ? "Reflect again" : "Begin"}
-        />
       </div>
 
       <p className="text-xs text-muted-foreground/80 leading-relaxed border-t border-border/50 pt-6">
-        These inventories are published in the public domain by their authors for
-        clinical and research use. They are offered here as reflections to sit
-        with, not as diagnoses. What they mean is yours to decide.
+        This inventory is offered here as a reflection to sit with, not as a
+        diagnosis. What it means is yours to decide.
       </p>
     </div>
   );

@@ -16,9 +16,9 @@ export default function Companions() {
               Continuing Bonds
             </h3>
             <p className="mt-[2.5vh] text-[2.5vw] leading-relaxed text-ink">
-              Stay connected to the person you lost — through memory, ritual, and
-              conversation that keeps the relationship alive in a way that
-              sustains you.
+              Stay connected to the person you lost — tend the relationship
+              through memory and reflection, or give voice to them in
+              conversation.
             </p>
           </div>
           <div className="bg-card border border-line rounded-2xl p-[3.2vw] flex flex-col">

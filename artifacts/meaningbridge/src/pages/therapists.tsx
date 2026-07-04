@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useFindTherapists } from "@workspace/api-client-react";
-import { Search, ExternalLink, MapPin, Award } from "lucide-react";
+import { Search, ExternalLink, MapPin, Award, Info } from "lucide-react";
 
 export default function Therapists() {
   const [zip, setZip] = useState("");
@@ -23,8 +23,16 @@ export default function Therapists() {
         </p>
       </div>
 
-      <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm text-muted-foreground text-center">
-        Directory placeholder — not vetted clinical referrals. Please verify all credentials independently.
+      <div className="flex items-start gap-3 bg-orange-500/5 border border-orange-500/30 rounded-lg p-4 text-sm text-foreground">
+        <Info className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+        <div className="space-y-1">
+          <p className="font-medium">This directory is a preview, not a vetted referral service.</p>
+          <p className="text-muted-foreground">
+            These listings are examples and are not screened clinical referrals. There is no
+            booking here yet — please verify any professional's credentials independently before
+            reaching out.
+          </p>
+        </div>
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2 max-w-md">

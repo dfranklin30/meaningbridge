@@ -254,42 +254,54 @@ export default function CompanionSession() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      // SSE frames can be split across network chunks; keep a residual buffer so
+      // a partial `data: {json}` line is never parsed (and dropped) mid-frame,
+      // which is what produced the garbled/interleaved text.
+      let sseBuffer = "";
+
+      const handleLine = (line: string) => {
+        if (!line.startsWith("data: ")) return;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === "delta" && data.text) {
+            setIsThinking(false);
+            pendingRef.current += data.text;
+            fullReplyRef.current += data.text;
+            startReveal();
+          } else if (data.type === "crisis") {
+            setCrisisAlert(true);
+          } else if (data.type === "done") {
+            doneRef.current = true;
+            startReveal();
+          } else if (data.type === "error") {
+            stopReveal();
+            pendingRef.current = "";
+            doneRef.current = false;
+            setIsStreaming(false);
+            setIsThinking(false);
+            setStreamedResponse("");
+            setStreamError(true);
+          }
+        } catch {
+          // A fully-delimited line still failed to parse — skip it safely.
+        }
+      };
 
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
-        
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.type === "delta" && data.text) {
-                setIsThinking(false);
-                pendingRef.current += data.text;
-                fullReplyRef.current += data.text;
-                startReveal();
-              } else if (data.type === "crisis") {
-                setCrisisAlert(true);
-              } else if (data.type === "done") {
-                doneRef.current = true;
-                startReveal();
-              } else if (data.type === "error") {
-                stopReveal();
-                pendingRef.current = "";
-                doneRef.current = false;
-                setIsStreaming(false);
-                setIsThinking(false);
-                setStreamedResponse("");
-                setStreamError(true);
-              }
-            } catch (err) {
-              // Ignore parse errors on incomplete chunks
-            }
-          }
-        }
+
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split("\n");
+        // The last element may be an incomplete line; hold it until more arrives.
+        sseBuffer = lines.pop() ?? "";
+        for (const line of lines) handleLine(line);
+      }
+
+      // Flush any complete trailing frame that lacked a final newline.
+      sseBuffer += decoder.decode();
+      if (sseBuffer) {
+        for (const line of sseBuffer.split("\n")) handleLine(line);
       }
     } catch (err) {
       console.error("Streaming error:", err);

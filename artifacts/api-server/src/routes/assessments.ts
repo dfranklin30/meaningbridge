@@ -165,14 +165,17 @@ router.post("/gis", async (req, res) => {
         userId: req.userId!,
         source: "gis_item3",
         severity: body.item3 >= 3 ? "critical" : "warning",
-        note: `GIS item 3 score ${body.item3} indicates unhealthy coping. Total ${score}.`,
+        // Never store raw item scores or totals in the note — the user's own
+        // safety feed renders this field, and the product promise is that a
+        // score is never shown. Internal scoring lives in screener_results.
+        note: "Self-destructive coping indicated on a grief impairment check-in.",
       });
     } else {
       await db.insert(safetyEventsTable).values({
         userId: req.userId!,
         source: "gis_item5",
         severity: "warning",
-        note: `GIS item 5 score ${body.item5} indicates social withdrawal. Total ${score}.`,
+        note: "Withdrawal from others indicated on a grief impairment check-in.",
       });
     }
   }

@@ -1,0 +1,31 @@
+I reviewed the live site at meaningbridge.replit.app. Right now it's a gentle, muted "coming soon" landing page (soft teal/blush palette, infinity-loop logo, sections on Bonds/Loss/Transformation, feature list, Dr. Neimeyer bio, deck download, Facebook community) — but there's no actual interactive walkthrough; "Enter the experience" just routes to a sign-up page. Here's a prompt you can paste into Replit's AI agent to build a real, colorful, guided feature demo while keeping the app's calm, human tone intact:
+
+---
+
+**Prompt for Replit Agent:**
+
+I want to upgrade my existing app "MeaningBridge" (live at meaningbridge.replit.app) by adding a robust, interactive product demo/walkthrough that lives on the site itself — no sign-up required to preview it. Keep the current brand identity (infinity-loop logo, "MeaningBridge" wordmark, teal/blush/cream palette, calm serif headlines) but make this new demo section noticeably more vivid, energetic, and visually engaging than the rest of the site so it grabs attention and holds it, without feeling clinical or cold.
+
+Requirements:
+
+1. **Entry point**: Add a prominent "See how it works" or "Take the tour" button on the homepage (near the hero) that launches an interactive, step-by-step walkthrough — either a full-screen guided modal/overlay or a dedicated `/demo` route.
+
+2. **Guided, multi-step structure**: Walk visitors through each core feature as its own vivid "scene" with a short headline, one or two lines of plain-language description, and a visual (illustration, animated icon, or mocked-up UI screenshot) — in this order: AI Companion, Journal, Practices, Insights, Loved One profile, Crisis support. Each step should feel like its own moment, not a wall of text.
+
+3. **Color and motion**: Give each feature scene its own accent color from an expanded, richer palette (e.g., warm coral, deep teal, soft gold, lavender, sage) so the journey feels dynamic scene-to-scene, while still harmonizing with the existing brand colors. Use subtle motion — fade/slide transitions between steps, gentle hover states, a soft progress indicator (dots or a bar) — so it feels alive but never jarring or fast (this is a grief-support product, so motion should be smooth and calming, not flashy).
+
+4. **Easy navigation**: Include clear "Next / Back" controls, clickable progress dots so users can jump to any step, a visible "Skip tour" / close (X) option at all times, and keyboard arrow-key support. Make sure it works cleanly on mobile with swipe gestures.
+
+5. **Retention hooks**: On the final step, show a short recap (small icons for all 6 features) and a clear next action — "Enter the experience" or "Notify me at launch" — so the demo converts interest into a next step instead of just ending.
+
+6. **Sample/mock content**: Since the real product isn't live yet, populate each feature scene with realistic sample content (e.g., a mock journal entry, a sample AI companion exchange, a sample insight chart, a sample loved-one profile card) so it feels tangible rather than abstract.
+
+7. **Performance & accessibility**: Ensure all animations respect `prefers-reduced-motion`, text has strong contrast against colorful backgrounds, and the whole flow is screen-reader friendly (proper ARIA roles for the modal/dialog and step navigation).
+
+8. **Don't break existing functionality**: Leave the current "coming soon" hero, sign-up flow, feedback form, deck download, and community links intact — this demo should be additive, reachable from a button, not a replacement of the homepage.
+
+Please implement this now, show me a preview when done, and flag any design decisions you made so I can adjust colors/copy afterward.
+
+---
+
+Want me to also open the Replit project in the browser and paste/run this for you, or would you rather bring it there yourself?

@@ -20,9 +20,12 @@ import {
   Share2,
   Lock,
   CheckCircle2,
-  Image as ImageIcon,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import lovedOne1 from "@/assets/demo/loved-one-1.png";
+import lovedOne2 from "@/assets/demo/loved-one-2.png";
+import lovedOne3 from "@/assets/demo/loved-one-3.png";
+import lovedOne4 from "@/assets/demo/loved-one-4.png";
 
 // A public, no-login guided tour of every feature, with an explanation and an
 // on-brand illustrative example for each. Split into the two audiences the
@@ -372,12 +375,14 @@ const grieving: Feature[] = [
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-lg bg-muted flex items-center justify-center"
-            >
-              <ImageIcon className="w-4 h-4 text-muted-foreground/50" />
+          {[lovedOne1, lovedOne2, lovedOne3, lovedOne4].map((src, i) => (
+            <div key={i} className="aspect-square rounded-lg overflow-hidden bg-muted">
+              <img
+                src={src}
+                alt=""
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
           ))}
         </div>

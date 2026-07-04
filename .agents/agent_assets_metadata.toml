@@ -48,6 +48,30 @@ uri = "file://artifacts/meaningbridge/src/assets/photo-companion.png"
 type = "image"
 title = "companion diverse woman"
 
+[[generated]]
+id = "G7kdtkSMS_cqVkKXNixP-"
+uri = "file://artifacts/meaningbridge/src/assets/demo/loved-one-1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Z5ogN8hHSYa0s6ZOX2EQI"
+uri = "file://artifacts/meaningbridge/src/assets/demo/loved-one-2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "GkcWSFPSc3RiwBDzRFMON"
+uri = "file://artifacts/meaningbridge/src/assets/demo/loved-one-3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "kafD4A8g8osXFYMWM89xR"
+uri = "file://artifacts/meaningbridge/src/assets/demo/loved-one-4.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "4WfJkrHgffQejIjYCzOMo"
 uri = "file://attached_assets/Pasted-Existing-Capabilities-Foundation-May-6-10-Created-the-a_1783012525190.txt"

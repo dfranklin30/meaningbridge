@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { ArrowLeft } from "lucide-react";
 import { useCreateCheckIn, getListCheckInsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { VoiceInput } from "../components/voice-input";
@@ -109,7 +110,16 @@ export default function CheckIn() {
   if (submitted) {
     const fb = pulseFeedback({ distress, meaning, connection, functioning, safetyConcern });
     return (
-      <div className="max-w-xl mx-auto py-16 space-y-6">
+      <div className="max-w-xl mx-auto py-8 space-y-6">
+        <div className="flex items-center">
+          <Link
+            href="/app"
+            aria-label="Back"
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 text-muted-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </div>
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-serif">Thank you for checking in.</h2>
           <p className="text-muted-foreground">
@@ -163,9 +173,18 @@ export default function CheckIn() {
 
   return (
     <div className="max-w-xl mx-auto space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-serif">Check-in</h1>
-        <p className="text-muted-foreground">Notice how you're feeling right now, without judgment.</p>
+      <div className="flex items-start gap-4">
+        <Link
+          href="/app"
+          aria-label="Back"
+          className="w-8 h-8 mt-1 rounded-full flex items-center justify-center hover:bg-secondary/50 text-muted-foreground transition-colors shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-serif">Check-in</h1>
+          <p className="text-muted-foreground">Notice how you're feeling right now, without judgment.</p>
+        </div>
       </div>
 
       <div className="bg-card border border-border p-6 rounded-xl space-y-8">

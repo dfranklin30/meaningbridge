@@ -16,7 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Save, Trash2, Check, Sparkle, Lock, LifeBuoy, ImagePlus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Check, Sparkle, Lock, LifeBuoy, ImagePlus, X, Loader2, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
 
@@ -261,6 +261,16 @@ export default function JournalEditor() {
     } finally {
       setIsReflecting(false);
     }
+  };
+
+  // Carry a written letter into a Continuing Bonds session where the companion
+  // can reply in the loved one's voice. The letter is stashed in sessionStorage
+  // and the companion page picks it up via ?share=letter.
+  const handleShareWithCompanion = () => {
+    const letter = body.trim();
+    if (!letter) return;
+    sessionStorage.setItem("mb-share-letter", letter);
+    setLocation("/companion?share=letter");
   };
 
   const [shareState, setShareState] = useState<"idle" | "sharing" | "done" | "error">("idle");
@@ -578,6 +588,28 @@ export default function JournalEditor() {
             </p>
           )}
         </div>
+
+        {!isNew && category === "letter" && (
+          <div className="space-y-3 pt-4 border-t border-border/40">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <h2 className="font-serif text-lg">Bring this letter to your companion</h2>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              If it would bring comfort, you can carry this letter into a companion conversation and
+              hear a gentle, imagined reply in the voice of the person you are writing to — shaped only
+              from what you remember. It is a comfort, never the real person.
+            </p>
+            <button
+              type="button"
+              onClick={handleShareWithCompanion}
+              disabled={!body.trim()}
+              className="text-sm font-medium text-primary underline underline-offset-4 disabled:opacity-40 disabled:no-underline"
+            >
+              Share this letter with your companion
+            </button>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>

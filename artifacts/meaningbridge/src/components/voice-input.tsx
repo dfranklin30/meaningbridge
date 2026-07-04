@@ -5,6 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 
 type Status = "idle" | "recording" | "transcribing" | "error";
 
+// The server detects format from the audio's magic bytes, but a truthful
+// filename extension keeps things clear across browsers (Chrome emits webm,
+// Safari/iOS emits mp4/aac).
+function extForMime(type: string): string {
+  const t = (type || "").toLowerCase();
+  if (t.includes("mp4") || t.includes("m4a") || t.includes("aac")) return "mp4";
+  if (t.includes("ogg")) return "ogg";
+  if (t.includes("wav")) return "wav";
+  if (t.includes("mpeg") || t.includes("mp3")) return "mp3";
+  return "webm";
+}
+
 type VoiceInputProps = {
   onTranscript: (text: string) => void;
   disabled?: boolean;
@@ -31,10 +43,15 @@ export function VoiceInput({ onTranscript, disabled, className }: VoiceInputProp
       await recorder.startRecording();
       recordingRef.current = true;
       setStatus("recording");
-    } catch {
+    } catch (err) {
       setStatus("error");
+      const denied =
+        err instanceof DOMException &&
+        (err.name === "NotAllowedError" || err.name === "SecurityError");
       setMessage(
-        "Microphone access is needed to record. You can allow it in your browser settings, or simply type instead.",
+        denied
+          ? "Microphone access is needed to record. You can allow it in your browser settings, or simply type instead."
+          : "Recording could not start on this device or browser. You can type your words instead.",
       );
     }
   };
@@ -49,7 +66,7 @@ export function VoiceInput({ onTranscript, disabled, className }: VoiceInputProp
         return;
       }
       const form = new FormData();
-      form.append("audio", blob, "recording.webm");
+      form.append("audio", blob, `recording.${extForMime(blob.type)}`);
       const res = await fetch(`${import.meta.env.BASE_URL}api/voice/transcribe`, {
         method: "POST",
         body: form,

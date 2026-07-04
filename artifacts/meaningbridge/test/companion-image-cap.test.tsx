@@ -30,6 +30,7 @@ vi.mock("@workspace/api-client-react", () => ({
     },
   }),
   useListDeceasedPhotos: () => ({ data: [] }),
+  useListDeceasedProfiles: () => ({ data: [] }),
   getGetChatSessionQueryKey: () => ["chat-session", 1],
   getListDeceasedPhotosQueryKey: () => ["deceased-photos", 0],
 }));

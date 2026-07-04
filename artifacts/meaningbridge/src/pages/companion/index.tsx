@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import {
   useListChatSessions,
@@ -23,7 +23,6 @@ const CONVERSATION_TYPES: { id: string; label: string; desc: string }[] = [
   { id: "unfinished", label: "Unfinished business", desc: "Name what still feels left undone." },
   { id: "legacy", label: "Their legacy in you", desc: "Notice what of them you carry forward." },
   { id: "meaning", label: "Making meaning", desc: "Reflect on the meaning of the life you shared." },
-  { id: "voice", label: "In their own voice", desc: "Hear an imagined, gentle reply in the voice of the one you are remembering." },
 ];
 
 function LovedOneCard({
@@ -79,16 +78,57 @@ export default function CompanionList() {
   const [cbOpen, setCbOpen] = useState(false);
   const [selectedDeceasedId, setSelectedDeceasedId] = useState<number | null>(null);
   const [conversationType, setConversationType] = useState<string>("open");
+  // "relationship" = reflect together on the bond; "voice" = an imagined reply
+  // in the person's own voice. These are the two explicit doorways into a
+  // Continuing Bonds session.
+  const [bondMode, setBondMode] = useState<"relationship" | "voice">("relationship");
+  const [sharedLetter, setSharedLetter] = useState<string | null>(null);
+  const sharedInitRef = useRef(false);
 
   const openContinuingBonds = () => {
     setSelectedDeceasedId(deceasedList?.[0]?.id ?? null);
+    setBondMode("relationship");
     setConversationType("open");
+    // A normal entry is never a letter share; drop any stale shared letter so it
+    // can't be auto-sent into this fresh session.
+    setSharedLetter(null);
+    sessionStorage.removeItem("mb-share-letter");
     setCbOpen(true);
   };
 
+  const closeContinuingBonds = () => {
+    setSharedLetter(null);
+    sessionStorage.removeItem("mb-share-letter");
+    setCbOpen(false);
+  };
+
+  const chooseBondMode = (mode: "relationship" | "voice") => {
+    setBondMode(mode);
+    setConversationType(mode === "voice" ? "voice" : "open");
+  };
+
+  // A letter written in the journal can be carried into a Continuing Bonds
+  // session where the companion replies in the loved one's voice. The letter is
+  // stashed in sessionStorage before navigation; here we open the config in
+  // voice mode with the letter ready to send.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("share") !== "letter") return;
+    const letter = sessionStorage.getItem("mb-share-letter");
+    if (!letter || !letter.trim()) return;
+    setSharedLetter(letter);
+    setBondMode("voice");
+    setConversationType("voice");
+    setSelectedDeceasedId((prev) => prev ?? deceasedList?.[0]?.id ?? null);
+    if (!sharedInitRef.current) {
+      sharedInitRef.current = true;
+      setCbOpen(true);
+    }
+  }, [deceasedList]);
+
   const startSession = async (
     mode: string,
-    opts?: { deceasedId?: number | null; conversationType?: string | null },
+    opts?: { deceasedId?: number | null; conversationType?: string | null; firstMessage?: string | null },
   ) => {
     setIsCreating(true);
     try {
@@ -100,6 +140,10 @@ export default function CompanionList() {
           conversationType: opts?.conversationType ?? null,
         },
       });
+      if (opts?.firstMessage && opts.firstMessage.trim()) {
+        sessionStorage.setItem(`mb-first-message:${session.id}`, opts.firstMessage.trim());
+      }
+      sessionStorage.removeItem("mb-share-letter");
       queryClient.invalidateQueries({ queryKey: getListChatSessionsQueryKey() });
       setLocation(`/companion/${session.id}`);
     } catch (e) {
@@ -115,7 +159,7 @@ export default function CompanionList() {
       <div className="max-w-3xl mx-auto space-y-10">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setCbOpen(false)}
+            onClick={closeContinuingBonds}
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/50 text-muted-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -125,6 +169,13 @@ export default function CompanionList() {
             <p className="text-sm text-muted-foreground">A gentle way to tend a relationship that continues.</p>
           </div>
         </div>
+
+        {sharedLetter && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-foreground/80 leading-relaxed">
+            Your letter will be the first thing shared here. Choose who you are writing to, and when
+            you are ready, {selectedPerson ? selectedPerson.name : "they"} will reply in their own voice.
+          </div>
+        )}
 
         <section className="space-y-4">
           <h2 className="text-sm font-medium text-muted-foreground">Who are you holding in mind?</h2>
@@ -151,27 +202,63 @@ export default function CompanionList() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground">What would you like this conversation to hold?</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">How would you like to spend this time?</h2>
           <div className="grid sm:grid-cols-2 gap-3">
-            {CONVERSATION_TYPES.map((type) => (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => setConversationType(type.id)}
-                className={`text-left rounded-lg border p-4 transition-colors ${
-                  conversationType === type.id
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-border hover:bg-secondary/30"
-                }`}
-              >
-                <div className="text-sm font-medium">{type.label}</div>
-                <div className="text-xs text-muted-foreground mt-1 leading-snug">{type.desc}</div>
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={() => chooseBondMode("relationship")}
+              className={`text-left rounded-lg border p-4 transition-colors ${
+                bondMode === "relationship"
+                  ? "border-primary/40 bg-primary/5"
+                  : "border-border hover:bg-secondary/30"
+              }`}
+            >
+              <div className="text-sm font-medium">Talk about the relationship</div>
+              <div className="text-xs text-muted-foreground mt-1 leading-snug">
+                Reflect together on your bond, your memories, and what you carry forward.
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseBondMode("voice")}
+              className={`text-left rounded-lg border p-4 transition-colors ${
+                bondMode === "voice"
+                  ? "border-primary/40 bg-primary/5"
+                  : "border-border hover:bg-secondary/30"
+              }`}
+            >
+              <div className="text-sm font-medium">Give voice to the person you've lost</div>
+              <div className="text-xs text-muted-foreground mt-1 leading-snug">
+                Hear a gentle, imagined reply in their voice — a comfort, never the real person.
+              </div>
+            </button>
           </div>
         </section>
 
-        {conversationType === "voice" && (
+        {bondMode === "relationship" && (
+          <section className="space-y-4">
+            <h2 className="text-sm font-medium text-muted-foreground">What would you like this conversation to hold?</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {CONVERSATION_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  type="button"
+                  onClick={() => setConversationType(type.id)}
+                  className={`text-left rounded-lg border p-4 transition-colors ${
+                    conversationType === type.id
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border hover:bg-secondary/30"
+                  }`}
+                >
+                  <div className="text-sm font-medium">{type.label}</div>
+                  <div className="text-xs text-muted-foreground mt-1 leading-snug">{type.desc}</div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {bondMode === "voice" && (
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-xs text-muted-foreground leading-relaxed">
             You have chosen to hear an imagined reply in{" "}
             {selectedPerson ? `${selectedPerson.name}'s` : "their"} voice. This is a gentle comfort
@@ -193,7 +280,11 @@ export default function CompanionList() {
           onClick={() =>
             !isCreating &&
             !voiceNeedsPerson &&
-            startSession("continuing-bonds", { deceasedId: selectedDeceasedId, conversationType })
+            startSession("continuing-bonds", {
+              deceasedId: selectedDeceasedId,
+              conversationType,
+              firstMessage: sharedLetter,
+            })
           }
           disabled={isCreating || voiceNeedsPerson}
           className="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"

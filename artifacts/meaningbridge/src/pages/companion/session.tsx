@@ -5,6 +5,7 @@ import {
   getGetChatSessionQueryKey,
   useListDeceasedPhotos,
   getListDeceasedPhotosQueryKey,
+  useListDeceasedProfiles,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette } from "lucide-react";
@@ -35,10 +36,23 @@ const CONVERSATION_LABELS: Record<string, string> = {
 
 // The companion's opening words, shown as its first message whenever a new
 // (empty) session is opened. Calm and mode-aware — never a form or a checklist.
-function introMessage(mode: string, conversationType?: string | null): string {
+function introMessage(
+  mode: string,
+  conversationType?: string | null,
+  deceased?: { name: string; relationship: string } | null,
+): string {
   const focus = conversationType ? CONVERSATION_LABELS[conversationType] : null;
   if (mode === "continuing-bonds") {
-    return `Hello. I am here as a companion in remembering the person you are holding in your heart${
+    const relationship = deceased?.relationship?.trim().toLowerCase();
+    if (conversationType === "voice" && deceased) {
+      return `Hello. When you are ready, you can say whatever you would like to say to ${deceased.name}. With care, I can offer a gentle, imagined reply in ${
+        relationship ? `your ${relationship}'s` : "their"
+      } voice — shaped only from what you remember. It is a comfort, not the real person, and you can ask me to step out of ${deceased.name}'s voice at any time.`;
+    }
+    const who = deceased
+      ? `${deceased.name}${relationship ? `, your ${relationship}` : ""}`
+      : "the person you are holding in your heart";
+    return `Hello. I am here as a companion in remembering ${who}${
       focus ? `, and we can give this time to ${focus}` : ""
     }. There is no right way to do this, and nothing you need to prepare. When you are ready, you might begin by telling me a little about them — or we can simply sit together for a while.`;
   }
@@ -57,6 +71,8 @@ export default function CompanionSession() {
     query: { enabled: !!deceasedId, queryKey: getListDeceasedPhotosQueryKey(deceasedId) },
   });
   const photo = photos?.[0];
+  const { data: deceasedList } = useListDeceasedProfiles();
+  const person = deceasedList?.find((p) => p.id === deceasedId) ?? null;
 
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -199,19 +215,13 @@ export default function CompanionSession() {
     }, 24);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!input.trim() && attachments.length === 0) || isStreaming) return;
+  const sendMessage = async (userMessage: string, images: string[]) => {
+    if ((!userMessage && images.length === 0) || isStreaming) return;
 
-    const userMessage = input.trim();
-    const images = attachments.map((a) => a.dataUrl);
     // The just-sent user turn will be appended at this index in session.messages
     // (the intro is client-only and never stored). Remember its attachments so
     // the thumbnails persist in the transcript after streaming finishes.
     const userMessageIndex = session?.messages?.length ?? 0;
-    setInput("");
-    setAttachments([]);
-    setImageError(null);
     setInflightMessage(userMessage);
     setInflightImages(images);
     if (images.length > 0) {
@@ -291,6 +301,36 @@ export default function CompanionSession() {
       setStreamError(true);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!input.trim() && attachments.length === 0) || isStreaming) return;
+    const userMessage = input.trim();
+    const images = attachments.map((a) => a.dataUrl);
+    setInput("");
+    setAttachments([]);
+    setImageError(null);
+    await sendMessage(userMessage, images);
+  };
+
+  // A letter shared from the journal is stashed under this session's id so it can
+  // be spoken as the opening turn exactly once, then cleared so it never re-sends.
+  const autoSentRef = useRef(false);
+  useEffect(() => {
+    autoSentRef.current = false;
+  }, [id]);
+  useEffect(() => {
+    if (!session || autoSentRef.current) return;
+    if (session.messages && session.messages.length > 0) return;
+    const key = `mb-first-message:${id}`;
+    const pending = sessionStorage.getItem(key);
+    if (pending && pending.trim()) {
+      autoSentRef.current = true;
+      sessionStorage.removeItem(key);
+      void sendMessage(pending.trim(), []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, id]);
 
   const generateMemoryImage = async () => {
     const prompt = imaginePrompt.trim();
@@ -400,7 +440,7 @@ export default function CompanionSession() {
           >
             <div className="max-w-[80%] rounded-2xl px-5 py-4 bg-card border border-border text-foreground">
               <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                {introMessage(session.mode, session.conversationType)}
+                {introMessage(session.mode, session.conversationType, person)}
               </div>
             </div>
           </motion.div>
@@ -638,12 +678,7 @@ export default function CompanionSession() {
             placeholder="Write here..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
+            rows={1}
           />
           <button 
             type="submit"

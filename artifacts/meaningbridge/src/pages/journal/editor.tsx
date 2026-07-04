@@ -90,7 +90,10 @@ export default function JournalEditor() {
     if (isNew) {
       const accepted: PendingPhoto[] = [];
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
+        if (!file.type.startsWith("image/")) {
+          setPhotoError("That file is not an image. Please choose a photo to add.");
+          continue;
+        }
         if (file.size > 10 * 1024 * 1024) {
           setPhotoError("That image is larger than 10 MB. Please choose a smaller one.");
           continue;
@@ -108,7 +111,10 @@ export default function JournalEditor() {
 
     try {
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
+        if (!file.type.startsWith("image/")) {
+          setPhotoError("That file is not an image. Please choose a photo to add.");
+          continue;
+        }
         if (file.size > 10 * 1024 * 1024) {
           setPhotoError("That image is larger than 10 MB. Please choose a smaller one.");
           continue;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   uploadFile: vi.fn(),
   createEntry: vi.fn(),
   addPhoto: vi.fn(),
+  deletePhoto: vi.fn(),
+  photos: [] as { id: number; objectPath: string }[],
   createObjectURL: vi.fn(),
   revokeObjectURL: vi.fn(),
 }));
@@ -46,9 +48,9 @@ vi.mock("@workspace/api-client-react", () => ({
   useUpdateJournalEntry: () => ({ mutateAsync: vi.fn() }),
   useDeleteJournalEntry: () => ({ mutateAsync: vi.fn() }),
   useReflectOnJournalEntry: () => ({ mutateAsync: vi.fn() }),
-  useListJournalPhotos: () => ({ data: [] }),
+  useListJournalPhotos: () => ({ data: mocks.photos }),
   useAddJournalPhoto: () => ({ mutateAsync: mocks.addPhoto }),
-  useDeleteJournalPhoto: () => ({ mutateAsync: vi.fn() }),
+  useDeleteJournalPhoto: () => ({ mutateAsync: mocks.deletePhoto }),
   getListJournalPhotosQueryKey: () => ["journal-photos"],
   getListJournalEntriesQueryKey: () => ["journal-entries"],
   getGetJournalEntryQueryKey: () => ["journal-entry"],
@@ -60,11 +62,12 @@ function renderEditor() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <JournalEditor />
     </QueryClientProvider>,
   );
+  return { ...view, client };
 }
 
 function imageFile(name: string): File {
@@ -76,6 +79,7 @@ const PENDING_ALT = "A photograph to add to this entry";
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.params = {}; // no id -> brand-new entry
+  mocks.photos = [];
   let n = 0;
   mocks.createObjectURL.mockImplementation(() => `blob:mock/${++n}`);
   // jsdom does not implement object-URL helpers; stub them so the component's
@@ -191,5 +195,108 @@ describe("JournalEditor new-entry photo flush on save", () => {
     // The retained photo's URL is not revoked (still in the strip for retry).
     expect(mocks.revokeObjectURL).toHaveBeenCalledTimes(1);
     expect(mocks.revokeObjectURL).toHaveBeenCalledWith("blob:mock/1");
+  });
+});
+
+/**
+ * Guards the already-saved-entry photo path (Task #65) — the common flow where a
+ * user opens a saved entry and adds a memory. Unlike the new-entry path there is
+ * a real entry id to bind to, so a chosen photo uploads + attaches immediately.
+ * These pin the three durable guarantees for that branch:
+ *   1. choosing a photo uploads it and attaches it to the EXISTING entry id, then
+ *      refreshes the photo list (no pending strip involved),
+ *   2. a non-image file or an over-10 MB image is rejected before any upload,
+ *      surfacing the calm size/type message,
+ *   3. removing a saved photo calls the delete mutation, and on failure shows the
+ *      calm "could not be removed" message instead of leaving a broken tile.
+ */
+describe("JournalEditor saved-entry photo attach, guards, and delete", () => {
+  it("uploads and attaches a chosen photo to the existing entry id and refreshes the list", async () => {
+    mocks.params = { id: "5" }; // existing entry -> not new
+    const user = userEvent.setup();
+    mocks.uploadFile.mockResolvedValueOnce({ objectPath: "/objects/z" });
+    mocks.addPhoto.mockResolvedValue({});
+
+    const { container, client } = renderEditor();
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    const fileInput = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    await user.upload(fileInput, [imageFile("z.png")]);
+
+    await waitFor(() => expect(mocks.uploadFile).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.addPhoto).toHaveBeenCalledTimes(1));
+    // Attaches to the real entry id, not the "new" sentinel path.
+    expect(mocks.addPhoto).toHaveBeenCalledWith({
+      entryId: 5,
+      data: { objectPath: "/objects/z" },
+    });
+    // The photo list is refreshed so the new tile appears.
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["journal-photos"] }),
+    );
+    // A saved entry uploads immediately; no local pending strip is used.
+    expect(screen.queryAllByAltText(PENDING_ALT)).toHaveLength(0);
+    expect(mocks.createEntry).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-image file and an oversized image before any upload, with a calm message", async () => {
+    mocks.params = { id: "5" };
+
+    const { container } = renderEditor();
+    const fileInput = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+
+    // fireEvent.change bypasses the input's accept="image/*" filter so the
+    // component's own type/size guards are what do the rejecting.
+    const pdf = new File(["x"], "notes.pdf", { type: "application/pdf" });
+    fireEvent.change(fileInput, { target: { files: [pdf] } });
+    await waitFor(() =>
+      expect(screen.getByText(/that file is not an image/i)).toBeInTheDocument(),
+    );
+    expect(mocks.uploadFile).not.toHaveBeenCalled();
+    expect(mocks.addPhoto).not.toHaveBeenCalled();
+
+    // Over 10 MB image: rejected with the size message, still no upload.
+    const big = new File([new Uint8Array(11 * 1024 * 1024)], "big.png", {
+      type: "image/png",
+    });
+    fireEvent.change(fileInput, { target: { files: [big] } });
+    await waitFor(() =>
+      expect(screen.getByText(/larger than 10 MB/i)).toBeInTheDocument(),
+    );
+    expect(mocks.uploadFile).not.toHaveBeenCalled();
+    expect(mocks.addPhoto).not.toHaveBeenCalled();
+  });
+
+  it("deletes a saved photo via the delete mutation and shows a calm message on failure", async () => {
+    mocks.params = { id: "5" };
+    mocks.photos = [{ id: 10, objectPath: "/objects/x" }];
+    mocks.deletePhoto.mockRejectedValueOnce(new Error("delete failed"));
+    const user = userEvent.setup();
+
+    renderEditor();
+
+    // The saved tile is present before the failed delete.
+    expect(
+      screen.getByAltText("A photograph in this entry"),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /remove photo/i }));
+
+    await waitFor(() =>
+      expect(mocks.deletePhoto).toHaveBeenCalledWith({ photoId: 10 }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByText(/that image could not be removed/i),
+      ).toBeInTheDocument(),
+    );
+    // The tile is not torn down on failure — no broken/empty state left behind.
+    expect(
+      screen.getByAltText("A photograph in this entry"),
+    ).toBeInTheDocument();
   });
 });

@@ -171,6 +171,9 @@ export const GetProfileResponse = zod.object({
   consentJournal: zod.boolean(),
   consentContinuingBonds: zod.boolean(),
   onboardingComplete: zod.boolean(),
+  welcomeTourSeen: zod
+    .boolean()
+    .describe("First-run welcome tour has been seen"),
   tier: zod
     .union([
       zod.literal("universal"),
@@ -210,6 +213,7 @@ export const UpdateProfileBody = zod.object({
   consentJournal: zod.boolean().optional(),
   consentContinuingBonds: zod.boolean().optional(),
   onboardingComplete: zod.boolean().optional(),
+  welcomeTourSeen: zod.boolean().optional(),
   breathCueEnabled: zod.boolean().optional(),
   breathCounterVisible: zod.boolean().optional(),
   safetyScreeningConsent: zod.boolean().optional(),
@@ -227,6 +231,9 @@ export const UpdateProfileResponse = zod.object({
   consentJournal: zod.boolean(),
   consentContinuingBonds: zod.boolean(),
   onboardingComplete: zod.boolean(),
+  welcomeTourSeen: zod
+    .boolean()
+    .describe("First-run welcome tour has been seen"),
   tier: zod
     .union([
       zod.literal("universal"),

@@ -2,11 +2,17 @@ import { Link } from "wouter";
 import { useGetProfile, useListCheckIns, useGetDashboardSummary } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Feather, BookOpen, Wind, Compass } from "lucide-react";
+import { WelcomeTour } from "@/components/welcome-tour";
 
 export default function Home() {
   const { data: profile } = useGetProfile();
   const { data: checkIns } = useListCheckIns();
   const { data: summary } = useGetDashboardSummary();
+
+  // First entrance after onboarding: step the person through the app once.
+  const showWelcomeTour = Boolean(
+    profile && profile.onboardingComplete && !profile.welcomeTourSeen,
+  );
 
   const hour = new Date().getHours();
   let greeting = "Good evening";
@@ -18,6 +24,9 @@ export default function Home() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-12">
+      {showWelcomeTour && (
+        <WelcomeTour firstName={profile?.firstName ?? profile?.name ?? null} />
+      )}
       <section className="space-y-4 text-center mt-8">
         <h1 className="text-3xl md:text-4xl text-foreground font-medium">
           {greeting}{profile?.name ? `, ${profile.name}` : ""}.

@@ -3091,6 +3091,7 @@ components:
         consentJournal: { type: boolean }
         consentContinuingBonds: { type: boolean }
         onboardingComplete: { type: boolean }
+        welcomeTourSeen: { type: boolean, description: "First-run welcome tour has been seen" }
         tier:
           type: ["string", "null"]
           enum: ["universal", "targeted", "clinical", null]
@@ -3110,6 +3111,7 @@ components:
         - consentJournal
         - consentContinuingBonds
         - onboardingComplete
+        - welcomeTourSeen
         - breathCueEnabled
         - breathCounterVisible
         - safetyScreeningConsent
@@ -3128,6 +3130,7 @@ components:
         consentJournal: { type: boolean }
         consentContinuingBonds: { type: boolean }
         onboardingComplete: { type: boolean }
+        welcomeTourSeen: { type: boolean }
         breathCueEnabled: { type: boolean }
         breathCounterVisible: { type: boolean }
         safetyScreeningConsent: { type: boolean }

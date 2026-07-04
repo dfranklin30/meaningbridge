@@ -17,6 +17,8 @@ export const profileTable = pgTable("profile", {
   consentJournal: boolean("consent_journal").notNull().default(true),
   consentContinuingBonds: boolean("consent_continuing_bonds").notNull().default(false),
   onboardingComplete: boolean("onboarding_complete").notNull().default(false),
+  // First-run guided welcome tour of the app (shown once after onboarding).
+  welcomeTourSeen: boolean("welcome_tour_seen").notNull().default(false),
   // Care tier from validated GIS screener (Lee & Neimeyer, Death Studies 2022).
   // null = not yet screened; "universal" | "targeted" | "clinical"
   tier: text("tier"),

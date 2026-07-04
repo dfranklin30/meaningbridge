@@ -22,6 +22,8 @@ export interface Profile {
   consentJournal: boolean;
   consentContinuingBonds: boolean;
   onboardingComplete: boolean;
+  /** First-run welcome tour has been seen */
+  welcomeTourSeen: boolean;
   /**
    * Care tier assigned by the GIS screener (null = not yet screened)
    * @nullable

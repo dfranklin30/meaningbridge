@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Heart, Stethoscope, MessageSquareQuote } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { LivingBackground } from "@/components/living-background";
-import { CAPABILITIES } from "./data";
+import { CapabilityShowcase } from "../demo";
 import { PatientDemo } from "./patient-demo";
 import { TherapistDemo } from "./therapist-demo";
 import { SandboxSurvey } from "./survey";
@@ -119,31 +119,18 @@ function Entry({
         </p>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        <p className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground mb-6">
-          What you will find here
-        </p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {CAPABILITIES.map((c) => {
-            const Icon = c.icon;
-            return (
-              <div
-                key={c.title}
-                className="rounded-2xl border border-border bg-card/70 p-5 flex gap-4"
-              >
-                <div className="shrink-0 w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">{c.title}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {c.body}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center max-w-2xl mx-auto space-y-3 mb-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+            Everything MeaningBridge offers
+          </p>
+          <p className="text-muted-foreground leading-relaxed">
+            A closer look at each capability, for those grieving and for the
+            professionals who support them. Every example below is an
+            illustration of the real feature.
+          </p>
         </div>
+        <CapabilityShowcase />
       </div>
 
       <div className="max-w-4xl mx-auto space-y-4">

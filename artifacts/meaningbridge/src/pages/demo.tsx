@@ -764,6 +764,49 @@ function AudienceHeader({
   );
 }
 
+// The full, high-fidelity capability showcase — both audiences, every feature
+// illustrated. Exported so the interactive sandbox tour can present the same
+// comprehensive highlight reel before inviting people into the hands-on walk.
+export function CapabilityShowcase() {
+  return (
+    <>
+      {/* Grieving */}
+      <section className="pt-8">
+        <AudienceHeader
+          accent="teal"
+          eyebrow="For those grieving"
+          title="A companion for the space between"
+          intro="A warm, private place to remember, reflect, and be gently accompanied — grounded in Dr. Robert Neimeyer's meaning-focused approach to grief."
+        />
+        <div className="mt-4">
+          {grieving.map((f) => (
+            <FeatureRow key={f.n} n={f.n} title={f.title} blurb={f.blurb} accent="teal">
+              {f.example}
+            </FeatureRow>
+          ))}
+        </div>
+      </section>
+
+      {/* Professionals */}
+      <section className="pt-24">
+        <AudienceHeader
+          accent="navy"
+          eyebrow="For professionals"
+          title="An adjunct to your care"
+          intro="Enroll the people in your care, let them consent, and see meaningful engagement and safety signals — never their private words. Built on HIPAA-covered infrastructure."
+        />
+        <div className="mt-4">
+          {professionals.map((f) => (
+            <FeatureRow key={f.n} n={f.n} title={f.title} blurb={f.blurb} accent="navy">
+              {f.example}
+            </FeatureRow>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
 export default function DemoPage() {
   return (
     <div className="min-h-[100dvh] bg-background text-foreground font-sans">
@@ -794,39 +837,7 @@ export default function DemoPage() {
           </p>
         </motion.section>
 
-        {/* Grieving */}
-        <section className="pt-8">
-          <AudienceHeader
-            accent="teal"
-            eyebrow="For those grieving"
-            title="A companion for the space between"
-            intro="A warm, private place to remember, reflect, and be gently accompanied — grounded in Dr. Robert Neimeyer's meaning-focused approach to grief."
-          />
-          <div className="mt-4">
-            {grieving.map((f) => (
-              <FeatureRow key={f.n} n={f.n} title={f.title} blurb={f.blurb} accent="teal">
-                {f.example}
-              </FeatureRow>
-            ))}
-          </div>
-        </section>
-
-        {/* Professionals */}
-        <section className="pt-24">
-          <AudienceHeader
-            accent="navy"
-            eyebrow="For professionals"
-            title="An adjunct to your care"
-            intro="Enroll the people in your care, let them consent, and see meaningful engagement and safety signals — never their private words. Built on HIPAA-covered infrastructure."
-          />
-          <div className="mt-4">
-            {professionals.map((f) => (
-              <FeatureRow key={f.n} n={f.n} title={f.title} blurb={f.blurb} accent="navy">
-                {f.example}
-              </FeatureRow>
-            ))}
-          </div>
-        </section>
+        <CapabilityShowcase />
 
         {/* Closing */}
         <motion.section

@@ -58,7 +58,7 @@ export default function LandingPage() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 lg:gap-2 text-sm font-medium">
           {[
-            { href: "/demo", label: "See the demo" },
+            { href: "/sandbox", label: "Take a tour" },
             { href: "/pricing", label: "Plans" },
             { href: "/evaluate", label: "Share feedback" },
             { href: "/notify", label: "Notify me" },
@@ -116,11 +116,11 @@ export default function LandingPage() {
               {/* Utility links */}
               <div className="flex items-center justify-center gap-5 text-sm font-medium text-foreground/70">
                 <Link
-                  href="/demo"
+                  href="/sandbox"
                   onClick={() => setMenuOpen(false)}
                   className="hover:text-primary transition-colors"
                 >
-                  See the demo
+                  Take a tour
                 </Link>
                 <span className="h-3 w-px bg-border" />
                 <Link

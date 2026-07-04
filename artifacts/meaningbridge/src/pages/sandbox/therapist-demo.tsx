@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { Link } from "wouter";
 import {
-  ArrowLeft,
   ArrowRight,
   ShieldAlert,
-  CheckCircle2,
   MessageSquare,
   PenLine,
   CalendarClock,
+  X,
 } from "lucide-react";
 
 type Tier = "universal" | "targeted" | "clinical";
@@ -121,16 +121,18 @@ export function TherapistDemo({
   onBack: () => void;
   onSurvey: () => void;
 }) {
+  const reduce = useReducedMotion();
   const [selectedId, setSelectedId] = useState<string>(PATIENTS[0]!.id);
   const selected = PATIENTS.find((p) => p.id === selectedId)!;
   const totalFlags = PATIENTS.reduce((s, p) => s + p.safetyFlags14d, 0);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8 }}
+      animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+      transition={{ duration: reduce ? 0.2 : 0.6 }}
       className="max-w-5xl mx-auto space-y-8"
+      style={{ ["--scene" as string]: "209 54% 34%" } as React.CSSProperties}
     >
       <div className="space-y-3">
         <button
@@ -138,10 +140,13 @@ export function TherapistDemo({
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to the entrance
+          <X className="w-3.5 h-3.5" />
+          Leave the tour
         </button>
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <p
+          className="text-xs uppercase tracking-[0.2em] font-medium"
+          style={{ color: `hsl(var(--scene))` }}
+        >
           Professional view, with sample data only
         </p>
         <h1 className="font-serif text-3xl md:text-4xl leading-tight">
@@ -216,9 +221,9 @@ export function TherapistDemo({
 
         <motion.aside
           key={selected.id}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6 }}
+          animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          transition={{ duration: reduce ? 0.2 : 0.4 }}
           className="lg:col-span-2 rounded-xl border border-border bg-card p-6 space-y-6"
         >
           <div className="space-y-1">
@@ -283,17 +288,46 @@ export function TherapistDemo({
         </motion.aside>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card/70 p-6 text-center space-y-4">
-        <p className="text-sm text-muted-foreground">
-          We would be grateful to hear how this professional view felt to you.
-        </p>
+      <div className="rounded-2xl border border-[hsl(var(--scene)_/_0.25)] bg-[hsl(var(--scene)_/_0.05)] p-6 md:p-8 text-center space-y-5">
+        <div className="space-y-1.5">
+          <p
+            className="text-xs uppercase tracking-[0.2em] font-medium"
+            style={{ color: `hsl(var(--scene))` }}
+          >
+            That is the professional side
+          </p>
+          <h2 className="font-serif text-2xl leading-snug">
+            Care that reaches between the sessions.
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            A consented roster, honest engagement signals, calm safety flags, and
+            a briefing before every visit — so no one falls through the quiet
+            weeks in between.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/caregiver"
+            className="group inline-flex items-center gap-2 px-7 py-3 rounded-full text-sm font-medium text-white shadow-sm hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: `hsl(var(--scene))` }}
+          >
+            Explore the professional portal
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <Link
+            href="/notify"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm border border-border text-foreground hover:border-foreground/40 transition-colors"
+          >
+            Notify me at launch
+          </Link>
+        </div>
         <button
           type="button"
           onClick={onSurvey}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="text-sm hover:underline"
+          style={{ color: `hsl(var(--scene))` }}
         >
           Share your experience
-          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </motion.div>
@@ -314,11 +348,14 @@ function StatCard({
   return (
     <div
       className={`rounded-xl border bg-card p-5 ${
-        accent ? "border-destructive/30" : "border-border"
+        accent ? "border-destructive/30" : "border-[hsl(var(--scene)_/_0.2)]"
       }`}
     >
       <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={`mt-2 text-3xl font-serif ${accent ? "text-destructive" : ""}`}>
+      <p
+        className="mt-2 text-3xl font-serif"
+        style={{ color: accent ? "hsl(var(--destructive))" : "hsl(var(--scene))" }}
+      >
         {value}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>

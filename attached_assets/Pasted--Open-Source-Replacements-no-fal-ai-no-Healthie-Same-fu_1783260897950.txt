@@ -1,0 +1,94 @@
+# Open-Source Replacements (no fal.ai, no Healthie)
+
+Same functionality, open-source stacks. Trade-off up front: with SaaS vendors
+(Healthie/fal/Daily) the vendor runs the infrastructure; with open source **you
+run it** — cheaper at scale, more work, and for anything touching patient data
+YOU carry the compliance burden on infrastructure you control.
+
+## 1. Healthie → **Medplum** (open-source headless EHR)
+
+[Medplum](https://www.medplum.com) — Apache 2.0, FHIR-native, TypeScript, on
+[GitHub](https://github.com/medplum/medplum). Covers what we used Healthie for:
+patients, providers, scheduling, intake forms with e-signature, charting,
+documents, consents — all via a modern REST/FHIR API + React components.
+
+Entity mapping (replaces the Healthie table in the Part-2 doc):
+
+| MeaningBridge concept | Medplum FHIR resource |
+|---|---|
+| Client/patient | `Patient` |
+| Licensed professional | `Practitioner` + `PractitionerRole` (license, states) |
+| Intake/consent forms | `Questionnaire` / `QuestionnaireResponse` |
+| Signed consents | `Consent` + PDF as `DocumentReference` |
+| Appointment | `Appointment` / `Slot` / `Schedule` |
+| Session note | `ClinicalImpression` or note `DocumentReference` |
+| Insurance policy | `Coverage` |
+| Referral | `ServiceRequest` |
+| Assessments (PG-13-R, PHQ-9) | `Questionnaire` + `Observation` scores |
+
+Hosting reality (important): Replit still can't hold PHI, and now there's no
+vendor BAA shielding you. Two options:
+- **Medplum hosted cloud** — they sign a BAA; open-source core, zero-ops
+  (closest drop-in for Healthie).
+- **Fully self-hosted** — deploy Medplum with their AWS CDK templates on an
+  AWS/GCP/Azure account that has a signed cloud BAA. Maximum control, you own
+  security, audit logging, backups, and the risk assessment.
+
+What Medplum does NOT replace: insurance billing/eligibility rails. Keep Stedi
+for eligibility (no real open-source clearinghouse exists), or defer insurance.
+
+## 2. fal.ai → **self-hosted LivePortrait/SadTalker** (`AVATAR_PROVIDER=oss`)
+
+`avatarPipeline.js` now has an `oss` adapter. Models: [LivePortrait]
+(https://github.com/KwaiVGI/LivePortrait) for idle motion, [SadTalker]
+(https://github.com/OpenTalker/SadTalker) for audio-driven letter moments,
+[Piper](https://github.com/rhasspy/piper) for neutral open-source TTS.
+
+Replit has no GPUs, so the worker runs on an on-demand GPU host (RunPod
+serverless / vast.ai / any cloud GPU VM — you rent hardware, all software is
+open source). Generation is one-time per family and cached, so cold-start
+serverless costs pennies per portrait. Worker contract is in the code comments
+(`POST /animate`). Set `OSS_AVATAR_WORKER_URL` + `OSS_AVATAR_WORKER_TOKEN`.
+
+## 3. (If also replacing Daily video) → **Jitsi Meet**, self-hosted
+
+Open source, embeddable via iframe API, recording via Jibri. Self-hosted on
+your BAA cloud for clinical sessions. More ops work than Daily; functionally
+equivalent for 1:1 telehealth.
+
+---
+
+## PASTE INTO REPLIT AGENT (replaces Healthie/fal wiring)
+
+> We're using open-source backends. Changes to the existing plan:
+>
+> 1. **EHR:** replace all Healthie GraphQL integration with Medplum's API
+>    (`npm i @medplum/core @medplum/fhirtypes`). Use `MEDPLUM_BASE_URL`,
+>    `MEDPLUM_CLIENT_ID`, `MEDPLUM_CLIENT_SECRET` from Secrets (client
+>    credentials flow). Map entities per the FHIR table in
+>    OPEN-SOURCE-ALTERNATIVES.md: patients as Patient, professionals as
+>    Practitioner/PractitionerRole, forms as Questionnaire/
+>    QuestionnaireResponse, consents as Consent + DocumentReference,
+>    scheduling as Schedule/Slot/Appointment, referrals as ServiceRequest,
+>    assessments scored into Observation. Build the same flows as before
+>    (intake wizard, e-sign, booking blocked until consents signed). Point at
+>    a Medplum dev instance for now; keep base URL env-driven.
+> 2. **Avatar:** set `AVATAR_PROVIDER=oss` and use the `oss` adapter already
+>    in `avatarPipeline.js` — do not install @fal-ai/client. Also scaffold
+>    `worker/` : a FastAPI service (Python) exposing POST /animate that runs
+>    LivePortrait (idle: apply IDLE_DRIVER_URL motion; audio: Piper TTS →
+>    SadTalker lip-sync), uploads the MP4 to our object storage, returns
+>    {video_url}. Include a Dockerfile (CUDA base) and a README line for
+>    deploying it on RunPod serverless. Bearer-token auth via
+>    OSS_AVATAR_WORKER_TOKEN.
+> 3. Everything else (companionEngine, guardrails, UI) stays exactly as
+>    previously instructed.
+
+## Cost comparison
+
+| | SaaS path | Open-source path |
+|---|---|---|
+| EHR | Healthie $/mo + BAA included | Medplum: $0 software; hosted-cloud fee w/ BAA, or self-host = cloud VM cost + your ops |
+| Avatar | fal.ai cents/generation | GPU rental cents/generation, all models free |
+| Video | Daily ~$500/mo HIPAA | Jitsi: server cost + ops |
+| Eligibility | Stedi per-check | (no OSS equivalent — keep or defer) |

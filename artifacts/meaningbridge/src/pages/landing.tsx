@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Menu, X, Users, Volume2, VolumeX } from "lucide-react";
+import { ArrowRight, Menu, X, Users, Volume2, VolumeX, Download } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { HeroWordmark } from "@/components/hero-wordmark";
 import { BridgeAnimation } from "@/components/bridge-animation";
@@ -264,13 +264,23 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col items-center gap-3 pt-1">
-              <Link
-                href="/sandbox"
-                className="group inline-flex items-center gap-2 rounded-full border border-primary/40 bg-card/70 backdrop-blur px-6 py-3 text-sm font-medium text-primary transition-colors hover:border-primary/70 hover:bg-primary/5"
-              >
-                See how it works
-                <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-              </Link>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <Link
+                  href="/sandbox"
+                  className="group inline-flex items-center gap-2 rounded-full border border-primary/40 bg-card/70 backdrop-blur px-6 py-3 text-sm font-medium text-primary transition-colors hover:border-primary/70 hover:bg-primary/5"
+                >
+                  See how it works
+                  <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                </Link>
+                <a
+                  href={`${import.meta.env.BASE_URL}meaningbridge-deck.pdf`}
+                  download="MeaningBridge-Overview.pdf"
+                  className="group inline-flex items-center gap-2 rounded-full border border-border bg-card/70 backdrop-blur px-6 py-3 text-sm font-medium text-foreground transition-colors hover:border-foreground/40 hover:bg-foreground/5"
+                >
+                  <Download className="w-4 h-4" />
+                  Download the overview
+                </a>
+              </div>
               <Link
                 href="/notify"
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"

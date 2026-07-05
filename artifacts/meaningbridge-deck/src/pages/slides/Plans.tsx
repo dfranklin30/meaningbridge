@@ -12,7 +12,7 @@ export default function Plans() {
         <div className="grid grid-cols-3 gap-[3vw] mt-[7vh] flex-1">
           <div className="bg-card border border-line rounded-2xl p-[3vw] flex flex-col">
             <h3 className="font-display font-medium text-[3.4vw] text-teal">
-              Companion
+              Support
             </h3>
             <div className="w-[6vw] h-px bg-line my-[2.5vh]" />
             <p className="text-[2.2vw] leading-relaxed text-ink">

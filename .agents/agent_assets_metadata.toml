@@ -77,3 +77,9 @@ id = "4WfJkrHgffQejIjYCzOMo"
 uri = "file://attached_assets/Pasted-Existing-Capabilities-Foundation-May-6-10-Created-the-a_1783012525190.txt"
 type = "text"
 title = "MeaningBridge Capabilities (updated)"
+
+[[outputs]]
+id = "V5YkN9elLQ7l2VU0dz7Ff"
+uri = "file://.local/outputs/MeaningBridge-Deck.pdf"
+type = "pdf"
+title = "MeaningBridge Deck (PDF)"

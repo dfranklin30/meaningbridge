@@ -20,6 +20,7 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { parseId } from "../lib/professionalViews";
 import { deliverOutreach } from "../lib/outreachChannel";
+import { getOrCreateGreeting } from "../lib/companionGreeting";
 import {
   CODE_TTL_MS,
   MAX_ATTEMPTS,
@@ -39,6 +40,11 @@ import {
 
 const router: IRouter = Router();
 router.use(requireAuth);
+
+router.get("/greeting", async (req, res) => {
+  const greeting = await getOrCreateGreeting(req.userId!);
+  res.json({ greeting });
+});
 
 function toMemory(m: CompanionMemory) {
   return {

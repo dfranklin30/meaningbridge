@@ -102,6 +102,27 @@ export interface CompanionMemoryInput {
   category?: string;
 }
 
+export type CompanionGreetingSuggestionAction =
+  (typeof CompanionGreetingSuggestionAction)[keyof typeof CompanionGreetingSuggestionAction];
+
+export const CompanionGreetingSuggestionAction = {
+  journal: "journal",
+  reflection: "reflection",
+  talk: "talk",
+  loved_one: "loved_one",
+  practice: "practice",
+} as const;
+
+export type CompanionGreetingSuggestion = {
+  text: string;
+  action: CompanionGreetingSuggestionAction;
+};
+
+export interface CompanionGreeting {
+  greeting: string;
+  suggestion: CompanionGreetingSuggestion;
+}
+
 export type CompanionTaskStatus =
   (typeof CompanionTaskStatus)[keyof typeof CompanionTaskStatus];
 
@@ -1776,6 +1797,10 @@ export const ListProvidersForAdminStatus = {
   rejected: "rejected",
   all: "all",
 } as const;
+
+export type GetCompanionGreeting200 = {
+  greeting: CompanionGreeting | null;
+};
 
 export type ListBookingAppointmentTypesParams = {
   providerId: string;

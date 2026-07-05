@@ -62,6 +62,7 @@ import type {
   DeckShareResult,
   DirectoryEntry,
   FindTherapistsParams,
+  GetCompanionGreeting200,
   GisResult,
   GisSubmission,
   GmriResult,
@@ -8388,6 +8389,81 @@ export const useUpdateCompanionTask = <
 > => {
   return useMutation(getUpdateCompanionTaskMutationOptions(options));
 };
+
+/**
+ * @summary A gentle, once-per-day personalized greeting and one next step for the dashboard.
+ */
+export const getGetCompanionGreetingUrl = () => {
+  return `/api/companion/greeting`;
+};
+
+export const getCompanionGreeting = async (
+  options?: RequestInit,
+): Promise<GetCompanionGreeting200> => {
+  return customFetch<GetCompanionGreeting200>(getGetCompanionGreetingUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCompanionGreetingQueryKey = () => {
+  return [`/api/companion/greeting`] as const;
+};
+
+export const getGetCompanionGreetingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanionGreeting>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionGreeting>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCompanionGreetingQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanionGreeting>>
+  > = ({ signal }) => getCompanionGreeting({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionGreeting>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanionGreetingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanionGreeting>>
+>;
+export type GetCompanionGreetingQueryError = ErrorType<unknown>;
+
+/**
+ * @summary A gentle, once-per-day personalized greeting and one next step for the dashboard.
+ */
+
+export function useGetCompanionGreeting<
+  TData = Awaited<ReturnType<typeof getCompanionGreeting>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionGreeting>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanionGreetingQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary The person's proactive check-in cadence, quiet hours, and pause switch.

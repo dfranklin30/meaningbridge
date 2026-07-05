@@ -1,10 +1,12 @@
 import { Link } from "wouter";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   useListCheckIns,
   useGetDashboardSummary,
   useGetDashboardTrends,
   useGetProfile,
   useListGmriResults,
+  useGetCompanionGreeting,
   type GmriResult,
 } from "@workspace/api-client-react";
 import {
@@ -40,6 +42,8 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+      <GreetingCard />
+
       <h1 className="text-3xl font-serif text-foreground">Insights</h1>
 
       {tier && (
@@ -96,6 +100,44 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  );
+}
+
+const GREETING_ACTION_ROUTES: Record<string, string> = {
+  journal: "/journal/new",
+  reflection: "/reflections",
+  talk: "/companion",
+  loved_one: "/loved-one",
+  practice: "/practices",
+};
+
+function GreetingCard() {
+  const { data } = useGetCompanionGreeting();
+  const reduceMotion = useReducedMotion();
+  const greeting = data?.greeting;
+  if (!greeting) return null;
+
+  const href = GREETING_ACTION_ROUTES[greeting.suggestion.action] ?? "/companion";
+
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="bg-card border border-border p-6 rounded-xl space-y-4"
+    >
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+        A moment with your companion
+      </p>
+      <p className="text-lg font-serif text-foreground leading-relaxed">{greeting.greeting}</p>
+      <Link
+        href={href}
+        className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+      >
+        {greeting.suggestion.text}
+        <ArrowRight className="w-3.5 h-3.5" />
+      </Link>
+    </motion.div>
   );
 }
 

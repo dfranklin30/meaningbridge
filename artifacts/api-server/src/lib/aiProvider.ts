@@ -283,3 +283,47 @@ export async function professionalComplete(input: {
       .trim();
   }
 }
+
+/**
+ * Non-streaming companion completion for short, warm generated copy (e.g. the
+ * daily dashboard greeting). Uses the fast companion Nemotron model as primary,
+ * falling back to Anthropic on error or empty output so a greeting is never
+ * blocked by a single provider hiccup.
+ */
+export async function companionComplete(input: {
+  system: string;
+  user: string;
+  maxTokens?: number;
+}): Promise<string> {
+  const maxTokens = input.maxTokens ?? 400;
+  try {
+    const openrouter = await getOpenRouter();
+    const res = await openrouter.chat.completions.create({
+      model: COMPANION_MODEL,
+      max_tokens: maxTokens,
+      messages: [
+        { role: "system", content: nemotronSystem(input.system) },
+        { role: "user", content: input.user },
+      ],
+    });
+    const text = res.choices[0]?.message?.content ?? "";
+    if (text.trim()) return text.trim();
+    throw new Error("empty companion completion");
+  } catch (err) {
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err) },
+      "companion completion falling back to anthropic",
+    );
+    const msg = await anthropic.messages.create({
+      model: FALLBACK_MODEL,
+      max_tokens: maxTokens,
+      system: input.system,
+      messages: [{ role: "user", content: input.user }],
+    });
+    return msg.content
+      .filter((b): b is Extract<typeof b, { type: "text" }> => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+  }
+}

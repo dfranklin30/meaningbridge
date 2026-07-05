@@ -2183,6 +2183,28 @@ export const UpdateCompanionTaskResponse = zod.object({
 });
 
 /**
+ * @summary A gentle, once-per-day personalized greeting and one next step for the dashboard.
+ */
+export const GetCompanionGreetingResponse = zod.object({
+  greeting: zod.union([
+    zod.object({
+      greeting: zod.string(),
+      suggestion: zod.object({
+        text: zod.string(),
+        action: zod.enum([
+          "journal",
+          "reflection",
+          "talk",
+          "loved_one",
+          "practice",
+        ]),
+      }),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
  * @summary The person's proactive check-in cadence, quiet hours, and pause switch.
  */
 export const GetOutreachPreferencesResponse = zod.object({

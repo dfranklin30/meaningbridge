@@ -1892,6 +1892,25 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AnthropicError" }
 
+  /companion/greeting:
+    get:
+      operationId: getCompanionGreeting
+      tags: [companion]
+      summary: A gentle, once-per-day personalized greeting and one next step for the dashboard.
+      responses:
+        "200":
+          description: Today's greeting, or null when none could be generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  greeting:
+                    oneOf:
+                      - $ref: "#/components/schemas/CompanionGreeting"
+                      - type: "null"
+                required: [greeting]
+
   /companion/outreach:
     get:
       operationId: getOutreachPreferences
@@ -2383,6 +2402,20 @@ components:
         content: { type: string, minLength: 1 }
         category: { type: string }
       required: [content]
+
+    CompanionGreeting:
+      type: object
+      properties:
+        greeting: { type: string }
+        suggestion:
+          type: object
+          properties:
+            text: { type: string }
+            action:
+              type: string
+              enum: [journal, reflection, talk, loved_one, practice]
+          required: [text, action]
+      required: [greeting, suggestion]
 
     CompanionTask:
       type: object

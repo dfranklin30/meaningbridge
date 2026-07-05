@@ -23,6 +23,7 @@ export * from "./patients";
 export * from "./referrals";
 export * from "./integrations";
 export * from "./companionMemory";
+export * from "./companionGreetings";
 export * from "./companionTasks";
 export * from "./outreachPreferences";
 export * from "./outreachLog";

@@ -20,6 +20,12 @@ import {
   Share2,
   Lock,
   CheckCircle2,
+  MessagesSquare,
+  Link2,
+  Upload,
+  Compass,
+  PenLine,
+  Eye,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import lovedOne1 from "@/assets/demo/loved-one-1.png";
@@ -472,6 +478,48 @@ const grieving: Feature[] = [
       </Frame>
     ),
   },
+  {
+    n: 13,
+    title: "A community that understands",
+    blurb:
+      "Real-time, gently moderated rooms where you can sit with others who are grieving. You choose a screen name and share only what feels right, every message is quietly watched for distress, and your companion can suggest the room that fits where you are.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-2 mb-3 text-brand-teal">
+          <MessagesSquare className="w-4 h-4" />
+          <span className="text-sm font-medium">Losing a parent</span>
+          <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Users className="w-3.5 h-3.5" /> 8 here now
+          </span>
+        </div>
+        <div className="space-y-2.5">
+          <Bubble side="companion">
+            Some mornings are heavier than others. You are not alone in that here.
+          </Bubble>
+          <Bubble side="user">Thank you. It helps to read that today.</Bubble>
+        </div>
+      </Frame>
+    ),
+  },
+  {
+    n: 14,
+    title: "Connect with your clinician",
+    blurb:
+      "If you are working with a grief-informed professional, you can link your account to theirs, so the care you receive in person and the support you find here move together. You choose what to share, and can disconnect at any time.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-3">
+          <Link2 className="w-5 h-5 text-brand-teal" />
+          <div>
+            <p className="text-sm text-foreground">Connected to Dr. Rivera, LCSW</p>
+            <p className="text-xs text-muted-foreground">
+              You choose what to share, and can disconnect any time.
+            </p>
+          </div>
+        </div>
+      </Frame>
+    ),
+  },
 ];
 
 const professionals: Feature[] = [
@@ -727,6 +775,128 @@ const professionals: Feature[] = [
       </Frame>
     ),
   },
+  {
+    n: 13,
+    title: "Bring your caseload with you",
+    blurb:
+      "Import the people already in your care from a simple file, so you can begin without re-entering everyone by hand. Consent is still requested from each patient before anything activates.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-2 mb-3 text-brand-navy">
+          <Upload className="w-4 h-4" />
+          <span className="text-sm font-medium">Import patients</span>
+        </div>
+        <div className="space-y-2 text-sm">
+          {["roster.csv · 24 rows", "Matched to your account", "Consent requests queued"].map(
+            (s, i) => (
+              <div key={s} className="flex items-center gap-2">
+                <CheckCircle2
+                  className={`w-4 h-4 ${i < 2 ? "text-brand-teal" : "text-muted-foreground/40"}`}
+                />
+                <span className={i < 2 ? "text-foreground" : "text-muted-foreground"}>{s}</span>
+              </div>
+            ),
+          )}
+        </div>
+      </Frame>
+    ),
+  },
+];
+
+const publicWays: Feature[] = [
+  {
+    n: 1,
+    title: "Explore before you decide",
+    blurb:
+      "This guided tour, and a hands-on sandbox, let you walk through the whole experience without an account, from either side.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-2 mb-3 text-brand-teal">
+          <Compass className="w-4 h-4" />
+          <span className="text-sm font-medium">A guided tour</span>
+        </div>
+        <p className="text-sm text-foreground/80 leading-relaxed">
+          Every feature, one at a time, with a gentle example, and no sign-in required.
+        </p>
+      </Frame>
+    ),
+  },
+  {
+    n: 2,
+    title: "Plans that meet the need",
+    blurb:
+      "Support is offered in tiers that match the level of care — Companion, Enhanced, and Specialist — so people find the right depth of support.",
+    example: (
+      <Frame>
+        <div className="flex flex-wrap gap-2">
+          <TierBadge tier="Companion" />
+          <TierBadge tier="Enhanced" />
+          <TierBadge tier="Specialist" />
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Each tier maps to the level of support, and is never shown as a score.
+        </p>
+      </Frame>
+    ),
+  },
+  {
+    n: 3,
+    title: "Stay in the loop",
+    blurb:
+      "Not ready yet? Leave an email to be gently notified at launch, and nothing more until then.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-2 text-brand-teal mb-2">
+          <Bell className="w-4 h-4" />
+          <span className="text-sm font-medium">Notify me at launch</span>
+        </div>
+        <div className="h-9 rounded-lg border border-border bg-background px-3 flex items-center text-sm text-muted-foreground">
+          you@example.com
+        </div>
+      </Frame>
+    ),
+  },
+  {
+    n: 4,
+    title: "A preview for professionals",
+    blurb:
+      "Clinicians can preview the caregiver portal with sample data — the roster, tiers, and safety signals — before they ever enroll a patient.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-2 text-brand-navy mb-2">
+          <Eye className="w-4 h-4" />
+          <span className="text-sm font-medium">Portal preview</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Sample data only. No real patient information is shown.
+        </p>
+      </Frame>
+    ),
+  },
+  {
+    n: 5,
+    title: "Secure links, no account needed",
+    blurb:
+      "Patients can review and sign consent, and confirm a session, from a private link sent to them — no password to create, and no barrier in a hard moment.",
+    example: (
+      <Frame>
+        <div className="flex items-center gap-2 text-brand-teal mb-3">
+          <PenLine className="w-4 h-4" />
+          <span className="text-sm font-medium">Consent &amp; confirmation</span>
+        </div>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-brand-teal" />
+            <span className="text-foreground">Consent reviewed and signed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Session confirmed</span>
+          </div>
+        </div>
+      </Frame>
+    ),
+  },
 ];
 
 function AudienceHeader({
@@ -760,8 +930,31 @@ function AudienceHeader({
 export function CapabilityShowcase() {
   return (
     <>
-      {/* Grieving */}
+      {/* Public — before you sign in */}
       <section className="pt-8">
+        <AudienceHeader
+          accent="teal"
+          eyebrow="Before you sign in"
+          title="Ways to explore, openly"
+          intro="You can learn how MeaningBridge works, see the plans, and even sign consent or confirm a session, all without an account."
+        />
+        <div className="mt-4">
+          {publicWays.map((f, i) => (
+            <FeatureRow
+              key={f.n}
+              n={f.n}
+              title={f.title}
+              blurb={f.blurb}
+              accent={i % 2 === 0 ? "teal" : "navy"}
+            >
+              {f.example}
+            </FeatureRow>
+          ))}
+        </div>
+      </section>
+
+      {/* Grieving */}
+      <section className="pt-24">
         <AudienceHeader
           accent="teal"
           eyebrow="For those grieving"

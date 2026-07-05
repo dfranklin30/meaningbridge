@@ -9,6 +9,8 @@ import {
   Heart,
   LifeBuoy,
   Sparkles,
+  MessagesSquare,
+  Users,
   ArrowLeft,
   ArrowRight,
   X,
@@ -27,6 +29,7 @@ type SceneId =
   | "practice"
   | "picture"
   | "lovedone"
+  | "community"
   | "crisis"
   | "recap";
 
@@ -82,6 +85,14 @@ const SCENES: Scene[] = [
     accent: "348 44% 44%",
     eyebrow: "A profile of your loved one",
     title: "Keep them close, in their own words.",
+  },
+  {
+    id: "community",
+    label: "Community",
+    icon: MessagesSquare,
+    accent: "199 46% 36%",
+    eyebrow: "A community that understands",
+    title: "Others who understand, when you want them.",
   },
   {
     id: "crisis",
@@ -258,6 +269,7 @@ export function PatientDemo({
             {scene.id === "practice" && <PracticePanel reduce={!!reduce} />}
             {scene.id === "picture" && <PicturePanel />}
             {scene.id === "lovedone" && <LovedOnePanel />}
+            {scene.id === "community" && <CommunityPanel />}
             {scene.id === "crisis" && <CrisisPanel />}
             {scene.id === "recap" && (
               <RecapPanel onSurvey={onSurvey} onReplay={() => goTo(0)} />
@@ -615,6 +627,56 @@ function Detail({
   );
 }
 
+function CommunityPanel() {
+  return (
+    <div className="rounded-2xl border border-[hsl(var(--scene)_/_0.25)] bg-card p-6 md:p-8 space-y-6">
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        When you would like company, gently moderated rooms let you sit with
+        others who are grieving too. You choose a screen name, share only what
+        feels right, and every message is quietly watched over for distress.
+      </p>
+
+      <div className="rounded-xl border border-[hsl(var(--scene)_/_0.3)] bg-background/60 p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded-full"
+            style={{
+              backgroundColor: `hsl(var(--scene) / 0.15)`,
+              color: `hsl(var(--scene))`,
+            }}
+          >
+            <MessagesSquare className="w-4 h-4" />
+          </span>
+          <p className="font-serif text-lg">Losing a parent</p>
+          <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Users className="w-3.5 h-3.5" /> 8 here now
+          </span>
+        </div>
+        <div className="space-y-3">
+          <div className="flex justify-start">
+            <p className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed bg-muted text-foreground/90">
+              Some mornings are heavier than others. You are not alone in that here.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <p
+              className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed text-white"
+              style={{ backgroundColor: `hsl(var(--scene))` }}
+            >
+              Thank you. It helps to read that today.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-4">
+        Your companion can suggest the room that fits where you are, and support
+        is always one tap away. This is a sample of the community.
+      </p>
+    </div>
+  );
+}
+
 function CrisisPanel() {
   return (
     <div className="rounded-2xl border border-[hsl(var(--scene)_/_0.25)] bg-card p-6 md:p-8 space-y-6">
@@ -676,8 +738,9 @@ function RecapPanel({
     <div className="rounded-2xl border border-[hsl(var(--scene)_/_0.25)] bg-card p-6 md:p-10 space-y-8">
       <p className="text-center text-muted-foreground leading-relaxed max-w-xl mx-auto">
         A companion who stays, a place to write, quiet practices, a gentle sense
-        of how you are, a profile that keeps your person close, and help always
-        within reach. All in one calm place.
+        of how you are, a profile that keeps your person close, others who
+        understand when you want them, and help always within reach. All in one
+        calm place.
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

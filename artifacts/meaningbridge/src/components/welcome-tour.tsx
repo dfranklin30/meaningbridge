@@ -8,6 +8,7 @@ import {
   Heart,
   Activity,
   LifeBuoy,
+  MessagesSquare,
   ArrowLeft,
   ArrowRight,
 } from "lucide-react";
@@ -45,6 +46,12 @@ const STEPS: Step[] = [
     eyebrow: "Practices",
     title: "Small, steadying practices",
     body: "Short grounding and breathing practices for the harder moments. Take one when you need to rest, or return to your breath.",
+  },
+  {
+    icon: MessagesSquare,
+    eyebrow: "Community",
+    title: "Others who understand, when you want them",
+    body: "Gently moderated rooms let you sit with people who are grieving too. Share as much or as little as you like, support is quietly watched over, and it is always optional.",
   },
   {
     icon: Heart,

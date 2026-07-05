@@ -10,6 +10,7 @@ import {
   Loader2,
   ShieldCheck,
   HeartHandshake,
+  Plus,
 } from "lucide-react";
 
 const API = `${import.meta.env.BASE_URL}api`;
@@ -23,6 +24,9 @@ type RoomSummary = {
   onlineCount: number;
   online: string[];
   joined: boolean;
+  memberCreated: boolean;
+  createdBy: string | null;
+  mine: boolean;
 };
 
 type ChatMessage = {
@@ -150,6 +154,110 @@ function ScreenNameGate({ onSet }: { onSet: (name: string) => void }) {
   );
 }
 
+function StartRoom({ onCreated }: { onCreated: (room: RoomSummary) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const reset = () => {
+    setName("");
+    setDescription("");
+    setError(null);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/community/rooms`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), description: description.trim() }),
+      });
+      const data = (await res.json()) as { room?: RoomSummary; error?: string };
+      if (!res.ok || !data.room) {
+        setError(data.error ?? "That room could not be created just now. Please try again in a moment.");
+        return;
+      }
+      reset();
+      setOpen(false);
+      onCreated(data.room);
+    } catch {
+      setError("That room could not be created just now. Please try again in a moment.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-3 w-full rounded-xl border border-dashed border-border/70 bg-secondary/10 px-5 py-4 text-left text-sm text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+      >
+        <Plus className="w-4 h-4 shrink-0 text-primary" />
+        Start a new room, a gentle space for a grief you do not see here
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="space-y-1.5">
+        <h2 className="text-lg font-serif">Start a room</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Open a space for others who share this loss. Please keep the name and
+          description gentle, and leave out anything that could identify you or
+          another person.
+        </p>
+      </div>
+      <div className="space-y-3">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Room name"
+          maxLength={60}
+          className="w-full bg-background border border-border rounded-md px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary/50 outline-none"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="A sentence about who this room is for (optional)"
+          rows={2}
+          maxLength={200}
+          className="w-full resize-none bg-background border border-border rounded-md px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary/50 outline-none"
+        />
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={saving || name.trim().length < 3}
+          className="bg-primary text-primary-foreground px-5 py-2.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+        >
+          {saving ? "Creating..." : "Create room"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            reset();
+          }}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function RoomList({
   screenName,
   onChangeName,
@@ -157,6 +265,7 @@ function RoomList({
   screenName: string;
   onChangeName: () => void;
 }) {
+  const [, setLocation] = useLocation();
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [suggestion, setSuggestion] = useState<Suggestion>(null);
@@ -217,6 +326,8 @@ function RoomList({
         </p>
       </div>
 
+      <StartRoom onCreated={(room) => setLocation(`/community/${room.slug}`)} />
+
       {suggestion && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
@@ -258,9 +369,20 @@ function RoomList({
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1.5">
                   <h2 className="text-xl font-serif">{room.name}</h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {room.description}
-                  </p>
+                  {room.description && (
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {room.description}
+                    </p>
+                  )}
+                  {room.memberCreated && (
+                    <p className="text-[11px] text-muted-foreground/70">
+                      {room.mine
+                        ? "Started by you"
+                        : room.createdBy
+                          ? `Started by ${room.createdBy}`
+                          : "Member room"}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
                   <Users className="w-3.5 h-3.5" />

@@ -16,6 +16,8 @@ import {
   broadcastMessageRemoved,
 } from "../lib/communityRealtime";
 import { suggestCommunityRoom } from "../lib/companionContext";
+import { moderate } from "../lib/safety";
+import { detectCrisis } from "../lib/crisis";
 
 /**
  * REST surface for community chat. Real-time messaging happens over Socket.IO;
@@ -110,7 +112,132 @@ router.get("/rooms", async (req, res) => {
       onlineCount: onlineCountForRoom(r.slug),
       online: onlineScreenNames(r.slug),
       joined: joined.has(r.id),
+      memberCreated: r.createdByUserId !== null,
+      createdBy: r.createdByScreenName,
+      mine: r.createdByUserId === req.userId,
     })),
+  });
+});
+
+// A member opens their own room. Curated rooms are seeded; these are the
+// spaces people start for a grief they do not see represented. The public,
+// persistent name and description run through the same safety net as messages.
+const MIN_ROOM_NAME = 3;
+const MAX_ROOM_NAME = 60;
+const MAX_ROOM_DESC = 200;
+const MAX_ROOMS_PER_USER = 15;
+const USER_ROOM_SORT = 1000;
+
+function slugify(input: string): string {
+  const base = input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return base || "room";
+}
+
+router.post("/rooms", async (req, res) => {
+  const [identity] = await db
+    .select({ screenName: communityIdentitiesTable.screenName })
+    .from(communityIdentitiesTable)
+    .where(eq(communityIdentitiesTable.userId, req.userId!))
+    .limit(1);
+  if (!identity) {
+    res.status(400).json({ error: "Please choose a screen name before starting a room." });
+    return;
+  }
+
+  const name =
+    typeof req.body?.name === "string" ? req.body.name.trim().replace(/\s+/g, " ") : "";
+  const description =
+    typeof req.body?.description === "string"
+      ? req.body.description.trim().replace(/\s+/g, " ").slice(0, MAX_ROOM_DESC)
+      : "";
+
+  if (name.length < MIN_ROOM_NAME || name.length > MAX_ROOM_NAME) {
+    res.status(400).json({ error: "Please give the room a name of 3 to 60 characters." });
+    return;
+  }
+
+  // Screen the public, persistent room text just as message bodies are screened.
+  const mod = await moderate(`${name}\n${description}`);
+  if (detectCrisis(`${name} ${description}`) || mod.selfHarm) {
+    res.status(422).json({
+      error:
+        "It sounds like you may be carrying something very heavy. This could not be created as a room, but support is here for you. You can open crisis support from any screen.",
+    });
+    return;
+  }
+  if (mod.flagged) {
+    res.status(422).json({
+      error:
+        "To keep this a gentle space, that room could not be created. Please try different wording.",
+    });
+    return;
+  }
+
+  // A gentle cap so the room list stays a calm, navigable place.
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(communityRoomsTable)
+    .where(eq(communityRoomsTable.createdByUserId, req.userId!));
+  if ((countRow?.count ?? 0) >= MAX_ROOMS_PER_USER) {
+    res.status(429).json({
+      error: "You have started the most rooms allowed for now. Please tend the ones you have.",
+    });
+    return;
+  }
+
+  // Insert with a free slug, appending -2, -3, ... on collision. The unique
+  // index is the source of truth: onConflictDoNothing returns no row when the
+  // slug was taken between attempts (a concurrent creator), so we simply try the
+  // next suffix rather than failing the request on a race.
+  const baseSlug = slugify(name);
+  let room: typeof communityRoomsTable.$inferSelect | undefined;
+  for (let attempt = 1; attempt <= 60; attempt++) {
+    const slug = attempt === 1 ? baseSlug : `${baseSlug}-${attempt}`;
+    [room] = await db
+      .insert(communityRoomsTable)
+      .values({
+        slug,
+        name,
+        description,
+        sortOrder: USER_ROOM_SORT,
+        createdByUserId: req.userId!,
+        createdByScreenName: identity.screenName,
+      })
+      .onConflictDoNothing({ target: communityRoomsTable.slug })
+      .returning();
+    if (room) break;
+  }
+  if (!room) {
+    res
+      .status(409)
+      .json({ error: "A room with a similar name already exists. Please try another name." });
+    return;
+  }
+
+  // The creator joins their own room.
+  await db
+    .insert(communityMembersTable)
+    .values({ roomId: room.id, userId: req.userId! })
+    .onConflictDoNothing();
+
+  res.status(201).json({
+    room: {
+      slug: room.slug,
+      name: room.name,
+      description: room.description,
+      memberCount: 1,
+      onlineCount: onlineCountForRoom(room.slug),
+      online: onlineScreenNames(room.slug),
+      joined: true,
+      memberCreated: true,
+      createdBy: room.createdByScreenName,
+      mine: true,
+    },
   });
 });
 

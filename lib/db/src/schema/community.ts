@@ -37,13 +37,22 @@ export const communityIdentitiesTable = pgTable("community_identities", {
   screenNameUnique: uniqueIndex("community_identities_screen_name_unique").on(t.screenName),
 }));
 
-/** A support room. Seeded from a fixed set (see scripts/seed-community). */
+/**
+ * A support room. Curated rooms are seeded (see scripts/seed-community) and have
+ * a null creator. Members can also open their own rooms; those carry the
+ * creator's user id and the screen name they held at creation time (snapshotted
+ * like message authorship, so history stays stable if they later rename).
+ */
 export const communityRoomsTable = pgTable("community_rooms", {
   id: serial("id").primaryKey(),
   slug: text("slug").notNull(),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),
+  createdByUserId: integer("created_by_user_id").references(() => usersTable.id, {
+    onDelete: "set null",
+  }),
+  createdByScreenName: text("created_by_screen_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   slugUnique: uniqueIndex("community_rooms_slug_unique").on(t.slug),

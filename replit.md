@@ -64,7 +64,13 @@ Public (no onboarding gate, no app chrome):
 
 The /pricing and /caregiver routes are in the public-routes set in `layout.tsx` so they bypass the onboarding gate, and link to each other plus `/notify` for waitlists.
 
-App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/reflections`, `/reflections/gmri`, `/dashboard`, `/loved-one`, `/therapists`, `/crisis`, `/settings`, 404.
+App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `/companion`, `/companion/:sessionId`, `/journal`, `/journal/new`, `/journal/:id`, `/practices`, `/practices/:id`, `/checkin`, `/reflections`, `/reflections/gmri`, `/dashboard`, `/loved-one`, `/therapists`, `/community`, `/community/:slug`, `/crisis`, `/settings`, 404.
+
+## Community (peer chat rooms)
+
+- Screen-name-only peer support rooms. REST (`routes/community.ts`) handles identity + room listing/join/leave + reporting + moderator review; live messaging is Socket.IO (`lib/communityRealtime.ts`, mounted under `/api/socket.io`, Clerk-cookie handshake). Not in the OpenAPI spec — the frontend (`pages/community.tsx`) uses manual `fetch` + `socket.io-client`, no generated hooks.
+- Rooms are both curated (seeded by slug via `scripts/seed-community.ts`, `createdByUserId` null) and member-created. `POST /community/rooms` lets any member with a screen name open a room: name 3-60 chars, optional description ≤200, slug generated + de-duped (`-2`, `-3`…), name+description run through the same `moderate()`/`detectCrisis()` safety net as messages (crisis/flagged → 422, never created), gentle cap of 15 rooms per creator, creator auto-joins. Member rooms sort after curated (sortOrder 1000) and snapshot the creator's screen name (`createdByScreenName`) for a calm "Started by …" tag. `slugToRoomId` resolves any room dynamically, so new rooms work over Socket.IO immediately with no realtime change.
+- Every inbound message is safety-screened before broadcast: crisis language is never shared (sender privately gets the 988 card, auto moderator flag), other harmful content is blocked with a kind private note. Moderator review view is gated to `isProfessional`.
 
 ## Reflective inventories (GMRI)
 

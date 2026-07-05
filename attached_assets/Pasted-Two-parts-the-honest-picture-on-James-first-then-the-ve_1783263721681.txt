@@ -1,0 +1,28 @@
+Two parts — the honest picture on James first, then the verification method.
+
+**Where "Ask James" fits.** James is NVIDIA's digital-human blueprint — a real-time 3D talking assistant. The right place for it in MeaningBridge is as the **companion's face** (a neutral, warm guide), not the loved-one avatar — the living portrait stays silent-by-default for the clinical reasons already built into the pipeline. Full James needs a dedicated GPU streaming continuously (self-hosted ACE stack), so the prompt below integrates it in two tiers: a lite version now on the GPU worker you're already standing up, and the full blueprint behind a flag for when there's budget.
+
+Paste to Replit Agent:
+
+> Add an embodied "companion presence" feature, `COMPANION_PRESENCE` env flag with two modes:
+>
+> **Mode "lite" (enable now):** give the AI companion a visible face — a calm, neutral animated guide avatar (NOT the loved-one portrait; use a commissioned neutral illustration/photo we own). Reuse our OSS avatar worker: generate short idle + speaking loops for the guide once, cache them; when the companion replies, play the speaking loop while streaming text and browser TTS. Result: a James-style attentive presence at near-zero marginal cost.
+>
+> **Mode "ace" (scaffold only, default off):** integrate per NVIDIA's digital-human blueprint (https://github.com/NVIDIA-AI-Blueprints/digital-human): a `presence-gateway` service that will connect to a self-hosted ACE pipeline (Riva ASR → our Nemotron companion endpoint → Audio2Face-3D → streamed renderer) with a WebRTC video element in the chat dock. Stub the ACE endpoints behind env vars (`ACE_STREAM_URL` etc.), document GPU requirements in the README, and make the chat dock render mode "lite" whenever "ace" is unavailable. The companion's persona, memory, and guardrails come from companionEngine.js in BOTH modes.
+
+**How to make Replit verify your points are implemented correctly.** Replit Agent will claim success optimistically — force it to prove each point with evidence. Paste this after any build phase:
+
+> Audit the implementation against this checklist. For each item, respond PASS or FAIL with evidence — the file/line where it's implemented, plus a screenshot or actual test output. Do not summarize; go item by item. Then fix every FAIL and re-run the audit until all pass:
+>
+> 1. First login triggers the onboarding conversation; profile JSON saved to companion_profiles (show the row).
+> 2. Second login shows a personalized greeting referencing stored memory (screenshot).
+> 3. Journal → logout → login: greeting references the journal theme (screenshot).
+> 4. Crisis-language test message returns the 988 response, not a normal reply (screenshot).
+> 5. Avatar creation blocked until consent checkbox + typed name recorded (show the consent row).
+> 6. Group photo upload is rejected with kind guidance (screenshot).
+> 7. Living portrait renders looping ONLY in Meaning Reconstruction sections — prove it's absent from dashboard/chat (screenshots of both).
+> 8. "Lay to rest" archives; delete removes stored files (show storage listing before/after).
+> 9. No API keys in client bundle or network responses (show grep of built assets).
+> 10. Companion presence: lite-mode guide avatar animates during replies and is visually distinct from any loved-one portrait (screenshot).
+
+The stronger habit: end every future prompt to Replit with "then audit against the acceptance criteria above, item by item with evidence, and fix failures before reporting done." That one line is the difference between the agent saying it works and showing you it does.

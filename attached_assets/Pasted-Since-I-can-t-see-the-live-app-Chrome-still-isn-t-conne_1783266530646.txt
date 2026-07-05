@@ -1,0 +1,27 @@
+Since I can't see the live app (Chrome still isn't connected), here are two build prompts written to leave Replit no wiggle room — each with acceptance criteria built in. Paste them one at a time.
+
+**Prompt 1 — make the companion truly embedded, everywhere:**
+
+> The companion is currently a feature you visit. Rebuild it as a presence woven through every screen. Using the existing `companionEngine.js`:
+>
+> 1. **Persistent companion dock** on every authenticated page (bottom-right): collapsed it shows the guide avatar breathing quietly; expanded it's the full chat with streaming replies and memory. State persists across navigation — no reload, no lost conversation.
+> 2. **Dashboard takeover on login:** the FIRST thing a user sees is the companion's personalized greeting (`loginGreeting()`) with one warm CTA — not a generic dashboard. New users get the onboarding conversation full-screen.
+> 3. **Contextual embedding, not just a dock:** in the Journal, the companion supplies the day's prompt from the user's recent themes and can respond to an entry when asked ("reflect with me"). In Reflections, it introduces each exercise personally, referencing the user's loss by name. On the loved-one profile, it can gently ask about a photo just uploaded. On the therapist directory, it explains what to look for based on the user's profile.
+> 4. **Continuity thread:** every one of these touchpoints reads/writes the SAME memory (companion_profiles + companion_summaries). Test: mention something in the journal helper, then the dock chat must know it.
+> 5. **Return pull:** wire the weekly `checkinEmail()` cron now, plus a session-booked confirmation where the companion says it will check in the day after the appointment — and actually does.
+>
+> Acceptance evidence, item by item, PASS/FAIL with screenshots: dock present on all 6+ main pages; greeting-first dashboard; journal prompt references a real prior theme; memory continuity test above; email cron log. Fix FAILs before reporting done.
+
+**Prompt 2 — build the community chat rooms (missing entirely):**
+
+> Build the community chat feature — it does not exist yet. Real-time, warm retro instant-messenger spirit, modern internals:
+>
+> 1. **Backend:** Socket.IO on our server. Tables: rooms, room_messages, room_members, message_reports. Seed rooms: General Support, Loss of a Parent, Loss of a Partner, Loss of a Child, Sibling Loss, Pet Loss.
+> 2. **Client:** a Community page with a room list sidebar (member counts, who's online with screen names only), main message window, typing indicators, join/leave notices, last-50 history on join. Buddy-list styling: soft cards, presence dots, optional gentle sign-on chime (default off).
+> 3. **Safety is non-negotiable:** every message passes the NemoGuard content-safety check server-side BEFORE broadcast; blocked messages get a private, kind explanation. Crisis language triggers the 988 resource response privately to that user and flags a moderator. Report button on every message; professionals get a moderator view (mute/remove/review reports). Community guidelines modal on first join.
+> 4. **Identity:** screen names only, chosen at first join; no real names or emails ever rendered.
+> 5. The companion is aware: it can suggest a relevant room ("others who've lost a parent gather here") from the user's profile — suggestion only, never auto-join.
+>
+> Acceptance evidence: two browser windows exchanging live messages (screenshot); unsafe test message blocked with private notice; crisis test message → private 988 response + moderator flag; report → visible in moderator view; DB rows for messages; screen name enforced. PASS/FAIL each, fix, re-audit.
+
+If the companion still feels bolted-on after Prompt 1, screenshot the dashboard and journal pages for me — I'll diagnose exactly which integration points Replit skipped and write a targeted repair prompt.

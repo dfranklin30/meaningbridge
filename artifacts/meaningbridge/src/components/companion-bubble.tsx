@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@clerk/react";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { MessageCircle, X, Send, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
 
 const API = `${import.meta.env.BASE_URL}api`;
@@ -403,12 +403,16 @@ export function CompanionBubble() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close companion" : "Open companion"}
-        className="ml-auto flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+        className={`ml-auto relative flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-colors ${
+          open ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-white"
+        }`}
       >
+        {!open && <GuideOrb />}
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
             <motion.span
               key="close"
+              className="relative z-10"
               initial={{ opacity: 0, rotate: -30 }}
               animate={{ opacity: 1, rotate: 0 }}
               exit={{ opacity: 0, rotate: 30 }}
@@ -419,16 +423,48 @@ export function CompanionBubble() {
           ) : (
             <motion.span
               key="open"
+              className="relative z-10"
               initial={{ opacity: 0, rotate: -30 }}
               animate={{ opacity: 1, rotate: 0 }}
               exit={{ opacity: 0, rotate: 30 }}
               transition={{ duration: 0.2 }}
             >
-              <MessageCircle className="w-6 h-6" />
+              <MessageCircle className="w-6 h-6 drop-shadow-sm" />
             </motion.span>
           )}
         </AnimatePresence>
       </button>
     </div>
+  );
+}
+
+// The collapsed companion is an abstract, on-brand orb — the navy→teal
+// infinity palette rendered as a gentle sphere. It breathes slowly to signal a
+// quiet, waiting presence, and rests still for anyone who prefers reduced motion.
+function GuideOrb() {
+  const reduceMotion = useReducedMotion();
+  return (
+    <span className="absolute inset-0 rounded-full overflow-hidden">
+      <span
+        className="absolute inset-0 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle at 32% 30%, var(--brand-teal), var(--brand-navy) 78%)",
+        }}
+      />
+      <motion.span
+        className="absolute inset-0 rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle at 68% 72%, rgba(255,255,255,0.4), transparent 55%)",
+        }}
+        animate={reduceMotion ? undefined : { opacity: [0.3, 0.6, 0.3], scale: [1, 1.08, 1] }}
+        transition={
+          reduceMotion
+            ? undefined
+            : { duration: 6, repeat: Infinity, ease: "easeInOut" }
+        }
+      />
+    </span>
   );
 }

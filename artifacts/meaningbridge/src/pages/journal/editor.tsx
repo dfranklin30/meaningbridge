@@ -59,6 +59,25 @@ export default function JournalEditor() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [companionPrompt, setCompanionPrompt] = useState<string | null>(null);
+  const [promptLoading, setPromptLoading] = useState(false);
+
+  const askCompanionPrompt = async () => {
+    setPromptLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/companion/journal-prompt`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { prompt?: string };
+        if (data.prompt) setCompanionPrompt(data.prompt);
+      }
+    } catch {
+      // The companion's prompt is an offering, not a requirement; stay quiet on failure.
+    } finally {
+      setPromptLoading(false);
+    }
+  };
 
   // On a brand-new entry there is no id to bind photos to yet, so chosen images
   // are held locally (preview + remove) and uploaded the moment the entry is
@@ -355,6 +374,24 @@ export default function JournalEditor() {
         {currentPrompt && (
           <div className="bg-secondary/30 rounded-lg p-4 text-sm text-foreground/80 border border-border/50 font-serif italic">
             "{currentPrompt.prompt}"
+          </div>
+        )}
+
+        <div>
+          <button
+            type="button"
+            onClick={() => void askCompanionPrompt()}
+            disabled={promptLoading}
+            className="inline-flex items-center gap-2 text-sm text-primary hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            <Sparkle className="w-3.5 h-3.5" />
+            {promptLoading ? "Finding a prompt..." : "Ask the companion for a prompt"}
+          </button>
+        </div>
+
+        {companionPrompt && (
+          <div className="bg-primary/5 rounded-lg p-4 text-sm text-foreground/80 border border-primary/20 font-serif italic">
+            "{companionPrompt}"
           </div>
         )}
 

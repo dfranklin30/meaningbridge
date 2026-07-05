@@ -2205,6 +2205,38 @@ export const GetCompanionGreetingResponse = zod.object({
 });
 
 /**
+ * @summary A gentle, personally-drawn journaling prompt from the person's recent themes.
+ */
+export const GetCompanionJournalPromptResponse = zod.object({
+  prompt: zod.string(),
+});
+
+/**
+ * @summary A short, personal introduction to a reflective exercise.
+ */
+export const GetCompanionReflectionIntroQueryParams = zod.object({
+  exercise: zod.coerce.string().optional(),
+});
+
+export const GetCompanionReflectionIntroResponse = zod.object({
+  intro: zod.string(),
+});
+
+/**
+ * @summary Profile-aware guidance on what to look for in a grief therapist.
+ */
+export const GetCompanionTherapistGuidanceResponse = zod.object({
+  guidance: zod.string(),
+});
+
+/**
+ * @summary A gentle note offered after a photo of the loved one is added.
+ */
+export const GetCompanionPhotoNoteResponse = zod.object({
+  note: zod.string(),
+});
+
+/**
  * @summary The person's proactive check-in cadence, quiet hours, and pause switch.
  */
 export const GetOutreachPreferencesResponse = zod.object({

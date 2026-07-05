@@ -1911,6 +1911,75 @@ paths:
                       - type: "null"
                 required: [greeting]
 
+  /companion/journal-prompt:
+    get:
+      operationId: getCompanionJournalPrompt
+      tags: [companion]
+      summary: A gentle, personally-drawn journaling prompt from the person's recent themes.
+      responses:
+        "200":
+          description: A one-line journaling prompt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prompt: { type: string }
+                required: [prompt]
+
+  /companion/reflection-intro:
+    get:
+      operationId: getCompanionReflectionIntro
+      tags: [companion]
+      summary: A short, personal introduction to a reflective exercise.
+      parameters:
+        - name: exercise
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: A warm intro paragraph
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intro: { type: string }
+                required: [intro]
+
+  /companion/therapist-guidance:
+    get:
+      operationId: getCompanionTherapistGuidance
+      tags: [companion]
+      summary: Profile-aware guidance on what to look for in a grief therapist.
+      responses:
+        "200":
+          description: A short guidance paragraph
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guidance: { type: string }
+                required: [guidance]
+
+  /companion/photo-note:
+    get:
+      operationId: getCompanionPhotoNote
+      tags: [companion]
+      summary: A gentle note offered after a photo of the loved one is added.
+      responses:
+        "200":
+          description: A one-line note
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  note: { type: string }
+                required: [note]
+
   /companion/outreach:
     get:
       operationId: getOutreachPreferences

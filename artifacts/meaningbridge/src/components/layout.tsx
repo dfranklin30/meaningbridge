@@ -66,6 +66,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link href="/journal" className={navLinkCls("/journal")}>Journal</Link>
             <Link href="/practices" className={navLinkCls("/practices")}>Practices</Link>
             <Link href="/reflections" className={navLinkCls("/reflections")}>Reflections</Link>
+            <Link href="/community" className={navLinkCls("/community")}>Community</Link>
             <Link href="/dashboard" className={navLinkCls("/dashboard")}>Insights</Link>
             <Link href="/loved-one" className={navLinkCls("/loved-one")}>Loved One</Link>
             <Link href="/book" className={navLinkCls("/book")}>Book</Link>
@@ -104,6 +105,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <Link href="/companion" className={mobileLinkCls("/companion")}><span className="font-serif">Chat</span></Link>
         <Link href="/journal" className={mobileLinkCls("/journal")}><span className="font-serif">Journal</span></Link>
         <Link href="/practices" className={mobileLinkCls("/practices")}><span className="font-serif">Practices</span></Link>
+        <Link href="/community" className={mobileLinkCls("/community")}><span className="font-serif">Community</span></Link>
         <Link href="/dashboard" className={mobileLinkCls("/dashboard")}><span className="font-serif">Insights</span></Link>
         <Link href="/book" className={mobileLinkCls("/book")}><span className="font-serif">Book</span></Link>
       </div>

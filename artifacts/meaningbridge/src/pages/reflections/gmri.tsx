@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
@@ -70,6 +70,29 @@ export default function GmriPage() {
 }
 
 function GmriIntro({ hasHistory, onStart }: { hasHistory: boolean; onStart: () => void }) {
+  const [companionIntro, setCompanionIntro] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.BASE_URL}api/companion/reflection-intro?exercise=gmri`,
+          { credentials: "include" },
+        );
+        if (res.ok) {
+          const data = (await res.json()) as { intro?: string };
+          if (active && data.intro) setCompanionIntro(data.intro);
+        }
+      } catch {
+        // The companion's intro is a warm extra; the reflection stands without it.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="max-w-xl mx-auto space-y-6 py-8">
       <div className="space-y-3">
@@ -83,6 +106,12 @@ function GmriIntro({ hasHistory, onStart }: { hasHistory: boolean; onStart: () =
           where you are across five themes of grieving.
         </p>
       </div>
+
+      {companionIntro && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-foreground/80 leading-relaxed font-serif italic">
+          {companionIntro}
+        </div>
+      )}
       <div className="flex items-center gap-4">
         <button
           onClick={onStart}

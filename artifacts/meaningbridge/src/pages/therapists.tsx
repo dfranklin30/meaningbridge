@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useFindTherapists } from "@workspace/api-client-react";
+import { useFindTherapists, useGetCompanionTherapistGuidance } from "@workspace/api-client-react";
 import { Search, ExternalLink, MapPin, Award, Info } from "lucide-react";
 
 export default function Therapists() {
@@ -7,6 +7,7 @@ export default function Therapists() {
   const [searchZip, setSearchZip] = useState<string | undefined>(undefined);
   
   const { data: therapists, isLoading } = useFindTherapists({ zip: searchZip });
+  const { data: guidance } = useGetCompanionTherapistGuidance();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +35,17 @@ export default function Therapists() {
           </p>
         </div>
       </div>
+
+      {guidance?.guidance && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+          <p className="text-[11px] uppercase tracking-wider text-primary/70 mb-2">
+            A word from your companion
+          </p>
+          <p className="text-sm text-foreground/80 leading-relaxed font-serif italic">
+            {guidance.guidance}
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
         <div className="relative flex-1">

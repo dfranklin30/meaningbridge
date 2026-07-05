@@ -22,6 +22,12 @@ import { parseId } from "../lib/professionalViews";
 import { deliverOutreach } from "../lib/outreachChannel";
 import { getOrCreateGreeting } from "../lib/companionGreeting";
 import {
+  journalPrompt,
+  reflectionIntro,
+  therapistGuidance,
+  photoNote,
+} from "../lib/companionContext";
+import {
   CODE_TTL_MS,
   MAX_ATTEMPTS,
   codeMatches,
@@ -44,6 +50,29 @@ router.use(requireAuth);
 router.get("/greeting", async (req, res) => {
   const greeting = await getOrCreateGreeting(req.userId!);
   res.json({ greeting });
+});
+
+// --- contextual companion copy woven into the app's surfaces ----------------
+
+router.get("/journal-prompt", async (req, res) => {
+  const prompt = await journalPrompt(req.userId!);
+  res.json({ prompt });
+});
+
+router.get("/reflection-intro", async (req, res) => {
+  const exercise = typeof req.query.exercise === "string" ? req.query.exercise : "reflection";
+  const intro = await reflectionIntro(req.userId!, exercise);
+  res.json({ intro });
+});
+
+router.get("/therapist-guidance", async (req, res) => {
+  const guidance = await therapistGuidance(req.userId!);
+  res.json({ guidance });
+});
+
+router.get("/photo-note", async (req, res) => {
+  const note = await photoNote(req.userId!);
+  res.json({ note });
 });
 
 function toMemory(m: CompanionMemory) {

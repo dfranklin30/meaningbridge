@@ -1802,6 +1802,26 @@ export type GetCompanionGreeting200 = {
   greeting: CompanionGreeting | null;
 };
 
+export type GetCompanionJournalPrompt200 = {
+  prompt: string;
+};
+
+export type GetCompanionReflectionIntroParams = {
+  exercise?: string;
+};
+
+export type GetCompanionReflectionIntro200 = {
+  intro: string;
+};
+
+export type GetCompanionTherapistGuidance200 = {
+  guidance: string;
+};
+
+export type GetCompanionPhotoNote200 = {
+  note: string;
+};
+
 export type ListBookingAppointmentTypesParams = {
   providerId: string;
 };

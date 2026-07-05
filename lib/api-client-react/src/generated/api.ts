@@ -63,6 +63,11 @@ import type {
   DirectoryEntry,
   FindTherapistsParams,
   GetCompanionGreeting200,
+  GetCompanionJournalPrompt200,
+  GetCompanionPhotoNote200,
+  GetCompanionReflectionIntro200,
+  GetCompanionReflectionIntroParams,
+  GetCompanionTherapistGuidance200,
   GisResult,
   GisSubmission,
   GmriResult,
@@ -8457,6 +8462,349 @@ export function useGetCompanionGreeting<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetCompanionGreetingQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary A gentle, personally-drawn journaling prompt from the person's recent themes.
+ */
+export const getGetCompanionJournalPromptUrl = () => {
+  return `/api/companion/journal-prompt`;
+};
+
+export const getCompanionJournalPrompt = async (
+  options?: RequestInit,
+): Promise<GetCompanionJournalPrompt200> => {
+  return customFetch<GetCompanionJournalPrompt200>(
+    getGetCompanionJournalPromptUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCompanionJournalPromptQueryKey = () => {
+  return [`/api/companion/journal-prompt`] as const;
+};
+
+export const getGetCompanionJournalPromptQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanionJournalPrompt>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionJournalPrompt>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCompanionJournalPromptQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanionJournalPrompt>>
+  > = ({ signal }) => getCompanionJournalPrompt({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionJournalPrompt>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanionJournalPromptQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanionJournalPrompt>>
+>;
+export type GetCompanionJournalPromptQueryError = ErrorType<unknown>;
+
+/**
+ * @summary A gentle, personally-drawn journaling prompt from the person's recent themes.
+ */
+
+export function useGetCompanionJournalPrompt<
+  TData = Awaited<ReturnType<typeof getCompanionJournalPrompt>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionJournalPrompt>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanionJournalPromptQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary A short, personal introduction to a reflective exercise.
+ */
+export const getGetCompanionReflectionIntroUrl = (
+  params?: GetCompanionReflectionIntroParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/companion/reflection-intro?${stringifiedParams}`
+    : `/api/companion/reflection-intro`;
+};
+
+export const getCompanionReflectionIntro = async (
+  params?: GetCompanionReflectionIntroParams,
+  options?: RequestInit,
+): Promise<GetCompanionReflectionIntro200> => {
+  return customFetch<GetCompanionReflectionIntro200>(
+    getGetCompanionReflectionIntroUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCompanionReflectionIntroQueryKey = (
+  params?: GetCompanionReflectionIntroParams,
+) => {
+  return [
+    `/api/companion/reflection-intro`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetCompanionReflectionIntroQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanionReflectionIntro>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetCompanionReflectionIntroParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCompanionReflectionIntro>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCompanionReflectionIntroQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanionReflectionIntro>>
+  > = ({ signal }) =>
+    getCompanionReflectionIntro(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionReflectionIntro>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanionReflectionIntroQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanionReflectionIntro>>
+>;
+export type GetCompanionReflectionIntroQueryError = ErrorType<unknown>;
+
+/**
+ * @summary A short, personal introduction to a reflective exercise.
+ */
+
+export function useGetCompanionReflectionIntro<
+  TData = Awaited<ReturnType<typeof getCompanionReflectionIntro>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetCompanionReflectionIntroParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCompanionReflectionIntro>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanionReflectionIntroQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Profile-aware guidance on what to look for in a grief therapist.
+ */
+export const getGetCompanionTherapistGuidanceUrl = () => {
+  return `/api/companion/therapist-guidance`;
+};
+
+export const getCompanionTherapistGuidance = async (
+  options?: RequestInit,
+): Promise<GetCompanionTherapistGuidance200> => {
+  return customFetch<GetCompanionTherapistGuidance200>(
+    getGetCompanionTherapistGuidanceUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCompanionTherapistGuidanceQueryKey = () => {
+  return [`/api/companion/therapist-guidance`] as const;
+};
+
+export const getGetCompanionTherapistGuidanceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanionTherapistGuidance>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionTherapistGuidance>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCompanionTherapistGuidanceQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanionTherapistGuidance>>
+  > = ({ signal }) =>
+    getCompanionTherapistGuidance({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionTherapistGuidance>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanionTherapistGuidanceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanionTherapistGuidance>>
+>;
+export type GetCompanionTherapistGuidanceQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Profile-aware guidance on what to look for in a grief therapist.
+ */
+
+export function useGetCompanionTherapistGuidance<
+  TData = Awaited<ReturnType<typeof getCompanionTherapistGuidance>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionTherapistGuidance>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanionTherapistGuidanceQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary A gentle note offered after a photo of the loved one is added.
+ */
+export const getGetCompanionPhotoNoteUrl = () => {
+  return `/api/companion/photo-note`;
+};
+
+export const getCompanionPhotoNote = async (
+  options?: RequestInit,
+): Promise<GetCompanionPhotoNote200> => {
+  return customFetch<GetCompanionPhotoNote200>(getGetCompanionPhotoNoteUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCompanionPhotoNoteQueryKey = () => {
+  return [`/api/companion/photo-note`] as const;
+};
+
+export const getGetCompanionPhotoNoteQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCompanionPhotoNote>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionPhotoNote>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCompanionPhotoNoteQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCompanionPhotoNote>>
+  > = ({ signal }) => getCompanionPhotoNote({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionPhotoNote>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCompanionPhotoNoteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCompanionPhotoNote>>
+>;
+export type GetCompanionPhotoNoteQueryError = ErrorType<unknown>;
+
+/**
+ * @summary A gentle note offered after a photo of the loved one is added.
+ */
+
+export function useGetCompanionPhotoNote<
+  TData = Awaited<ReturnType<typeof getCompanionPhotoNote>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCompanionPhotoNote>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCompanionPhotoNoteQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

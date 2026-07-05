@@ -19,7 +19,8 @@ import { isOutreachAllowedStatus, isUserOutreachAllowed } from "./outreachConsen
  * sends, within each person's own bounds (cadence, quiet hours, pause switch):
  *   - gentle companion check-ins,
  *   - reminders for active companion tasks that have a due date,
- *   - reminders for confirmed appointments in the next 24 hours.
+ *   - reminders for confirmed appointments in the next 24 hours,
+ *   - a gentle companion note the day after a session.
  *
  * Idempotency: every send is guarded by a UNIQUE dedupeKey inserted into
  * `outreach_log` BEFORE sending (insert-then-send). A restart or overlapping
@@ -55,6 +56,11 @@ export async function runOutreachTick(): Promise<void> {
     await runAppointmentReminders(now);
   } catch (err) {
     logger.error({ err: errMsg(err) }, "outreach appointment reminders tick failed");
+  }
+  try {
+    await runAppointmentFollowups(now);
+  } catch (err) {
+    logger.error({ err: errMsg(err) }, "outreach appointment followups tick failed");
   }
 }
 
@@ -230,6 +236,53 @@ async function runAppointmentReminders(now: Date): Promise<void> {
   }
 }
 
+// --- appointment follow-ups (day after) ------------------------------------
+
+async function runAppointmentFollowups(now: Date): Promise<void> {
+  // A gentle note the day after a session. The window is one day wide and the
+  // dedupe ledger guarantees a single send, so sessions that predate this
+  // feature by more than two days are never back-filled.
+  const windowEnd = new Date(now.getTime() - DAY_MS);
+  const windowStart = new Date(now.getTime() - 2 * DAY_MS);
+  const appts = await db
+    .select()
+    .from(appointmentsTable)
+    .where(
+      and(
+        eq(appointmentsTable.status, "confirmed"),
+        gte(appointmentsTable.startsAt, windowStart),
+        lte(appointmentsTable.startsAt, windowEnd),
+      ),
+    );
+
+  for (const appt of appts) {
+    const [patient] = await db
+      .select({
+        emailEnc: patientsTable.emailEnc,
+        firstNameEnc: patientsTable.firstNameEnc,
+        status: patientsTable.status,
+      })
+      .from(patientsTable)
+      .where(eq(patientsTable.id, appt.patientId))
+      .limit(1);
+    // Consent floor: no note once the patient has withdrawn/closed consent.
+    if (!patient || !isOutreachAllowedStatus(patient.status)) continue;
+    const dedupeKey = `appointment_followup:${appt.id}`;
+    if (!(await claim(appt.providerUserId, "appointment_followup", dedupeKey, "email"))) continue;
+    const email = decryptPhi(patient.emailEnc);
+    if (!email) {
+      await markLog(dedupeKey, "skipped", "no patient email");
+      continue;
+    }
+    const firstName = decryptPhi(patient.firstNameEnc);
+    const message = appointmentFollowupEmail(firstName, appOriginStatic());
+    const result = await deliverOutreach({ channel: "email", to: email, ...message });
+    if (!result.delivered) {
+      await markLog(dedupeKey, "failed", result.error);
+    }
+  }
+}
+
 // --- channel routing -------------------------------------------------------
 
 type TargetPref = Pick<
@@ -400,6 +453,32 @@ function appointmentReminderEmail(
      <p style="margin-top:28px;">With care,<br/>The MeaningBridge team</p>`,
   );
   return { subject: "A reminder of your upcoming session", text, html };
+}
+
+function appointmentFollowupEmail(firstName: string | null, origin: string) {
+  const greeting = firstName ? `Hello ${firstName},` : "Hello,";
+  const link = `${origin}/companion`;
+  const text = [
+    greeting,
+    "",
+    "It has been a day since your session. There is nothing you need to do. If anything surfaced that you would like to sit with, your MeaningBridge companion is here whenever you are ready.",
+    "",
+    "Open your companion:",
+    link,
+    "",
+    "You can change how often you hear from us, set quiet hours, or pause these messages at any time in your settings.",
+    "",
+    "With care,",
+    "The MeaningBridge team",
+  ].join("\n");
+  const html = shell(
+    `<p>${greeting}</p>
+     <p>It has been a day since your session. There is nothing you need to do. If anything surfaced that you would like to sit with, your MeaningBridge companion is here whenever you are ready.</p>
+     ${button(link, "Open your companion")}
+     <p style="color:#5b6b78;font-size:14px;">You can change how often you hear from us, set quiet hours, or pause these messages at any time in your settings.</p>
+     <p style="margin-top:28px;">With care,<br/>The MeaningBridge team</p>`,
+  );
+  return { subject: "A gentle note after your session", text, html };
 }
 
 // --- SMS bodies (short, calm, no emojis) -----------------------------------

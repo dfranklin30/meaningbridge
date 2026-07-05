@@ -14,6 +14,7 @@ export function PhotoGallery({ deceasedId }: { deceasedId: number }) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   const { data: photos } = useListDeceasedPhotos(deceasedId, {
     query: { queryKey: getListDeceasedPhotosQueryKey(deceasedId) },
@@ -39,6 +40,17 @@ export function PhotoGallery({ deceasedId }: { deceasedId: number }) {
         await addPhoto({ id: deceasedId, data: { objectPath: result.objectPath } });
       }
       await refresh();
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}api/companion/photo-note`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { note?: string };
+          if (data.note) setNote(data.note);
+        }
+      } catch {
+        // A gentle note is a nicety; never surface its failure.
+      }
     } catch {
       setError("That photo could not be added. Please try again when you are ready.");
     } finally {
@@ -86,6 +98,20 @@ export function PhotoGallery({ deceasedId }: { deceasedId: number }) {
       <p className="text-sm text-muted-foreground">
         These images are private to you. Add the faces and moments you want to keep close.
       </p>
+
+      <AnimatePresence>
+        {note && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-foreground/80 leading-relaxed font-serif italic"
+          >
+            {note}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">

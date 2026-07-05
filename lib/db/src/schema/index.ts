@@ -29,3 +29,4 @@ export * from "./outreachPreferences";
 export * from "./outreachLog";
 export * from "./appointments";
 export * from "./providerCalendar";
+export * from "./community";

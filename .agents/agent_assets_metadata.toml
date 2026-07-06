@@ -83,3 +83,15 @@ id = "V5YkN9elLQ7l2VU0dz7Ff"
 uri = "file://.local/outputs/MeaningBridge-Deck.pdf"
 type = "pdf"
 title = "MeaningBridge Deck (PDF)"
+
+[[outputs]]
+id = "LL7kaaC7Ho-EveEZ6GpYz"
+uri = "file://.local/outputs/MeaningBridge.pdf"
+type = "pdf"
+title = "MeaningBridge.pdf"
+
+[[outputs]]
+id = "CNBtAHQQLQMEFHKw5Ca0v"
+uri = "file://.local/outputs/MeaningBridge.pptx"
+type = "slides"
+title = "MeaningBridge.pptx"

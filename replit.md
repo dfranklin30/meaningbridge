@@ -111,6 +111,7 @@ App (behind onboarding gate, full chrome) lives at `/app` plus: `/onboarding`, `
 
 ## Brand assets
 
+- The homepage film section is a carousel (`components/film-carousel.tsx`, rendered under the hero on `/`): the 30-sec teaser (`src/assets/teaser-film.mp4`) and the opening film (`src/assets/hero-film.mp4`) are self-hosted, autoplay muted, and carry a sound on/off toggle (sound resets on clip change). The rest are Dr. Neimeyer's YouTube talks — a thumbnail with a play overlay that swaps to a youtube-nocookie iframe on click. Prev/next arrows + a thumbnail rail; self-hosted clips use navy/teal gradient tiles.
 - The homepage background (`components/living-background.tsx`) draws navy/teal aurora orbs plus a faint animated infinity ribbon (lemniscate SVG path) with two soft lights travelling its loops — the continuing bond / bridge between two worlds. Honors `prefers-reduced-motion` (renders at rest).
 - Source PNG with whitespace trimmed: `artifacts/meaningbridge/src/assets/brand/meaningbridge-mark.png` (infinity-bridge mark, 787x340) and `artifacts/meaningbridge/src/assets/brand/meaningbridge-lockup.png` (mark + wordmark, 957x535). Both are RGBA with transparent background.
 - `<Logo variant="lockup" size={N} />` renders the full lockup at height `N`. `<Logo />` (default) renders just the infinity mark; pass `withWordmark` to append the serif text wordmark instead of the image lockup.

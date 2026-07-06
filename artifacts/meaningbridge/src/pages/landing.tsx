@@ -1,25 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Menu, X, Users, Volume2, VolumeX, Download } from "lucide-react";
+import { ArrowRight, Menu, X, Users, Download } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { HeroWordmark } from "@/components/hero-wordmark";
 import { BridgeAnimation } from "@/components/bridge-animation";
 import { SceneGallery } from "@/components/scene-gallery";
 import { LivingBackground } from "@/components/living-background";
 import { DeckShare } from "@/components/deck-share";
+import { FilmCarousel } from "@/components/film-carousel";
 import photoBonds from "@/assets/photo-bonds.png";
 import neimeyerPortrait from "@assets/image_1782985313122.png";
 import lectureCongress from "@assets/image_1782985283687.png";
 import lectureAudience from "@assets/image_1782985270880.png";
 import lectureTie from "@assets/image_1782985295812.png";
 import lectureStanding from "@assets/image_1783094613403.png";
-import heroVideo from "@/assets/hero-film.mp4";
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [soundOn, setSoundOn] = useState(false);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -29,21 +27,6 @@ export default function LandingPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
-
-  // Browsers block autoplay with sound, so the film starts muted and the visitor
-  // gently turns sound on. Looping keeps the calm audio playing continuously in
-  // the background while they read and scroll.
-  const toggleSound = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    const next = !soundOn;
-    v.muted = !next;
-    if (next) {
-      v.volume = 0.55;
-      void v.play().catch(() => {});
-    }
-    setSoundOn(next);
-  };
 
   return (
     <div className="min-h-[100dvh] text-foreground font-sans relative overflow-hidden isolate">
@@ -316,38 +299,8 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Opening film — a quiet, atmospheric welcome, set below the ribbon */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-4xl mx-auto mt-24 md:mt-32"
-        >
-          <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.2)]">
-            <video
-              ref={videoRef}
-              src={heroVideo}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              className="block w-full aspect-video object-cover"
-            />
-            <button
-              type="button"
-              onClick={toggleSound}
-              aria-pressed={soundOn}
-              aria-label={soundOn ? "Turn off film sound" : "Play film sound"}
-              title={soundOn ? "Sound on" : "Play sound"}
-              className="absolute bottom-4 right-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 backdrop-blur px-4 py-2 text-sm text-foreground/80 shadow-sm transition-colors hover:bg-background/90 hover:text-foreground"
-            >
-              {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              {soundOn ? "Sound on" : "Play sound"}
-            </button>
-          </div>
-        </motion.div>
+        {/* Film carousel — the teaser, the opening film, and Dr. Neimeyer's talks */}
+        <FilmCarousel />
 
         {/* Bridge animation — humans connecting with humans and with AI */}
         <motion.section

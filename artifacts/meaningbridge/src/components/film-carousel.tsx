@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Volume2, VolumeX, Play } from "lucide-react";
 import teaserFilm from "@/assets/teaser-film.mp4";
@@ -71,20 +71,49 @@ const clips: Clip[] = [
   },
 ];
 
+// How long each YouTube talk previews before the carousel moves on. Self-hosted
+// films play to their natural end instead of using a timer.
+const YT_PREVIEW_MS = 20000;
+
 export function FilmCarousel() {
   const [active, setActive] = useState(0);
   const [soundOn, setSoundOn] = useState(false);
   const [ytPlaying, setYtPlaying] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const current = clips[active];
 
-  const go = (next: number) => {
-    const n = (next + clips.length) % clips.length;
-    setActive(n);
+  const go = useCallback((next: number) => {
+    setActive(((next % clips.length) + clips.length) % clips.length);
     setSoundOn(false);
     setYtPlaying(false);
-  };
+  }, []);
+
+  // While a viewer is hovering or listening with sound, the carousel waits.
+  const paused = hovering || soundOn;
+
+  // Respect reduced-motion: fall back to manual (click-to-play) navigation.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setAutoPlay(!mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  // Auto-start each YouTube talk when it becomes the active clip.
+  useEffect(() => {
+    if (autoPlay && current.kind === "youtube") setYtPlaying(true);
+  }, [active, autoPlay, current.kind]);
+
+  // Advance YouTube talks after a gentle preview; films advance on their own end.
+  useEffect(() => {
+    if (!autoPlay || paused || current.kind !== "youtube") return;
+    const t = setTimeout(() => go(active + 1), YT_PREVIEW_MS);
+    return () => clearTimeout(t);
+  }, [active, autoPlay, paused, current.kind, go]);
 
   // Browsers block autoplay with sound, so self-hosted films start muted and the
   // visitor gently turns sound on.
@@ -124,7 +153,11 @@ export function FilmCarousel() {
       </div>
 
       {/* Main stage */}
-      <div className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.2)]">
+      <div
+        className="relative rounded-3xl overflow-hidden border border-border bg-card shadow-[0_20px_60px_-20px_hsl(215_50%_30%/0.2)]"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
         <div className="relative aspect-video bg-secondary/30">
           {current.kind === "video" ? (
             <>
@@ -134,9 +167,12 @@ export function FilmCarousel() {
                 src={current.src}
                 autoPlay
                 muted
-                loop
+                loop={paused || !autoPlay}
                 playsInline
                 preload="auto"
+                onEnded={() => {
+                  if (autoPlay && !paused) go(active + 1);
+                }}
                 className="block w-full h-full object-cover"
               />
               <button
@@ -154,7 +190,7 @@ export function FilmCarousel() {
           ) : ytPlaying ? (
             <iframe
               key={`yt-${active}`}
-              src={`https://www.youtube-nocookie.com/embed/${current.id}?autoplay=1&rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/${current.id}?autoplay=1&mute=1&rel=0`}
               title={current.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

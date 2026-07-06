@@ -6,7 +6,7 @@ export default function Plans() {
           className="font-display font-medium text-[4.8vw] leading-[1.05] text-navy max-w-[70vw]"
           style={{ textWrap: "balance" }}
         >
-          Plans that follow need, not engagement
+          Plans that follow need, not protocol
         </h2>
 
         <div className="grid grid-cols-3 gap-[3vw] mt-[7vh] flex-1">

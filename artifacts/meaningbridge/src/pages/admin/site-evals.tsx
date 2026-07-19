@@ -17,6 +17,9 @@ const DIMENSIONS: { key: string; label: string }[] = [
   { key: "relevance", label: "Relevance of features offered" },
   { key: "helpfulness", label: "Perceived helpfulness to bereaved users" },
   { key: "fidelity", label: "Fidelity to the voice of the deceased" },
+  { key: "continuingBonds", label: "Continuing bonds" },
+  { key: "meaningfulness", label: "Meaningfulness" },
+  { key: "emotionalImpact", label: "Emotional impact" },
   { key: "therapistValue", label: "Helpfulness of features to therapists" },
   { key: "trust", label: "Trust and sense of safety" },
   { key: "easeOfUse", label: "Overall ease of use" },
@@ -50,6 +53,7 @@ function buildCsv(rows: SandboxFeedback[]): string {
     "role_label",
     "consent_to_share",
     ...DIMENSIONS.flatMap((d) => [`${d.key}_score`, `${d.key}_comment`]),
+    "time_spent",
     "additional_suggestions",
     "narrative",
   ];
@@ -66,6 +70,7 @@ function buildCsv(rows: SandboxFeedback[]): string {
       cells.push(row.ratings?.[d.key] ?? "");
       cells.push(row.comments?.[d.key] ?? "");
     }
+    cells.push(row.comments?.timeSpent ?? "");
     cells.push(row.additionalSuggestions ?? "");
     cells.push(row.narrative ?? "");
     return cells.map(csvCell).join(",");

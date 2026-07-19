@@ -57,6 +57,9 @@ const EVAL_DIMENSIONS: { key: string; label: string }[] = [
   { key: "relevance", label: "Relevance of features offered" },
   { key: "helpfulness", label: "Perceived helpfulness to bereaved users" },
   { key: "fidelity", label: "Fidelity to the voice of the deceased" },
+  { key: "continuingBonds", label: "Continuing bonds" },
+  { key: "meaningfulness", label: "Meaningfulness" },
+  { key: "emotionalImpact", label: "Emotional impact" },
   { key: "therapistValue", label: "Helpfulness of features to therapists" },
   { key: "trust", label: "Trust and sense of safety" },
   { key: "easeOfUse", label: "Overall ease of use" },
@@ -164,6 +167,9 @@ router.post("/feedback", async (req, res) => {
       "Narrative:",
       narrative ?? "\u2014",
       ...evalTextLines,
+      ...(comments?.timeSpent
+        ? ["", `Time spent with the app: ${comments.timeSpent}`]
+        : []),
       ...(additionalSuggestions
         ? ["", "Additional suggestions:", additionalSuggestions]
         : []),
@@ -190,6 +196,11 @@ router.post("/feedback", async (req, res) => {
             : ""
         }
         ${evalHtml}
+        ${
+          comments?.timeSpent
+            ? `<p style="margin:18px 0 6px;color:#6b7280;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;">Time spent with the app</p><p style="margin:0;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #e5e1d5;">${escapeHtml(comments.timeSpent)}</p>`
+            : ""
+        }
         ${suggestionsHtml}
         <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Automated notification from MeaningBridge.</p>
       </div>

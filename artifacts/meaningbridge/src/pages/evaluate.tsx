@@ -64,6 +64,27 @@ const DIMENSIONS: Dimension[] = [
     optional: true,
   },
   {
+    key: "continuingBonds",
+    label: "Continuing bonds",
+    help: "Whether you felt more connected to your loved one after the session.",
+    low: "I felt more distant and anxious",
+    high: "I felt more close and secure",
+  },
+  {
+    key: "meaningfulness",
+    label: "Meaningfulness",
+    help: "How much using the site helped you make sense of your experience of your loss, and of yourself as a bereaved person.",
+    low: "I felt more confused",
+    high: "I felt greater understanding and meaning",
+  },
+  {
+    key: "emotionalImpact",
+    label: "Emotional impact",
+    help: "How you felt after the session.",
+    low: "More distressed",
+    high: "More centered and peaceful",
+  },
+  {
     key: "therapistValue",
     label: "Helpfulness to therapists",
     help: "How useful the tools could be to a therapist — session summaries, assessments, suggestions. Skip if this did not apply.",
@@ -201,6 +222,7 @@ export default function EvaluatePage() {
   const [roleLabel, setRoleLabel] = useState("");
   const [name, setName] = useState("");
   const [suggestions, setSuggestions] = useState("");
+  const [timeSpent, setTimeSpent] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -231,6 +253,7 @@ export default function EvaluatePage() {
     for (const [k, v] of Object.entries(comments)) {
       if (scores[k] != null && v.trim()) trimmedComments[k] = v.trim();
     }
+    if (timeSpent.trim()) trimmedComments.timeSpent = timeSpent.trim();
 
     const role =
       roleChoice === "seeker" || roleChoice === "professional"
@@ -414,6 +437,22 @@ export default function EvaluatePage() {
                     />
                   </div>
                 )}
+
+                <div className="space-y-2">
+                  <label htmlFor="timeSpent" className="text-sm font-medium">
+                    How much time in total did you spend interacting with the
+                    app?{" "}
+                    <span className="text-muted-foreground/70">(optional)</span>
+                  </label>
+                  <input
+                    id="timeSpent"
+                    type="text"
+                    value={timeSpent}
+                    onChange={(e) => setTimeSpent(e.target.value)}
+                    placeholder="For example: about 45 minutes, or 3 sessions over a week"
+                    className="w-full bg-background border border-border rounded-md px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50"
+                  />
+                </div>
 
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input

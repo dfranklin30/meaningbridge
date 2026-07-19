@@ -41,18 +41,18 @@ function getOpenRouter(): Promise<OpenRouterClient> {
 // Companion model: text-only paid Nemotron. Fast and cost-effective. Image turns
 // bypass this and go to Anthropic (see companionStream) because no paid Nemotron
 // model accepts image input through the integration.
-export const COMPANION_MODEL = "nvidia/nemotron-3-nano-30b-a3b";
+export const COMPANION_MODEL = process.env.GEMINI_CHAT_MODEL || "gemini-2.5-flash";
 // Deeper-reasoning model for the clinician-side assistant / case summaries.
-export const PROFESSIONAL_MODEL = "nvidia/nemotron-3-super-120b-a12b";
+export const PROFESSIONAL_MODEL = process.env.GEMINI_PRO_MODEL || process.env.GEMINI_CHAT_MODEL || "gemini-2.5-flash";
 // Anthropic fallback used whenever the primary provider fails, and the primary
 // provider for any companion turn that carries an image.
-const FALLBACK_MODEL = "claude-sonnet-4-5";
+const FALLBACK_MODEL = process.env.GEMINI_CHAT_MODEL || "gemini-2.5-flash";
 
 // NVIDIA Nemotron models expose a reasoning toggle via the system prompt. Left
 // on, they leak their scratchpad ("The user says...") into user-facing prose, so
 // we force it off and prepend the directive to every Nemotron system message.
 function nemotronSystem(system: string): string {
-  return `detailed thinking off\n\n${system}`;
+  return system;
 }
 
 const ALLOWED_MEDIA_TYPES = [

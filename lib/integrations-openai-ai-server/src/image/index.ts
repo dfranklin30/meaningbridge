@@ -30,7 +30,7 @@ export async function generateImageBuffer(
   size: ImageSize = "1024x1024",
 ): Promise<Buffer> {
   const result = await openai.images.generate({
-    model: "gpt-image-1",
+    model: process.env.AI_IMAGE_MODEL || "gemini-2.5-flash-image",
     prompt,
     size,
     n: 1,

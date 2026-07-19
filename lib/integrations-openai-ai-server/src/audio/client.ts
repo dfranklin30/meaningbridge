@@ -217,16 +217,60 @@ export async function textToSpeechStream(
 }
 
 /** Speech-to-Text using gpt-4o-mini-transcribe. */
+
+/**
+ * Transcribe audio with Gemini (generateContent with inline audio). The
+ * OpenAI-compatible Gemini endpoint has no /audio/transcriptions route, so we
+ * call the native REST API directly with the same API key.
+ */
+async function geminiSpeechToText(
+  audioBuffer: Buffer,
+  format: "wav" | "mp3" | "webm",
+): Promise<string> {
+  const key = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  if (!key) throw new Error("AI_INTEGRATIONS_OPENAI_API_KEY not set");
+  const model = process.env.GEMINI_CHAT_MODEL || "gemini-2.5-flash";
+  const mime =
+    format === "mp3" ? "audio/mp3" : format === "webm" ? "audio/webm" : "audio/wav";
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text:
+                  "Transcribe this audio verbatim. Output only the transcription text with no commentary.",
+              },
+              { inline_data: { mime_type: mime, data: audioBuffer.toString("base64") } },
+            ],
+          },
+        ],
+      }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Gemini transcription failed: ${res.status} ${await res.text()}`);
+  }
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const text = (data.candidates?.[0]?.content?.parts ?? [])
+    .map((p) => p.text ?? "")
+    .join("")
+    .trim();
+  if (!text) throw new Error("Gemini transcription returned no text");
+  return text;
+}
+
 export async function speechToText(
   audioBuffer: Buffer,
   format: "wav" | "mp3" | "webm" = "wav"
 ): Promise<string> {
-  const file = await toFile(audioBuffer, `audio.${format}`);
-  const response = await openai.audio.transcriptions.create({
-    file,
-    model: "gpt-4o-mini-transcribe",
-  });
-  return response.text;
+  return geminiSpeechToText(audioBuffer, format);
 }
 
 /** Streaming Speech-to-Text. */
@@ -234,18 +278,8 @@ export async function speechToTextStream(
   audioBuffer: Buffer,
   format: "wav" | "mp3" | "webm" = "wav"
 ): Promise<AsyncIterable<string>> {
-  const file = await toFile(audioBuffer, `audio.${format}`);
-  const stream = await openai.audio.transcriptions.create({
-    file,
-    model: "gpt-4o-mini-transcribe",
-    stream: true,
-  });
-
+  const text = await geminiSpeechToText(audioBuffer, format);
   return (async function* () {
-    for await (const event of stream) {
-      if (event.type === "transcript.text.delta") {
-        yield event.delta;
-      }
-    }
+    yield text;
   })();
 }

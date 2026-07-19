@@ -10,6 +10,7 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import { serveStatic } from "./static";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -71,6 +72,10 @@ app.use(
 );
 
 app.use("/api", router);
+
+if (process.env.SERVE_STATIC !== "false") {
+  serveStatic(app);
+}
 
 // Centralized error handler. Express 5 forwards rejected promises from async
 // route handlers here. Without this, thrown errors return an opaque 500 with no

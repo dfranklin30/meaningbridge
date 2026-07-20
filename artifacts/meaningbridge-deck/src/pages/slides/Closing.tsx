@@ -32,7 +32,7 @@ export default function Closing() {
         </h2>
         <div className="mt-[6vh] flex items-center gap-[2.5vw] text-[2.4vw]">
           <span className="font-medium" style={{ color: "hsl(176 55% 68%)" }}>
-            meaningbridge.replit.app
+            meaning-bridge.com
           </span>
           <span className="w-[5vw] h-px" style={{ background: "hsl(176 55% 55% / 0.5)" }} />
           <span className="opacity-80">Dr. Robert Neimeyer</span>

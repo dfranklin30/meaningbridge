@@ -40,7 +40,7 @@ export default function Cover() {
           there whenever grief feels heavy.
         </p>
         <div className="mt-[6vh] flex items-center gap-[2vw] text-[2.2vw] text-muted">
-          <span className="text-teal font-medium">meaningbridge.replit.app</span>
+          <span className="text-teal font-medium">meaning-bridge.com</span>
           <span className="w-[5vw] h-px bg-line" />
           <span>Portland Institute for Loss and Transition</span>
         </div>

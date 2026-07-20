@@ -314,12 +314,8 @@ function ProviderPortalRoutes() {
   if (isError || !me) {
     return <AccountErrorState />;
   }
-  if (!me.isSeeker && !me.isProfessional) {
-    return <Redirect to="/select-role" />;
-  }
-  if (!me.isProfessional && !me.isAdmin) {
-    return <Redirect to="/app" />;
-  }
+  // Testing mode: any signed-in account may enter the professional portal —
+  // no role registration, licensure, or verification required.
 
   const shellMe: Me = {
     id: me.id,

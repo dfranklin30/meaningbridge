@@ -299,7 +299,7 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Film carousel — the teaser, the opening film, and Dr. Neimeyer's talks */}
+        {/* The welcome film — a single glimpse of MeaningBridge */}
         <FilmCarousel />
 
         {/* Bridge animation — humans connecting with humans and with AI */}
@@ -496,6 +496,27 @@ export default function LandingPage() {
                     className="text-primary hover:underline"
                   >
                     Portland Institute for Loss and Transition
+                  </a>
+                  .
+                </p>
+                <p className="text-xs text-muted-foreground/80">
+                  For the avid listener, two of his talks:{" "}
+                  <a
+                    href="https://www.youtube.com/watch?v=6r28S6iZ3Yc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary/90 hover:underline"
+                  >
+                    Finding Meaning in Grief
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="https://www.youtube.com/watch?v=n9p5MgJlcXI"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary/90 hover:underline"
+                  >
+                    The Six Tasks of Grief
                   </a>
                   .
                 </p>

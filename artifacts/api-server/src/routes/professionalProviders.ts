@@ -81,7 +81,17 @@ router.get("/providers/me", requireAuth, requireProfessional, async (req, res) =
     .where(eq(providersTable.userId, req.userId!))
     .limit(1);
   if (!row) {
-    res.status(404).json({ error: "No provider profile yet" });
+    // Testing mode: no forced onboarding. Create a minimal profile on first
+    // visit so every signed-in user lands directly on the portal; details can
+    // be filled in later from the optional Edit profile screen.
+    const fallbackName =
+      req.appUser?.firstName || req.appUser?.email || "MeaningBridge professional";
+    const [created] = await db
+      .insert(providersTable)
+      .values({ userId: req.userId!, fullName: fallbackName })
+      .returning();
+    await audit(req, "provider.create", { detail: "auto-created (testing mode)" });
+    res.json(toProviderView(created!));
     return;
   }
   res.json(toProviderView(row));

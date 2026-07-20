@@ -1,12 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 
 /**
- * Role gate for clinician-only endpoints.
+ * Role gate for clinician endpoints — RELAXED during development/testing.
  *
  * MUST run AFTER requireAuth, which resolves and attaches `req.appUser`.
- * Gates on the additive `isProfessional` capability, so an account that is
- * both a seeker and a professional keeps clinician access regardless of which
- * space it is currently viewing.
+ * Previously required the `isProfessional` capability; per Dr. Neimeyer's
+ * direction, any signed-in account may enter the professional portal while we
+ * develop and test (no role registration, licensure, or verification needed).
  */
 export function requireProfessional(
   req: Request,
@@ -15,10 +15,6 @@ export function requireProfessional(
 ): void {
   if (!req.appUser) {
     res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  if (!req.appUser.isProfessional) {
-    res.status(403).json({ error: "Professionals only" });
     return;
   }
   next();

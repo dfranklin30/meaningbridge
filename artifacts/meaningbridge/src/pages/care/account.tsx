@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { CheckCircle2, Clock, XCircle, ShieldCheck, ShieldAlert, ArrowRight, Users, Send } from "lucide-react";
+import { ShieldCheck, ShieldAlert, ArrowRight, Users, Send } from "lucide-react";
 import {
   api,
   ApiError,
@@ -9,27 +9,6 @@ import {
   type ProviderProfile,
   type SecurityStatus,
 } from "./provider-shell";
-
-const STATUS_META = {
-  pending: {
-    icon: Clock,
-    tone: "text-amber-600",
-    title: "Awaiting verification",
-    body: "A member of our team is reviewing your profile. We will email you once you are verified. You can update your details any time before then.",
-  },
-  verified: {
-    icon: CheckCircle2,
-    tone: "text-primary",
-    title: "Verified",
-    body: "Your account is verified. With two-step verification active, you can access client referrals and the colleague directory.",
-  },
-  rejected: {
-    icon: XCircle,
-    tone: "text-destructive",
-    title: "Not verified",
-    body: "We were unable to verify this profile. Please review your details and resubmit, or contact us if you believe this is a mistake.",
-  },
-} as const;
 
 export default function ProviderAccount() {
   const [, setLocation] = useLocation();
@@ -83,9 +62,6 @@ export default function ProviderAccount() {
   if (error) return <ErrorBanner message={error} />;
   if (!profile) return null;
 
-  const meta = STATUS_META[profile.verificationStatus];
-  const StatusIcon = meta.icon;
-
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
@@ -96,19 +72,6 @@ export default function ProviderAccount() {
         <Link href="/care/onboarding" className="text-sm text-primary hover:underline whitespace-nowrap">
           Edit profile
         </Link>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card p-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <StatusIcon className={`w-5 h-5 ${meta.tone}`} />
-          <h2 className="font-serif text-lg">{meta.title}</h2>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">{meta.body}</p>
-        {profile.verificationStatus === "rejected" && profile.verificationNote && (
-          <p className="text-sm text-foreground/80 border-l-2 border-destructive/40 pl-3">
-            {profile.verificationNote}
-          </p>
-        )}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -124,7 +87,7 @@ export default function ProviderAccount() {
           <p className="text-sm text-muted-foreground">
             {security?.totpEnabled
               ? `Active. Sessions lock after ${security.idleTimeoutMinutes} minutes of inactivity.`
-              : "Required before you can access client information."}
+              : "Optional — add an extra layer of sign-in security whenever you like."}
           </p>
           <Link href="/care/security" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
             {security?.totpEnabled ? "Manage" : "Set up now"} <ArrowRight className="w-3.5 h-3.5" />
@@ -144,7 +107,7 @@ export default function ProviderAccount() {
               onChange={toggleOptIn}
               className="h-4 w-4 accent-[var(--primary)]"
             />
-            <span>List me in the directory once verified</span>
+            <span>List me in the colleague directory</span>
           </label>
           <Link href="/care/directory" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
             Browse colleagues <ArrowRight className="w-3.5 h-3.5" />

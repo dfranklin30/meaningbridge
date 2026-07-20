@@ -38,10 +38,10 @@ export default function Need() {
           </div>
           <div>
             <div className="font-display font-medium text-[7vw] leading-none text-amber">
-              3 months
+              3
             </div>
             <div className="mt-[2vh] text-[2.4vw] leading-snug text-ink">
-              until everyday support quietly fades
+              months until everyday support quietly fades
             </div>
           </div>
         </div>

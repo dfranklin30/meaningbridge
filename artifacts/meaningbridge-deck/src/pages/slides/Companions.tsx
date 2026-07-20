@@ -12,7 +12,7 @@ export default function Companions() {
         <div className="grid grid-cols-2 gap-[3vw] mt-[6vh] flex-1">
           <div className="bg-card border border-line rounded-2xl p-[3.2vw] flex flex-col">
             <div className="w-[7vw] h-[0.5vh] bg-teal rounded-full" />
-            <h3 className="font-display font-medium text-[3.6vw] text-teal mt-[3vh]">
+            <h3 className="font-display font-medium text-[3.2vw] whitespace-nowrap text-teal mt-[3vh]">
               Continuing Bonds
             </h3>
             <p className="mt-[2.5vh] text-[2.5vw] leading-relaxed text-ink">
@@ -23,7 +23,7 @@ export default function Companions() {
           </div>
           <div className="bg-card border border-line rounded-2xl p-[3.2vw] flex flex-col">
             <div className="w-[7vw] h-[0.5vh] bg-navy rounded-full" />
-            <h3 className="font-display font-medium text-[3.6vw] text-navy mt-[3vh]">
+            <h3 className="font-display font-medium text-[3.2vw] whitespace-nowrap text-navy mt-[3vh]">
               Meaning Reconstruction
             </h3>
             <p className="mt-[2.5vh] text-[2.5vw] leading-relaxed text-ink">

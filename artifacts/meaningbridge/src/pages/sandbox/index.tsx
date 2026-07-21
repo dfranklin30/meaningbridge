@@ -8,13 +8,15 @@ import { CapabilityShowcase } from "../demo";
 import { PatientDemo } from "./patient-demo";
 import { TherapistDemo } from "./therapist-demo";
 import { SandboxSurvey } from "./survey";
+import { GuidedWalkthrough } from "./walkthrough";
 
-type Step = "entry" | "patient" | "therapist" | "survey";
+type Step = "entry" | "guided" | "patient" | "therapist" | "survey";
 type Role = "seeker" | "professional" | null;
 
 export default function Sandbox() {
   const [step, setStep] = useState<Step>("entry");
   const [role, setRole] = useState<Role>(null);
+  const [walkNarrative, setWalkNarrative] = useState("");
 
   const goSurvey = (r: Role) => {
     setRole(r);
@@ -53,8 +55,19 @@ export default function Sandbox() {
       <main className="flex-1 container max-w-6xl mx-auto px-4 py-12 md:py-16">
         {step === "entry" && (
           <Entry
+            onGuided={() => go("guided")}
             onPatient={() => go("patient")}
             onTherapist={() => go("therapist")}
+          />
+        )}
+        {step === "guided" && (
+          <GuidedWalkthrough
+            onExit={() => go("entry")}
+            onFinish={(r, summary) => {
+              setWalkNarrative(summary);
+              setRole(r);
+              go("survey");
+            }}
           />
         )}
         {step === "patient" && (
@@ -69,6 +82,7 @@ export default function Sandbox() {
         {step === "survey" && (
           <SandboxSurvey
             role={role}
+            initialNarrative={walkNarrative}
             onBack={() =>
               go(
                 role === "professional"
@@ -91,9 +105,11 @@ export default function Sandbox() {
 }
 
 function Entry({
+  onGuided,
   onPatient,
   onTherapist,
 }: {
+  onGuided: () => void;
   onPatient: () => void;
   onTherapist: () => void;
 }) {
@@ -117,6 +133,19 @@ function Entry({
           is everything it offers. When you are ready, choose a way to walk
           through it.
         </p>
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onGuided}
+            className="group inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-7 py-3.5 text-base font-medium shadow-sm shadow-primary/20 hover:bg-primary/90 transition-colors"
+          >
+            Take the guided walkthrough
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </button>
+          <span className="text-xs text-muted-foreground">
+            Step through every capability, one at a time. No account needed.
+          </span>
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto">

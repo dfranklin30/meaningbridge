@@ -38,9 +38,11 @@ const SCALE = [1, 2, 3, 4, 5];
 
 export function SandboxSurvey({
   role,
+  initialNarrative,
   onBack,
 }: {
   role: Role;
+  initialNarrative?: string;
   onBack: () => void;
 }) {
   const [scores, setScores] = useState<Record<RatingKey, number | null>>({
@@ -49,7 +51,7 @@ export function SandboxSurvey({
     helpfulness: null,
     overall: null,
   });
-  const [narrative, setNarrative] = useState("");
+  const [narrative, setNarrative] = useState(initialNarrative ?? "");
   const [name, setName] = useState("");
   const [roleLabel, setRoleLabel] = useState("");
   const [consent, setConsent] = useState(false);

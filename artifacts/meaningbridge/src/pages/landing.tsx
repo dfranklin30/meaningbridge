@@ -63,7 +63,7 @@ export default function LandingPage() {
             <span className="pointer-events-none absolute left-3 right-3 -bottom-0.5 h-px origin-left scale-x-0 bg-primary/60 transition-transform duration-300 group-hover:scale-x-100" />
           </a>
           <Link
-            href="/sign-up"
+            href="/grieving"
             className="group ml-1 lg:ml-2 inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
           >
             Enter the experience
@@ -126,7 +126,7 @@ export default function LandingPage() {
               {/* Big audience boxes */}
               <div className="grid grid-cols-2 gap-3">
                 <Link
-                  href="/sign-up"
+                  href="/grieving"
                   onClick={() => setMenuOpen(false)}
                   className="flex flex-col justify-between rounded-2xl border border-border bg-background/70 p-4 min-h-[6.5rem] hover:border-primary/40 transition-colors"
                 >
@@ -134,7 +134,7 @@ export default function LandingPage() {
                   <span className="text-xs text-muted-foreground mt-2">Begin gently</span>
                 </Link>
                 <Link
-                  href="/caregiver"
+                  href="/pro"
                   onClick={() => setMenuOpen(false)}
                   className="flex flex-col justify-between rounded-2xl border border-border bg-background/70 p-4 min-h-[6.5rem] hover:border-primary/40 transition-colors"
                 >
@@ -145,7 +145,7 @@ export default function LandingPage() {
 
               {/* Enter the experience — prominent box */}
               <Link
-                href="/sign-up"
+                href="/grieving"
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center justify-between rounded-2xl bg-primary text-primary-foreground px-5 py-4 shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
               >
@@ -203,7 +203,7 @@ export default function LandingPage() {
             {/* Two doorways — front and center, around the infinity */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto pt-2">
               <Link
-                href="/caregiver"
+                href="/pro"
                 aria-label="For professionals — enter here"
                 className="group relative overflow-hidden rounded-2xl border border-brand-navy/25 bg-card/80 backdrop-blur px-6 py-8 sm:py-10 transition-colors hover:border-brand-navy/60"
               >
@@ -216,7 +216,7 @@ export default function LandingPage() {
                 </span>
               </Link>
               <Link
-                href="/sign-up"
+                href="/grieving"
                 aria-label="For those grieving — enter here"
                 className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-card/80 backdrop-blur px-6 py-8 sm:py-10 transition-colors hover:border-primary/60"
               >
@@ -405,7 +405,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-12">
             <Link
-              href="/sign-up"
+              href="/grieving"
               className="group inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-medium text-primary-foreground shadow-sm shadow-primary/20 hover:opacity-90 transition-opacity"
             >
               Enter the experience

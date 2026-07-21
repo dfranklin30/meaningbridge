@@ -17,7 +17,7 @@ import {
 } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, useUpdateMe, getGetMeQueryKey } from "@workspace/api-client-react";
 
 import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -206,42 +206,76 @@ function AccountErrorState() {
   );
 }
 
-// Resolves the correct portal for a signed-in account based on chosen role.
-function PortalRedirect() {
+// Enters a specific space for a signed-in account, granting the capability if
+// needed (additive — never revokes the other) and setting it active, then
+// routing into that space. Used by the /grieving and /pro doorways so a
+// returning user keeps all their data and simply chooses where to go.
+function SpaceEntry({ role }: { role: "seeker" | "professional" }) {
   const { data: me, isLoading, isError } = useGetMe();
+  const updateMe = useUpdateMe();
+  const qc = useQueryClient();
+  const [, setLocation] = useLocation();
+  const firedRef = useRef(false);
 
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
+  useEffect(() => {
+    if (isLoading || isError || !me || firedRef.current) return;
+    firedRef.current = true;
+    const dest = role === "professional" ? "/care/account" : "/app";
+    const hasRole = role === "professional" ? me.isProfessional : me.isSeeker;
+    (async () => {
+      if (!hasRole || me.activeSpace !== role) {
+        try {
+          const updated = await updateMe.mutateAsync({
+            data: { role, activeSpace: role },
+          });
+          qc.setQueryData(getGetMeQueryKey(), updated);
+        } catch {
+          // Non-fatal: fall through and let the destination gate resolve.
+        }
+      }
+      setLocation(dest);
+    })();
+  }, [me, isLoading, isError, role, updateMe, qc, setLocation]);
 
-  if (isError || !me) {
-    return <AccountErrorState />;
-  }
-
-  if (!me.isSeeker && !me.isProfessional) {
-    return <Redirect to="/select-role" />;
-  }
-
-  const target = me.activeSpace ?? (me.isProfessional && !me.isSeeker ? "professional" : "seeker");
-  if (target === "professional") {
-    return <Redirect to="/care/account" />;
-  }
-
-  return <Redirect to="/app" />;
+  if (isError) return <AccountErrorState />;
+  return <FullScreenLoader />;
 }
 
-// "/" — landing for signed-out visitors, portal redirect for signed-in users.
-function HomeRedirect() {
+// "/grieving" — clean doorway into the grief experience. Signed-out visitors go
+// to sign-up; signed-in users enter their seeker space with data intact.
+function GrievingEntry() {
   return (
     <>
       <Show when="signed-out">
-        <Landing />
+        <Redirect to="/sign-up" />
       </Show>
       <Show when="signed-in">
-        <PortalRedirect />
+        <SpaceEntry role="seeker" />
       </Show>
     </>
   );
+}
+
+// "/pro" — clean doorway into the professional experience. Signed-out visitors
+// see the caregiver preview; signed-in users enter their professional space.
+function ProEntry() {
+  return (
+    <>
+      <Show when="signed-out">
+        <Redirect to="/caregiver" />
+      </Show>
+      <Show when="signed-in">
+        <SpaceEntry role="professional" />
+      </Show>
+    </>
+  );
+}
+
+// "/" — the home page for everyone. Signed-out and signed-in visitors both see
+// the landing with the two doorways, so returning users always start at home
+// and choose where to go rather than being dropped straight into a portal.
+function HomeRedirect() {
+  return <Landing />;
 }
 
 function AppRoutes() {
@@ -427,6 +461,8 @@ function AppRouterSwitch() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/demo" component={Demo} />
       <Route path="/caregiver" component={Caregiver} />
+      <Route path="/grieving" component={GrievingEntry} />
+      <Route path="/pro" component={ProEntry} />
       <Route path="/consent/withdraw/:token" component={ConsentWithdrawPage} />
       <Route path="/consent/:token" component={ConsentPage} />
       <Route path="/appointments/:token" component={AppointmentConfirm} />

@@ -99,6 +99,23 @@ export default function Onboarding() {
     setLocation("/app");
   };
 
+  // Lets someone enter the space and look around without completing the full
+  // setup. Their account and anything they have entered so far are saved, and
+  // they are not asked to start over on the next visit. Setup stays available
+  // anytime from within the app.
+  const skipForNow = async () => {
+    const updated = await updateProfile({
+      data: {
+        onboardingComplete: true,
+        ...(firstName.trim()
+          ? { name: firstName.trim(), firstName: trimmedFirst }
+          : {}),
+      },
+    });
+    queryClient.setQueryData(getGetProfileQueryKey(), updated);
+    setLocation("/app");
+  };
+
   return (
     <div className="max-w-xl mx-auto py-12 px-4 space-y-8">
       <div className="text-center space-y-3">
@@ -345,6 +362,22 @@ export default function Onboarding() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {step !== "consent" && step !== "safety" && (
+        <div className="text-center space-y-1">
+          <button
+            type="button"
+            onClick={skipForNow}
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+          >
+            I would like to look around first
+          </button>
+          <p className="text-xs text-muted-foreground/70">
+            You can set this up anytime. Your space, and anything you add, is
+            saved to your account.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

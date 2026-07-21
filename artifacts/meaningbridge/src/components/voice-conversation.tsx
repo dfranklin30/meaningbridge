@@ -92,6 +92,7 @@ export function VoiceConversation({
   // Turn-taking
   const utteranceRef = useRef(""); // accumulated final speech this turn
   const lastActivityRef = useRef(0);
+  const listenStartRef = useRef(0); // when the current listening turn began
   const silenceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Streaming + TTS
@@ -128,6 +129,10 @@ export function VoiceConversation({
   // ---- speech recognition ----
   const onResult = useCallback((r: { transcript: string; isFinal: boolean }) => {
     if (convStateRef.current !== "listening") return;
+    // Drop a final that lands in the first instants of a listening turn: it is
+    // almost always the tail of the companion's own voice echoing back, not the
+    // person. Real speech produces its final only after they pause.
+    if (r.isFinal && Date.now() - listenStartRef.current < 500) return;
     lastActivityRef.current = Date.now();
     if (r.isFinal) {
       utteranceRef.current = (utteranceRef.current + " " + r.transcript).trim();
@@ -143,48 +148,42 @@ export function VoiceConversation({
     onError: (e) => {
       if (e === "not-allowed" || e === "service-not-allowed") {
         setError(
-          "Microphone access is blocked. Allow it in your browser to talk, or type below.",
+          "Microphone access is blocked. Click the microphone icon in your browser's address bar, choose Allow, then tap the orb — or just type below.",
+        );
+      } else if (e === "audio-capture") {
+        setError(
+          "No microphone was found. Check that a mic is connected and not in use by another app — or type below.",
         );
       }
+      // 'no-speech', 'aborted' and 'network' are transient; the recognizer
+      // restarts itself, so we stay quiet and keep listening.
     },
   });
 
-  // ---- audio level loop ----
-  const startMeter = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micStreamRef.current = stream;
-      const Ctx =
-        (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
-          .AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = new Ctx();
-      audioCtxRef.current = ctx;
-      const src = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      src.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        if (convStateRef.current === "listening") {
-          analyser.getByteFrequencyData(data);
-          let sum = 0;
-          for (let i = 0; i < data.length; i++) sum += data[i];
-          const avg = sum / data.length / 255; // 0..1
-          setLevel(Math.min(1, avg * 2.2));
-        } else if (convStateRef.current === "speaking") {
-          // gentle synthetic pulse while the companion talks
-          setLevel(0.35 + 0.25 * (0.5 + 0.5 * Math.sin(Date.now() / 180)));
-        } else {
-          setLevel((l) => l * 0.9);
-        }
-        rafRef.current = requestAnimationFrame(tick);
-      };
+  // ---- orb level loop ----
+  // Deliberately synthetic: we do NOT open our own getUserMedia stream here.
+  // Chrome's SpeechRecognition and a concurrent getUserMedia/AudioContext
+  // compete for the microphone, and that competition can leave the recognizer
+  // receiving silence — i.e. "it can't hear me". The orb still feels alive from
+  // these state-driven pulses plus a bump whenever fresh speech is recognised.
+  const startMeter = useCallback(() => {
+    if (rafRef.current) return;
+    const tick = () => {
+      const s = convStateRef.current;
+      if (s === "listening") {
+        const fresh = Date.now() - lastActivityRef.current < 450;
+        const shimmer = 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(Date.now() / 240));
+        setLevel(fresh ? Math.min(1, shimmer + 0.5) : shimmer);
+      } else if (s === "speaking") {
+        setLevel(0.35 + 0.25 * (0.5 + 0.5 * Math.sin(Date.now() / 180)));
+      } else if (s === "thinking") {
+        setLevel(0.2 + 0.1 * (0.5 + 0.5 * Math.sin(Date.now() / 300)));
+      } else {
+        setLevel((l) => l * 0.9);
+      }
       rafRef.current = requestAnimationFrame(tick);
-    } catch {
-      // Metering is a nice-to-have; recognition can still work without it.
-    }
+    };
+    rafRef.current = requestAnimationFrame(tick);
   }, []);
 
   // ---- send a turn ----
@@ -237,7 +236,11 @@ export function VoiceConversation({
     utteranceRef.current = "";
     setInterim("");
     setConvState("listening");
-    lastActivityRef.current = Date.now();
+    const now = Date.now();
+    lastActivityRef.current = now;
+    listenStartRef.current = now;
+    // The recognizer is kept alive for the whole session; start() is a no-op if
+    // it is already running, and revives it if Chrome quietly dropped it.
     if (recognition.supported) recognition.start();
   }, [recognition]);
 
@@ -245,7 +248,10 @@ export function VoiceConversation({
     async (content: string) => {
       const text = content.trim();
       if (!text) return;
-      recognition.stop();
+      // Note: we intentionally do NOT stop the recognizer here. It stays alive
+      // for the whole session (started once, on the opening tap) which is far
+      // more reliable than stop/restart; results are simply ignored while the
+      // state is "thinking"/"speaking".
       setLastUser(text);
       setInterim("");
       setReply("");
@@ -332,22 +338,47 @@ export function VoiceConversation({
   }, [interim, sendTurn]);
 
   // ---- start / stop ----
-  const begin = useCallback(async () => {
+  const begin = useCallback(() => {
     setStarted(true);
     setError(null);
-    await startMeter();
+    startMeter();
+    // Start the microphone right away, on this tap, so the browser shows its
+    // permission prompt and the recognizer is live from the first moment.
+    if (recognition.supported) recognition.start();
     if (greeting && voiceOnRef.current && ttsSupported) {
-      // Speak a short opening, then listen.
+      // Speak a short opening, then listen. Because Chrome's utterance "end"
+      // event is unreliable and sometimes never fires, we also arm a fallback
+      // timer so the mic is never left stranded in the "speaking" state.
       setConvState("speaking");
       streamDoneRef.current = true;
       replyRef.current = greeting;
       setReply(greeting);
+      utteranceRef.current = "";
       ttsQueueRef.current = [greeting];
       speakNext();
+      const words = greeting.trim().split(/\s+/).length;
+      const estMs = Math.min(11000, 2200 + words * 360);
+      window.setTimeout(() => {
+        if (convStateRef.current === "speaking") resumeListening();
+      }, estMs);
     } else {
+      // Show the greeting as text and start listening immediately.
+      if (greeting) {
+        replyRef.current = greeting;
+        setReply(greeting);
+      }
       resumeListening();
     }
-  }, [greeting, startMeter, speakNext, resumeListening, ttsSupported]);
+  }, [greeting, startMeter, speakNext, resumeListening, ttsSupported, recognition]);
+
+  // Open straight into a live conversation — no extra "start" tap. Opening the
+  // panel is itself the user gesture, so the mic can come up right away.
+  const autoBegunRef = useRef(false);
+  useEffect(() => {
+    if (autoBegunRef.current) return;
+    autoBegunRef.current = true;
+    begin();
+  }, [begin]);
 
   const interrupt = useCallback(() => {
     // barge-in: stop talking / thinking and listen

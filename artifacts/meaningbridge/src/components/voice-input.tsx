@@ -1,118 +1,112 @@
-import { useState, useEffect, useRef } from "react";
-import { useVoiceRecorder } from "@workspace/integrations-openai-ai-react/audio";
-import { Mic, Square, Loader2 } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Mic, Square } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-type Status = "idle" | "recording" | "transcribing" | "error";
-
-// The server detects format from the audio's magic bytes, but a truthful
-// filename extension keeps things clear across browsers (Chrome emits webm,
-// Safari/iOS emits mp4/aac).
-function extForMime(type: string): string {
-  const t = (type || "").toLowerCase();
-  if (t.includes("mp4") || t.includes("m4a") || t.includes("aac")) return "mp4";
-  if (t.includes("ogg")) return "ogg";
-  if (t.includes("wav")) return "wav";
-  if (t.includes("mpeg") || t.includes("mp3")) return "mp3";
-  return "webm";
-}
+import { useSpeechRecognition } from "../hooks/use-speech-recognition";
 
 type VoiceInputProps = {
+  // Called with each completed phrase (appended to the composer).
   onTranscript: (text: string) => void;
+  // Called continuously with the in-progress words, so the caller can show a
+  // live preview if it wishes. Cleared (empty string) when a phrase finalises.
+  onPartial?: (text: string) => void;
   disabled?: boolean;
   className?: string;
+  lang?: string;
 };
 
-export function VoiceInput({ onTranscript, disabled, className }: VoiceInputProps) {
-  const recorder = useVoiceRecorder();
-  const [status, setStatus] = useState<Status>("idle");
+/**
+ * Live voice typing. Uses the browser's on-device speech recognition so words
+ * appear the instant they are spoken — no record-then-upload round trip, and no
+ * server dependency. A floating caption shows the live transcript so the person
+ * can see immediately that their voice is being heard.
+ */
+export function VoiceInput({
+  onTranscript,
+  onPartial,
+  disabled,
+  className,
+  lang,
+}: VoiceInputProps) {
+  const [live, setLive] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const recordingRef = useRef(false);
+  const liveRef = useRef("");
 
-  useEffect(() => {
-    return () => {
-      if (recordingRef.current) {
-        void recorder.stopRecording().catch(() => {});
+  const handleResult = useCallback(
+    (r: { transcript: string; isFinal: boolean }) => {
+      if (r.isFinal) {
+        const t = r.transcript.trim();
+        if (t) onTranscript(t);
+        setLive("");
+        liveRef.current = "";
+        onPartial?.("");
+      } else {
+        setLive(r.transcript);
+        liveRef.current = r.transcript;
+        onPartial?.(r.transcript);
       }
-    };
-  }, [recorder]);
+    },
+    [onTranscript, onPartial],
+  );
 
-  const start = async () => {
-    setMessage(null);
-    try {
-      await recorder.startRecording();
-      recordingRef.current = true;
-      setStatus("recording");
-    } catch (err) {
-      setStatus("error");
-      const denied =
-        err instanceof DOMException &&
-        (err.name === "NotAllowedError" || err.name === "SecurityError");
-      setMessage(
-        denied
-          ? "Microphone access is needed to record. You can allow it in your browser settings, or simply type instead."
-          : "Recording could not start on this device or browser. You can type your words instead.",
-      );
-    }
-  };
-
-  const stop = async () => {
-    setStatus("transcribing");
-    recordingRef.current = false;
-    try {
-      const blob = await recorder.stopRecording();
-      if (!blob || blob.size === 0) {
-        setStatus("idle");
-        return;
+  const recognition = useSpeechRecognition({
+    lang,
+    onResult: handleResult,
+    onError: (e) => {
+      if (e === "not-allowed" || e === "service-not-allowed") {
+        setMessage(
+          "Microphone access is blocked. Click the mic icon in your browser's address bar and allow it, or type instead.",
+        );
+      } else if (e === "audio-capture") {
+        setMessage(
+          "No microphone was found. Check that a mic is connected, or type instead.",
+        );
       }
-      const form = new FormData();
-      form.append("audio", blob, `recording.${extForMime(blob.type)}`);
-      const res = await fetch(`${import.meta.env.BASE_URL}api/voice/transcribe`, {
-        method: "POST",
-        body: form,
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("transcription failed");
-      const data = (await res.json()) as { text?: string };
-      const text = (data.text ?? "").trim();
-      if (text) onTranscript(text);
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-      setMessage("That recording could not be transcribed. Please try again, or type instead.");
-    }
-  };
+      // 'no-speech' / 'aborted' / 'network' are transient and self-recover.
+    },
+  });
+
+  const listening = recognition.listening;
 
   const toggle = () => {
-    if (status === "recording") {
-      void stop();
-    } else if (status === "idle" || status === "error") {
-      void start();
+    setMessage(null);
+    if (listening) {
+      // Flush whatever is still in-progress so nothing spoken is lost.
+      const t = liveRef.current.trim();
+      if (t) onTranscript(t);
+      setLive("");
+      liveRef.current = "";
+      onPartial?.("");
+      recognition.stop();
+    } else {
+      if (!recognition.supported) {
+        setMessage(
+          "Live voice typing is not supported in this browser. Please type, or try Chrome or Edge.",
+        );
+        return;
+      }
+      setLive("");
+      liveRef.current = "";
+      recognition.start();
     }
   };
 
-  const label =
-    status === "recording"
-      ? "Stop recording"
-      : status === "transcribing"
-        ? "Transcribing"
-        : "Record voice";
+  const label = listening ? "Stop voice typing" : "Voice typing";
 
   return (
-    <div className={className}>
+    <div className={`relative ${className ?? ""}`}>
       <button
         type="button"
         onClick={toggle}
-        disabled={status === "transcribing" || (Boolean(disabled) && status !== "recording")}
+        disabled={Boolean(disabled) && !listening}
         aria-label={label}
         title={label}
         className={`relative w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 ${
-          status === "recording"
+          listening
             ? "bg-destructive/10 text-destructive"
             : "bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary"
         }`}
       >
-        {status === "recording" && (
+        {listening && (
           <motion.span
             className="absolute inset-0 rounded-lg border border-destructive/40"
             initial={{ opacity: 0.6, scale: 1 }}
@@ -120,9 +114,7 @@ export function VoiceInput({ onTranscript, disabled, className }: VoiceInputProp
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
           />
         )}
-        {status === "transcribing" ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : status === "recording" ? (
+        {listening ? (
           <Square className="w-3.5 h-3.5 fill-current" />
         ) : (
           <Mic className="w-4 h-4" />
@@ -130,22 +122,30 @@ export function VoiceInput({ onTranscript, disabled, className }: VoiceInputProp
       </button>
 
       <AnimatePresence>
-        {status === "transcribing" && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="text-xs text-muted-foreground mt-2"
+        {listening && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            className="absolute bottom-full left-0 mb-2 z-20 w-64 max-w-[70vw] rounded-xl border border-border bg-card px-3 py-2 shadow-lg"
           >
-            Listening back, one moment...
-          </motion.p>
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.15em] text-destructive mb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+              Listening
+            </div>
+            <p className="text-sm text-foreground leading-snug min-h-[1.25rem]">
+              {live || (
+                <span className="text-muted-foreground">Start speaking…</span>
+              )}
+            </p>
+          </motion.div>
         )}
-        {status === "error" && message && (
+        {message && !listening && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-xs text-muted-foreground mt-2 max-w-xs"
+            className="absolute bottom-full left-0 mb-2 z-20 w-64 max-w-[70vw] rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground shadow-lg"
           >
             {message}
           </motion.p>

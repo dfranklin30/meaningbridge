@@ -14,6 +14,7 @@ type Recognition = {
   onresult: ((ev: unknown) => void) | null;
   onerror: ((ev: unknown) => void) | null;
   onend: (() => void) | null;
+  onstart: (() => void) | null;
 };
 
 function getRecognitionCtor(): (new () => Recognition) | null {
@@ -98,8 +99,15 @@ export function useSpeechRecognition(opts: {
       if (interim) cbRef.current.onResult?.({ transcript: interim, isFinal: false });
     };
 
+    rec.onstart = () => {
+      setListening(true);
+    };
+
     rec.onerror = (ev: unknown) => {
       const err = (ev as { error?: string })?.error ?? "speech_error";
+      // Only a hard permission denial should stop us retrying. "no-speech",
+      // "aborted", "audio-capture" and "network" are transient — the onend
+      // handler below will resurrect the session so the mic stays ready.
       if (err === "not-allowed" || err === "service-not-allowed") {
         wantRef.current = false;
       }

@@ -830,6 +830,7 @@ export default function CompanionSession() {
           <VoiceInput
             className="mb-0.5"
             disabled={isStreaming}
+            lang={voiceLang || undefined}
             onTranscript={handleVoiceTranscript}
           />
           <button

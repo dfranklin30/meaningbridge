@@ -8,9 +8,10 @@ import {
   useListDeceasedProfiles,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette, ChevronDown, Languages } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette, ChevronDown, Languages, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
+import { VoiceConversation } from "../../components/voice-conversation";
 
 type PendingImage = { id: string; dataUrl: string };
 
@@ -112,8 +113,9 @@ export default function CompanionSession() {
   const ttsSupported =
     typeof window !== "undefined" && "speechSynthesis" in window;
   const [voiceOutput, setVoiceOutput] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("mb-voice-output") === "on";
+    if (typeof window === "undefined") return true;
+    // On by default; the companion reads replies aloud unless turned off.
+    return window.localStorage.getItem("mb-voice-output") !== "off";
   });
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -137,6 +139,7 @@ export default function CompanionSession() {
     typeof window !== "undefined" ? window.localStorage.getItem("mb-voice-lang") ?? "" : "",
   );
   const [voicePickerOpen, setVoicePickerOpen] = useState(false);
+  const [voiceConvoOpen, setVoiceConvoOpen] = useState(false);
   const voiceNameRef = useRef(voiceName);
   voiceNameRef.current = voiceName;
   const voiceLangRef = useRef(voiceLang);
@@ -507,8 +510,18 @@ export default function CompanionSession() {
             {session.conversationType ? `, ${CONVERSATION_LABELS[session.conversationType] ?? session.conversationType}` : ""}
           </p>
         </div>
-        {ttsSupported && (
-          <div className="ml-auto relative flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setVoiceConvoOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium hover:bg-primary/90 transition-colors"
+            title="Talk with the companion by voice"
+          >
+            <Mic className="w-3.5 h-3.5" />
+            Talk
+          </button>
+          {ttsSupported && (
+          <div className="relative flex items-center gap-1">
             <button
               type="button"
               onClick={toggleVoiceOutput}
@@ -585,7 +598,8 @@ export default function CompanionSession() {
               </div>
             )}
           </div>
-        )}
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -867,6 +881,13 @@ export default function CompanionSession() {
           </button>
         </form>
       </div>
+      {voiceConvoOpen && (
+        <VoiceConversation
+          sessionId={String(id)}
+          greeting="I am here with you. Take your time, and when you are ready, tell me what is on your heart."
+          onClose={() => setVoiceConvoOpen(false)}
+        />
+      )}
     </div>
   );
 }

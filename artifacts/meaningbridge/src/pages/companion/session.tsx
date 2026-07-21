@@ -8,11 +8,22 @@ import {
   useListDeceasedProfiles,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette } from "lucide-react";
+import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette, ChevronDown, Languages } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
 
 type PendingImage = { id: string; dataUrl: string };
+
+// Human-readable language name from a BCP-47 tag (e.g. "en-US" -> "English"),
+// best-effort so the voice picker reads naturally in any browser.
+function languageLabel(lang: string): string {
+  try {
+    const dn = new Intl.DisplayNames(undefined, { type: "language" });
+    return dn.of(lang.split("-")[0]) ?? lang;
+  } catch {
+    return lang;
+  }
+}
 
 /** Read a File into a base64 data URL for ephemeral vision attachments. */
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -115,6 +126,31 @@ export default function CompanionSession() {
   const voiceOutputRef = useRef(voiceOutput);
   voiceOutputRef.current = voiceOutput;
 
+  // The voice + language the companion speaks in — chosen by the user from the
+  // free voices their device already provides. Remembered across sessions. No
+  // network, no data leaves the device.
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [voiceName, setVoiceName] = useState(() =>
+    typeof window !== "undefined" ? window.localStorage.getItem("mb-voice-name") ?? "" : "",
+  );
+  const [voiceLang, setVoiceLang] = useState(() =>
+    typeof window !== "undefined" ? window.localStorage.getItem("mb-voice-lang") ?? "" : "",
+  );
+  const [voicePickerOpen, setVoicePickerOpen] = useState(false);
+  const voiceNameRef = useRef(voiceName);
+  voiceNameRef.current = voiceName;
+  const voiceLangRef = useRef(voiceLang);
+  voiceLangRef.current = voiceLang;
+
+  // Voices load asynchronously in some browsers; listen for the ready event.
+  useEffect(() => {
+    if (!ttsSupported) return;
+    const load = () => setVoices(window.speechSynthesis.getVoices());
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+  }, [ttsSupported]);
+
   const speakReply = (text: string) => {
     if (!ttsSupported || !text.trim()) return;
     try {
@@ -122,11 +158,80 @@ export default function CompanionSession() {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.95;
       utterance.pitch = 1;
+      const all = window.speechSynthesis.getVoices();
+      const chosen =
+        (voiceNameRef.current && all.find((v) => v.name === voiceNameRef.current)) ||
+        (voiceLangRef.current && all.find((v) => v.lang === voiceLangRef.current)) ||
+        null;
+      if (chosen) utterance.voice = chosen;
+      utterance.lang = voiceLangRef.current || chosen?.lang || utterance.lang;
       window.speechSynthesis.speak(utterance);
     } catch {
       // Speech synthesis is best-effort; never let it interrupt the conversation.
     }
   };
+
+  const persistVoice = (name: string, lang: string) => {
+    setVoiceName(name);
+    setVoiceLang(lang);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("mb-voice-name", name);
+      window.localStorage.setItem("mb-voice-lang", lang);
+    }
+  };
+
+  // Pick a voice by exact name (from the dropdown).
+  const selectVoice = (name: string) => {
+    const v = voices.find((x) => x.name === name);
+    persistVoice(name, v?.lang ?? voiceLang);
+  };
+
+  // Pick a language; default to that language's first available voice.
+  const selectLang = (lang: string) => {
+    const v = voices.find((x) => x.lang === lang) ?? voices.find((x) => x.lang.startsWith(lang.split("-")[0]));
+    persistVoice(v?.name ?? "", lang);
+  };
+
+  const enableVoiceOutput = (on: boolean) => {
+    setVoiceOutput(on);
+    if (typeof window !== "undefined") window.localStorage.setItem("mb-voice-output", on ? "on" : "off");
+    if (!on && ttsSupported) window.speechSynthesis.cancel();
+  };
+
+  // Let the user steer the spoken companion by voice: turning talk-back on or
+  // off, or switching spoken language, without touching the keyboard. Anything
+  // that is not a command is treated as normal dictation.
+  const handleVoiceTranscript = (text: string) => {
+    const t = text.toLowerCase().trim();
+    if (/\b(stop|be quiet|hush|mute|turn off|don'?t)\b.*\b(talk|speak|read|voice|aloud)\b|\b(stop talking|be quiet)\b/.test(t)) {
+      enableVoiceOutput(false);
+      return;
+    }
+    if (/\b(read|speak|talk|say)\b.*\b(aloud|out loud|to me)\b|\b(turn on|enable)\b.*\b(voice|reading|talk)\b/.test(t)) {
+      enableVoiceOutput(true);
+      return;
+    }
+    const langMatch = t.match(/\b(?:speak|talk|read|respond|reply|switch)\b(?:[^.]*?)\b(?:in|to)\s+([a-zÀ-ɏ]+)/);
+    if (langMatch) {
+      const wanted = langMatch[1];
+      const v = voices.find(
+        (x) =>
+          languageLabel(x.lang).toLowerCase().startsWith(wanted) ||
+          x.name.toLowerCase().includes(wanted),
+      );
+      if (v) {
+        persistVoice(v.name, v.lang);
+        enableVoiceOutput(true);
+        return;
+      }
+    }
+    setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+  };
+
+  // Distinct languages available, for the picker.
+  const voiceLangs = Array.from(new Set(voices.map((v) => v.lang))).sort();
+  const activeLang = voiceLang || voices.find((v) => v.name === voiceName)?.lang || "";
+  const voicesForLang = voices.filter((v) => v.lang === activeLang);
 
   const toggleVoiceOutput = () => {
     setVoiceOutput((on) => {
@@ -403,20 +508,83 @@ export default function CompanionSession() {
           </p>
         </div>
         {ttsSupported && (
-          <button
-            type="button"
-            onClick={toggleVoiceOutput}
-            aria-pressed={voiceOutput}
-            aria-label={voiceOutput ? "Turn off reading replies aloud" : "Read replies aloud"}
-            title={voiceOutput ? "Reading replies aloud" : "Read replies aloud"}
-            className={`ml-auto w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-              voiceOutput
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-secondary/50"
-            }`}
-          >
-            {voiceOutput ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </button>
+          <div className="ml-auto relative flex items-center gap-1">
+            <button
+              type="button"
+              onClick={toggleVoiceOutput}
+              aria-pressed={voiceOutput}
+              aria-label={voiceOutput ? "Turn off reading replies aloud" : "Read replies aloud"}
+              title={voiceOutput ? "Reading replies aloud" : "Read replies aloud"}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                voiceOutput
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-secondary/50"
+              }`}
+            >
+              {voiceOutput ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setVoicePickerOpen((v) => !v)}
+              aria-expanded={voicePickerOpen}
+              aria-label="Choose voice and language"
+              title="Choose voice and language"
+              className={`h-9 px-2 rounded-full flex items-center gap-1 transition-colors ${
+                voicePickerOpen ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/50"
+              }`}
+            >
+              <Languages className="w-3.5 h-3.5" />
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {voicePickerOpen && (
+              <div className="absolute right-0 top-11 z-30 w-72 rounded-xl border border-border bg-card shadow-lg p-4 space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Choose how the companion sounds. These are the free voices your
+                  device already provides. You can also change them by voice.
+                </p>
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium">Language</span>
+                  <select
+                    value={activeLang}
+                    onChange={(e) => selectLang(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-2.5 py-2 text-sm focus:border-primary/50 focus:outline-none"
+                  >
+                    {voiceLangs.length === 0 && <option value="">System default</option>}
+                    {voiceLangs.map((l) => (
+                      <option key={l} value={l}>
+                        {languageLabel(l)} ({l})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium">Voice</span>
+                  <select
+                    value={voiceName}
+                    onChange={(e) => selectVoice(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-2.5 py-2 text-sm focus:border-primary/50 focus:outline-none"
+                  >
+                    {voicesForLang.length === 0 && <option value="">System default</option>}
+                    {voicesForLang.map((v) => (
+                      <option key={v.name} value={v.name}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    enableVoiceOutput(true);
+                    speakReply("This is how I will sound as we talk.");
+                  }}
+                  className="w-full rounded-lg bg-primary/10 text-primary text-sm py-2 hover:bg-primary/15 transition-colors"
+                >
+                  Hear a preview
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -648,9 +816,7 @@ export default function CompanionSession() {
           <VoiceInput
             className="mb-0.5"
             disabled={isStreaming}
-            onTranscript={(text) =>
-              setInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text))
-            }
+            onTranscript={handleVoiceTranscript}
           />
           <button
             type="button"

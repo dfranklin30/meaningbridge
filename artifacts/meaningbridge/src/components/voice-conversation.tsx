@@ -263,11 +263,27 @@ export function VoiceConversation({
       ttsQueueRef.current = [];
       streamDoneRef.current = false;
       setCrisis(false);
+      setError(null);
       setConvState("thinking");
       if (ttsSupported) window.speechSynthesis.cancel();
 
       const controller = new AbortController();
       abortRef.current = controller;
+      let gotToken = false;
+      let timedOut = false;
+      // Watchdog: never let the conversation freeze on "Thinking". If the reply
+      // hasn't begun within the window, abort and recover to listening so the
+      // person can simply try again by speaking.
+      const watchdog = window.setTimeout(() => {
+        if (!gotToken) {
+          timedOut = true;
+          try {
+            controller.abort();
+          } catch {
+            /* ignore */
+          }
+        }
+      }, 28000);
       try {
         const res = await fetch(`${base}api/chat/sessions/${sessionId}/messages`, {
           method: "POST",
@@ -276,7 +292,7 @@ export function VoiceConversation({
           credentials: "include",
           signal: controller.signal,
         });
-        if (!res.body) throw new Error("no body");
+        if (!res.ok || !res.body) throw new Error(`bad response ${res.status}`);
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let sseBuffer = "";
@@ -285,6 +301,8 @@ export function VoiceConversation({
           try {
             const d = JSON.parse(line.slice(6));
             if (d.type === "delta" && d.text) {
+              gotToken = true;
+              window.clearTimeout(watchdog);
               if (convStateRef.current !== "speaking") setConvState("speaking");
               replyRef.current += d.text;
               setReply(replyRef.current);
@@ -311,16 +329,28 @@ export function VoiceConversation({
 
         streamDoneRef.current = true;
         enqueueSpeakable();
+        // The model ended without producing anything — give feedback rather than
+        // silently dropping back, so the turn never feels ignored.
+        if (!gotToken && !replyRef.current.trim()) {
+          setError("The companion had trouble responding. Please try again.");
+        }
         // If nothing to speak (voice off, or empty), go straight back to listening.
         if (!voiceOnRef.current || ttsQueueRef.current.length === 0) {
           if (!ttsSpeakingRef.current) resumeListening();
         }
       } catch (err) {
-        if ((err as Error)?.name !== "AbortError") {
+        const name = (err as Error)?.name;
+        if (timedOut) {
+          setError("That took a moment too long — I'm still here. Try saying it again.");
+          resumeListening();
+        } else if (name !== "AbortError") {
+          // A genuine failure (network, bad response). A plain user interrupt is
+          // an AbortError with timedOut=false and is handled by interrupt().
           setError("Could not reach the companion. Please try again.");
-          setConvState("listening");
-          if (recognition.supported) recognition.start();
+          resumeListening();
         }
+      } finally {
+        window.clearTimeout(watchdog);
       }
     },
     [sessionId, ttsSupported, enqueueSpeakable, resumeListening, recognition],

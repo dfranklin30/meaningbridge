@@ -42,6 +42,12 @@ function getOpenRouter(): Promise<OpenRouterClient> {
 // bypass this and go to Anthropic (see companionStream) because no paid Nemotron
 // model accepts image input through the integration.
 export const COMPANION_MODEL = process.env.GEMINI_CHAT_MODEL || "gemini-2.5-flash";
+// Vision-capable companion model for turns that carry an image. NVIDIA's
+// multimodal Llama accepts image_url content parts through the OpenAI-compatible
+// endpoint, so image turns stay on the same reliable provider as text turns
+// instead of a separate (and here, misconfigured) vision provider.
+export const COMPANION_VISION_MODEL =
+  process.env.VISION_MODEL || "meta/llama-3.2-11b-vision-instruct";
 // Deeper-reasoning model for the clinician-side assistant / case summaries.
 export const PROFESSIONAL_MODEL = process.env.GEMINI_PRO_MODEL || process.env.GEMINI_CHAT_MODEL || "gemini-2.5-flash";
 // Anthropic fallback used whenever the primary provider fails, and the primary
@@ -195,34 +201,78 @@ async function* streamAnthropic(input: CompanionStreamInput): AsyncGenerator<str
  * provider fails AFTER emitting tokens we cannot safely restart, so the error
  * propagates rather than duplicating text.
  */
+// Guard an underlying token stream against a stall. If no token arrives within
+// `ms`, the wrapped generator throws instead of hanging the whole request
+// forever — the single worst failure for a live voice companion, because the UI
+// is left frozen on "Thinking" with no way forward. The caller can then retry.
+async function* withStallTimeout(
+  gen: AsyncGenerator<string>,
+  ms: number,
+): AsyncGenerator<string> {
+  const it = gen[Symbol.asyncIterator]();
+  try {
+    while (true) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`companion stream stalled after ${ms}ms`)),
+          ms,
+        );
+      });
+      let result: IteratorResult<string>;
+      try {
+        result = await Promise.race([it.next(), timeout]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+      if (result.done) return;
+      yield result.value;
+    }
+  } finally {
+    // Best-effort: let the underlying stream release its connection on timeout.
+    try {
+      await it.return?.(undefined);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Stream the companion reply. Every turn — text OR image — goes to NVIDIA's
+ * OpenAI-compatible endpoint: text on the fast Llama model, image turns on the
+ * multimodal Llama. Two attempts, each guarded by a stall timeout, so a slow or
+ * dead connection fails fast and retries instead of freezing the conversation.
+ * We deliberately do NOT fall back to the Anthropic SDK here: the Anthropic
+ * client is pointed at a non-Anthropic base URL in this deployment, so that path
+ * can hang — the exact failure that left the voice companion stuck "Thinking".
+ */
 export async function* companionStream(
   input: CompanionStreamInput,
 ): AsyncGenerator<string> {
   const hasImages = (input.images?.length ?? 0) > 0;
-  const attempts: Array<{ label: string; run: () => AsyncGenerator<string> }> =
-    hasImages
-      ? [{ label: "anthropic-vision", run: () => streamAnthropic(input) }]
-      : [
-          { label: "openrouter", run: () => streamOpenRouter(input, COMPANION_MODEL) },
-          { label: "openrouter-retry", run: () => streamOpenRouter(input, COMPANION_MODEL) },
-          { label: "anthropic-fallback", run: () => streamAnthropic(input) },
-        ];
+  const model = hasImages ? COMPANION_VISION_MODEL : COMPANION_MODEL;
+  const STALL_MS = 25_000;
+  const attempts: Array<{ label: string; run: () => AsyncGenerator<string> }> = [
+    { label: "nvidia", run: () => streamOpenRouter(input, model) },
+    { label: "nvidia-retry", run: () => streamOpenRouter(input, model) },
+  ];
   let lastErr: unknown;
   for (const attempt of attempts) {
     let emitted = false;
     try {
-      for await (const chunk of attempt.run()) {
+      for await (const chunk of withStallTimeout(attempt.run(), STALL_MS)) {
         emitted = true;
         yield chunk;
       }
       if (emitted) return;
       // A stream that completed without emitting any tokens is a soft failure:
       // returning here would send an empty assistant reply. Fall through to the
-      // next provider instead. (This is pre-emission, so restarting is safe.)
+      // next attempt instead. (This is pre-emission, so restarting is safe.)
       lastErr = new Error(`empty stream from ${attempt.label}`);
       logger.warn(
         { attempt: attempt.label, emitted: false },
-        "companion stream produced no tokens; trying next provider",
+        "companion stream produced no tokens; trying next attempt",
       );
     } catch (err) {
       lastErr = err;

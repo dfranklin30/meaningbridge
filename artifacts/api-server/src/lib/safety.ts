@@ -69,10 +69,19 @@ export async function moderate(text: string): Promise<ModerationResult> {
   if (!trimmed) return { ...SAFE };
   try {
     const openai = await getOpenAI();
-    const res = await openai.moderations.create({
-      model: "omni-moderation-latest",
-      input: trimmed,
-    });
+    // This runs BEFORE the companion reply streams, so a stalled or unsupported
+    // moderation endpoint would freeze the entire turn (the UI sits on
+    // "Thinking"). Moderation fails open and the deterministic crisis regex still
+    // runs, so bounding it with a short timeout is safe and keeps turns snappy.
+    const res = await Promise.race([
+      openai.moderations.create({
+        model: "omni-moderation-latest",
+        input: trimmed,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("moderation timed out")), 3500),
+      ),
+    ]);
     const result = res.results[0];
     if (!result) return { ...SAFE, degraded: true };
     const categories = Object.entries(

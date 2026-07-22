@@ -33,13 +33,47 @@ const router: IRouter = Router();
 
 router.use(requireAuth);
 
+// A short, human title distilled from the first thing the person says, so a
+// saved conversation is recognisable later instead of reading "Session - <date>".
+function conversationTitle(text: string): string {
+  const clean = (text || "").replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  let t = "";
+  for (const w of clean.split(" ")) {
+    if (t && (t + " " + w).length > 48) break;
+    t = t ? `${t} ${w}` : w;
+  }
+  if (!t) t = clean.slice(0, 48);
+  if (t.length < clean.length) t += "…";
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 router.get("/sessions", async (req, res) => {
   const rows = await db
     .select()
     .from(chatSessionsTable)
     .where(eq(chatSessionsTable.userId, req.userId!))
     .orderBy(desc(chatSessionsTable.createdAt));
-  res.json(rows);
+  // Enrich each session with a preview of the most recent message and a count,
+  // so the "Your conversations" list can show what each one was about.
+  const enriched = await Promise.all(
+    rows.map(async (s) => {
+      const msgs = await db
+        .select()
+        .from(chatMessagesTable)
+        .where(eq(chatMessagesTable.sessionId, s.id))
+        .orderBy(desc(chatMessagesTable.createdAt));
+      const last = msgs[0];
+      return {
+        ...s,
+        messageCount: msgs.length,
+        lastRole: last?.role ?? null,
+        lastAt: last?.createdAt ?? s.createdAt,
+        preview: last?.content ? last.content.replace(/\s+/g, " ").trim().slice(0, 160) : null,
+      };
+    }),
+  );
+  res.json(enriched);
 });
 
 router.post("/sessions", async (req, res) => {
@@ -88,12 +122,32 @@ router.post("/sessions/:id/messages", async (req, res) => {
   // self-harm the regex misses. Either one routes to the warm crisis path.
   const moderation = await moderate(body.content);
   const crisis = detectCrisis(body.content) || moderation.selfHarm;
+
+  // Is this the first thing said in the session? If so we auto-title it below.
+  const priorMessages = await db
+    .select({ id: chatMessagesTable.id })
+    .from(chatMessagesTable)
+    .where(eq(chatMessagesTable.sessionId, id));
+  const isFirstTurn = priorMessages.length === 0;
+
   await db.insert(chatMessagesTable).values({
     sessionId: id,
     role: "user",
     content: body.content,
     crisisFlag: crisis,
   });
+
+  // Name the conversation from the opening message (only while it still carries
+  // the default "Session - <date>" title, so we never overwrite a real name).
+  if (isFirstTurn && body.content.trim() && /^Session - /.test(session.title ?? "")) {
+    const title = conversationTitle(body.content);
+    if (title) {
+      await db
+        .update(chatSessionsTable)
+        .set({ title })
+        .where(eq(chatSessionsTable.id, id));
+    }
+  }
   if (crisis) {
     await db.insert(safetyEventsTable).values({
       userId: req.userId!,

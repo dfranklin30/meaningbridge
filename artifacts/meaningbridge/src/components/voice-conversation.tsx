@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { VoiceOrb, type OrbState } from "./voice-orb";
 import { useSpeechRecognition } from "../hooks/use-speech-recognition";
+import { unlockSpeech, startSpeechKeepAlive, stopSpeechKeepAlive } from "../lib/tts";
 
 const base = import.meta.env.BASE_URL;
 
@@ -193,10 +194,12 @@ export function VoiceConversation({
     const chunk = ttsQueueRef.current.shift();
     if (!chunk) {
       // nothing queued
+      stopSpeechKeepAlive();
       if (streamDoneRef.current) resumeListening();
       return;
     }
     ttsSpeakingRef.current = true;
+    startSpeechKeepAlive();
     const u = pickUtterance(chunk);
     u.onend = () => {
       ttsSpeakingRef.current = false;
@@ -341,6 +344,7 @@ export function VoiceConversation({
   const begin = useCallback(() => {
     setStarted(true);
     setError(null);
+    unlockSpeech();
     startMeter();
     // Start the microphone right away, on this tap, so the browser shows its
     // permission prompt and the recognizer is live from the first moment.
@@ -382,6 +386,7 @@ export function VoiceConversation({
 
   const interrupt = useCallback(() => {
     // barge-in: stop talking / thinking and listen
+    stopSpeechKeepAlive();
     if (ttsSupported) window.speechSynthesis.cancel();
     ttsQueueRef.current = [];
     ttsSpeakingRef.current = false;
@@ -393,6 +398,7 @@ export function VoiceConversation({
     if (silenceTimerRef.current) clearInterval(silenceTimerRef.current);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     abortRef.current?.abort();
+    stopSpeechKeepAlive();
     if (ttsSupported) window.speechSynthesis.cancel();
     recognition.abort();
     micStreamRef.current?.getTracks().forEach((t) => t.stop());

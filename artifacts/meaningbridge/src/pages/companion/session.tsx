@@ -12,6 +12,7 @@ import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, P
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
 import { VoiceConversation } from "../../components/voice-conversation";
+import { speak, cancelSpeech, unlockSpeech } from "../../lib/tts";
 
 type PendingImage = { id: string; dataUrl: string };
 
@@ -154,24 +155,38 @@ export default function CompanionSession() {
     return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, [ttsSupported]);
 
+  // Which message is currently being read aloud (by key), so we can show a live
+  // indicator on its replay button. "live" marks the reply just streamed in.
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null);
+
   const speakReply = (text: string) => {
     if (!ttsSupported || !text.trim()) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
-      utterance.pitch = 1;
-      const all = window.speechSynthesis.getVoices();
-      const chosen =
-        (voiceNameRef.current && all.find((v) => v.name === voiceNameRef.current)) ||
-        (voiceLangRef.current && all.find((v) => v.lang === voiceLangRef.current)) ||
-        null;
-      if (chosen) utterance.voice = chosen;
-      utterance.lang = voiceLangRef.current || chosen?.lang || utterance.lang;
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Speech synthesis is best-effort; never let it interrupt the conversation.
+    setSpeakingKey("live");
+    void speak(text, {
+      voiceName: voiceNameRef.current || undefined,
+      lang: voiceLangRef.current || undefined,
+      onEnd: () => setSpeakingKey((k) => (k === "live" ? null : k)),
+      onError: () => setSpeakingKey((k) => (k === "live" ? null : k)),
+    });
+  };
+
+  // Replay any message on demand. Tapping the speaker on a message reads it; a
+  // second tap stops. This is also a user gesture, so it primes mobile audio.
+  const playMessage = (key: string, text: string) => {
+    unlockSpeech();
+    if (!ttsSupported || !text.trim()) return;
+    if (speakingKey === key) {
+      cancelSpeech();
+      setSpeakingKey(null);
+      return;
     }
+    setSpeakingKey(key);
+    void speak(text, {
+      voiceName: voiceNameRef.current || undefined,
+      lang: voiceLangRef.current || undefined,
+      onEnd: () => setSpeakingKey((k) => (k === key ? null : k)),
+      onError: () => setSpeakingKey((k) => (k === key ? null : k)),
+    });
   };
 
   const persistVoice = (name: string, lang: string) => {
@@ -196,9 +211,13 @@ export default function CompanionSession() {
   };
 
   const enableVoiceOutput = (on: boolean) => {
+    if (on) unlockSpeech();
     setVoiceOutput(on);
     if (typeof window !== "undefined") window.localStorage.setItem("mb-voice-output", on ? "on" : "off");
-    if (!on && ttsSupported) window.speechSynthesis.cancel();
+    if (!on) {
+      cancelSpeech();
+      setSpeakingKey(null);
+    }
   };
 
   // Let the user steer the spoken companion by voice: turning talk-back on or
@@ -237,12 +256,16 @@ export default function CompanionSession() {
   const voicesForLang = voices.filter((v) => v.lang === activeLang);
 
   const toggleVoiceOutput = () => {
+    unlockSpeech();
     setVoiceOutput((on) => {
       const next = !on;
       if (typeof window !== "undefined") {
         window.localStorage.setItem("mb-voice-output", next ? "on" : "off");
       }
-      if (!next && ttsSupported) window.speechSynthesis.cancel();
+      if (!next) {
+        cancelSpeech();
+        setSpeakingKey(null);
+      }
       return next;
     });
   };
@@ -250,9 +273,9 @@ export default function CompanionSession() {
   // Stop any speech when leaving the conversation.
   useEffect(() => {
     return () => {
-      if (ttsSupported) window.speechSynthesis.cancel();
+      cancelSpeech();
     };
-  }, [ttsSupported]);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -425,6 +448,8 @@ export default function CompanionSession() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!input.trim() && attachments.length === 0) || isStreaming) return;
+    // Sending is a user gesture — prime mobile audio so the reply can auto-read.
+    unlockSpeech();
     const userMessage = input.trim();
     const images = attachments.map((a) => a.dataUrl);
     setInput("");
@@ -513,7 +538,10 @@ export default function CompanionSession() {
         <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setVoiceConvoOpen(true)}
+            onClick={() => {
+              unlockSpeech();
+              setVoiceConvoOpen(true);
+            }}
             className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3.5 py-1.5 text-sm font-medium hover:bg-primary/90 transition-colors"
             title="Talk with the companion by voice"
           >
@@ -636,35 +664,72 @@ export default function CompanionSession() {
               <div className="whitespace-pre-wrap text-sm leading-relaxed">
                 {introMessage(session.mode, session.conversationType, person)}
               </div>
+              {ttsSupported && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    playMessage("intro", introMessage(session.mode, session.conversationType, person))
+                  }
+                  aria-label={speakingKey === "intro" ? "Stop reading" : "Read this aloud"}
+                  title={speakingKey === "intro" ? "Stop" : "Read aloud"}
+                  className={`mt-2 inline-flex items-center gap-1 text-xs transition-colors ${
+                    speakingKey === "intro"
+                      ? "text-primary"
+                      : "text-muted-foreground/60 hover:text-primary"
+                  }`}
+                >
+                  <Volume2 className={`w-3.5 h-3.5 ${speakingKey === "intro" ? "animate-pulse" : ""}`} />
+                  {speakingKey === "intro" ? "Reading…" : "Read aloud"}
+                </button>
+              )}
             </div>
           </motion.div>
         )}
         
-        {session.messages?.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl px-5 py-4 ${
-              msg.role === 'user' 
-                ? 'bg-primary text-primary-foreground ml-auto' 
-                : 'bg-card border border-border text-foreground'
-            }`}>
-              {msg.role === 'user' && (sentImages[i]?.length ?? 0) > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {sentImages[i]!.map((src, idx) => (
-                    <img
-                      key={idx}
-                      src={src}
-                      alt="An image you shared"
-                      className="h-24 w-24 rounded-lg object-cover border border-primary-foreground/20"
-                    />
-                  ))}
-                </div>
-              )}
-              {msg.content && (
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
-              )}
+        {session.messages?.map((msg, i) => {
+          const isUser = msg.role === "user";
+          const key = `msg-${i}`;
+          const active = speakingKey === key;
+          return (
+            <div key={i} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[80%] rounded-2xl px-5 py-4 ${
+                isUser
+                  ? "bg-primary text-primary-foreground ml-auto"
+                  : "bg-card border border-border text-foreground"
+              }`}>
+                {isUser && (sentImages[i]?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {sentImages[i]!.map((src, idx) => (
+                      <img
+                        key={idx}
+                        src={src}
+                        alt="An image you shared"
+                        className="h-24 w-24 rounded-lg object-cover border border-primary-foreground/20"
+                      />
+                    ))}
+                  </div>
+                )}
+                {msg.content && (
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>
+                )}
+                {!isUser && msg.content && ttsSupported && (
+                  <button
+                    type="button"
+                    onClick={() => playMessage(key, msg.content)}
+                    aria-label={active ? "Stop reading this aloud" : "Read this aloud"}
+                    title={active ? "Stop" : "Read aloud"}
+                    className={`mt-2 inline-flex items-center gap-1 text-xs transition-colors ${
+                      active ? "text-primary" : "text-muted-foreground/60 hover:text-primary"
+                    }`}
+                  >
+                    <Volume2 className={`w-3.5 h-3.5 ${active ? "animate-pulse" : ""}`} />
+                    {active ? "Reading…" : "Read aloud"}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         
         {inflightMessage !== null && (
           <div className="flex justify-end">

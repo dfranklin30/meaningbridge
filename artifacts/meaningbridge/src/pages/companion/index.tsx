@@ -10,7 +10,31 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Anchor, Plus, ArrowLeft, Check, User } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
+
+// Sessions from the API carry a few extra display fields (added server-side)
+// that the generated client type doesn't know about.
+type SessionCard = {
+  id: number;
+  title: string;
+  mode: string;
+  createdAt: string;
+  preview?: string | null;
+  lastRole?: string | null;
+  lastAt?: string | null;
+  messageCount?: number;
+};
+
+function relativeTime(value?: string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  try {
+    return formatDistanceToNow(d, { addSuffix: true });
+  } catch {
+    return format(d, "MMM d");
+  }
+}
 import { CompanionPanels } from "@/components/companion-panels";
 
 type DeceasedProfile = { id: number; name: string; relationship: string };
@@ -345,30 +369,67 @@ export default function CompanionList() {
         </div>
       </div>
 
+      {(() => {
+        const cards = (sessions ?? []) as unknown as SessionCard[];
+        if (cards.length === 0) return null;
+        return (
+          <div className="space-y-5 pt-8 border-t border-border/50">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-serif">Your conversations</h2>
+                <p className="text-sm text-muted-foreground mt-1 max-w-xl leading-relaxed">
+                  Every conversation with your companion is saved here. Open any one to read it
+                  again, listen back, or simply keep going where you left off.
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {cards.length} saved
+              </span>
+            </div>
+            <div className="grid gap-3">
+              {cards.map((session) => (
+                <Link key={session.id} href={`/companion/${session.id}`}>
+                  <div className="bg-card border border-border p-4 rounded-xl hover:border-primary/30 hover:bg-secondary/20 transition-colors cursor-pointer group">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-medium group-hover:text-primary transition-colors truncate">
+                          {session.title}
+                        </h3>
+                        {session.preview && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                            {session.lastRole === "user" ? "You: " : ""}
+                            {session.preview}
+                          </p>
+                        )}
+                      </div>
+                      <MessageSquare className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-muted-foreground">
+                      <span className="capitalize tracking-wide">{session.mode.replace("-", " ")}</span>
+                      <span aria-hidden>·</span>
+                      <span>
+                        {session.messageCount
+                          ? `${session.messageCount} message${session.messageCount === 1 ? "" : "s"}`
+                          : "Not started yet"}
+                      </span>
+                      {relativeTime(session.lastAt ?? session.createdAt) && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span>{relativeTime(session.lastAt ?? session.createdAt)}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="pt-8 border-t border-border/50">
         <CompanionPanels />
       </div>
-
-      {sessions && sessions.length > 0 && (
-        <div className="space-y-6 pt-8 border-t border-border/50">
-          <h2 className="text-xl font-serif">Past Sessions</h2>
-          <div className="grid gap-3">
-            {sessions.map((session) => (
-              <Link key={session.id} href={`/companion/${session.id}`}>
-                <div className="bg-card border border-border p-4 rounded-lg flex items-center justify-between hover:bg-secondary/20 transition-colors cursor-pointer group">
-                  <div>
-                    <h3 className="font-medium group-hover:text-primary transition-colors">{session.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1 capitalize tracking-wider">
-                      {session.mode.replace("-", " ")}, {format(new Date(session.createdAt), "MMM d")}
-                    </p>
-                  </div>
-                  <MessageSquare className="w-4 h-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

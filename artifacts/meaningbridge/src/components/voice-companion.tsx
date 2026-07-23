@@ -11,10 +11,30 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { VoiceOrb, type OrbState } from "./voice-orb";
-import { useSpeechRecognition } from "../hooks/use-speech-recognition";
 import { unlockSpeech, startSpeechKeepAlive, stopSpeechKeepAlive } from "../lib/tts";
 
 const base = import.meta.env.BASE_URL;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VoiceCompanion — a ChatGPT-style spoken conversation.
+//
+// Why this replaces the old VoiceConversation: the old one leaned on the
+// browser's SpeechRecognition, which drops audio, fights the mic, and fails
+// silently — "it can't hear me". This version instead RECORDS the person's
+// voice (MediaRecorder) and sends the audio to the server's reliable Gemini
+// transcription (POST /api/voice/transcribe → { text }). It then runs the same
+// companion chat stream and speaks the reply back. The orb pulses with the
+// person's REAL microphone amplitude, turn-taking is driven by voice-activity
+// detection (it waits for a natural pause), tapping the orb interrupts, and the
+// loop continues on its own.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// VAD / turn-taking tuning
+const START_RMS = 0.025; // above this we consider it speech
+const SILENCE_MS = 1200; // pause after speech that ends a turn
+const MIN_SPEECH_MS = 350; // ignore blips shorter than this
+const MAX_TURN_MS = 30000; // hard cap on one spoken turn
+const PRIMING_MS = 350; // ignore the first instants (avoids catching TTS tail)
 
 function languageLabel(lang: string): string {
   try {
@@ -31,7 +51,6 @@ function nextSentenceBoundary(text: string, from: number): number {
   for (let i = from; i < text.length; i++) {
     const c = text[i];
     if (c === "." || c === "!" || c === "?" || c === "\n") {
-      // include trailing quotes/spaces
       let j = i + 1;
       while (j < text.length && /["'”’)\s]/.test(text[j])) j++;
       return j;
@@ -40,7 +59,25 @@ function nextSentenceBoundary(text: string, from: number): number {
   return -1;
 }
 
-export function VoiceConversation({
+function pickRecorderMime(): string {
+  if (typeof MediaRecorder === "undefined") return "";
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4",
+    "audio/ogg;codecs=opus",
+  ];
+  for (const c of candidates) {
+    try {
+      if (MediaRecorder.isTypeSupported(c)) return c;
+    } catch {
+      /* ignore */
+    }
+  }
+  return "";
+}
+
+export function VoiceCompanion({
   sessionId,
   onClose,
   greeting,
@@ -52,22 +89,21 @@ export function VoiceConversation({
   const ttsSupported =
     typeof window !== "undefined" && "speechSynthesis" in window;
 
-  const [started, setStarted] = useState(false);
-  const [convState, setConvState] = useState<OrbState>("idle");
-  const [interim, setInterim] = useState("");
+  const [phase, setPhase] = useState<OrbState>("idle");
+  const [level, setLevel] = useState(0);
   const [lastUser, setLastUser] = useState("");
   const [reply, setReply] = useState("");
-  const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [crisis, setCrisis] = useState(false);
+  const [micReady, setMicReady] = useState(false);
+  const [textInput, setTextInput] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   const [voiceOn, setVoiceOn] = useState(
     () =>
       typeof window === "undefined" ||
       window.localStorage.getItem("mb-voice-output") !== "off",
   );
-  const [textInput, setTextInput] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(false);
-
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceName, setVoiceName] = useState(
     () => (typeof window !== "undefined" && window.localStorage.getItem("mb-voice-name")) || "",
@@ -76,8 +112,9 @@ export function VoiceConversation({
     () => (typeof window !== "undefined" && window.localStorage.getItem("mb-voice-lang")) || "",
   );
 
-  const convStateRef = useRef(convState);
-  convStateRef.current = convState;
+  // live refs
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
   const voiceOnRef = useRef(voiceOn);
   voiceOnRef.current = voiceOn;
   const voiceNameRef = useRef(voiceName);
@@ -85,24 +122,31 @@ export function VoiceConversation({
   const voiceLangRef = useRef(voiceLang);
   voiceLangRef.current = voiceLang;
 
-  // Audio metering
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const micStreamRef = useRef<MediaStream | null>(null);
+  // audio graph
+  const streamRef = useRef<MediaStream | null>(null);
+  const acRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const dataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  // Turn-taking
-  const utteranceRef = useRef(""); // accumulated final speech this turn
-  const lastActivityRef = useRef(0);
-  const listenStartRef = useRef(0); // when the current listening turn began
-  const silenceTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // recorder + VAD
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const mimeRef = useRef<string>("");
+  const speechDetectedRef = useRef(false);
+  const speechStartedAtRef = useRef(0);
+  const lastLoudRef = useRef(0);
+  const turnStartRef = useRef(0);
+  const stoppingRef = useRef(false);
 
-  // Streaming + TTS
+  // streaming + tts
   const abortRef = useRef<AbortController | null>(null);
   const replyRef = useRef("");
   const spokenUpToRef = useRef(0);
   const ttsQueueRef = useRef<string[]>([]);
   const ttsSpeakingRef = useRef(false);
   const streamDoneRef = useRef(false);
+  const teardownRef = useRef(false);
 
   // ---- voices ----
   useEffect(() => {
@@ -127,75 +171,20 @@ export function VoiceConversation({
     return u;
   }, []);
 
-  // ---- speech recognition ----
-  const onResult = useCallback((r: { transcript: string; isFinal: boolean }) => {
-    if (convStateRef.current !== "listening") return;
-    // Drop a final that lands in the first instants of a listening turn: it is
-    // almost always the tail of the companion's own voice echoing back, not the
-    // person. Real speech produces its final only after they pause.
-    if (r.isFinal && Date.now() - listenStartRef.current < 500) return;
-    lastActivityRef.current = Date.now();
-    if (r.isFinal) {
-      utteranceRef.current = (utteranceRef.current + " " + r.transcript).trim();
-      setInterim("");
-    } else {
-      setInterim(r.transcript);
-    }
-  }, []);
+  // ---- forward decls via refs so callbacks can call each other ----
+  const startListeningRef = useRef<() => void>(() => {});
+  const sendTextTurnRef = useRef<(t: string) => void>(() => {});
 
-  const recognition = useSpeechRecognition({
-    lang: voiceLang || undefined,
-    onResult,
-    onError: (e) => {
-      if (e === "not-allowed" || e === "service-not-allowed") {
-        setError(
-          "Microphone access is blocked. Click the microphone icon in your browser's address bar, choose Allow, then tap the orb — or just type below.",
-        );
-      } else if (e === "audio-capture") {
-        setError(
-          "No microphone was found. Check that a mic is connected and not in use by another app — or type below.",
-        );
-      }
-      // 'no-speech', 'aborted' and 'network' are transient; the recognizer
-      // restarts itself, so we stay quiet and keep listening.
-    },
-  });
-
-  // ---- orb level loop ----
-  // Deliberately synthetic: we do NOT open our own getUserMedia stream here.
-  // Chrome's SpeechRecognition and a concurrent getUserMedia/AudioContext
-  // compete for the microphone, and that competition can leave the recognizer
-  // receiving silence — i.e. "it can't hear me". The orb still feels alive from
-  // these state-driven pulses plus a bump whenever fresh speech is recognised.
-  const startMeter = useCallback(() => {
-    if (rafRef.current) return;
-    const tick = () => {
-      const s = convStateRef.current;
-      if (s === "listening") {
-        const fresh = Date.now() - lastActivityRef.current < 450;
-        const shimmer = 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(Date.now() / 240));
-        setLevel(fresh ? Math.min(1, shimmer + 0.5) : shimmer);
-      } else if (s === "speaking") {
-        setLevel(0.35 + 0.25 * (0.5 + 0.5 * Math.sin(Date.now() / 180)));
-      } else if (s === "thinking") {
-        setLevel(0.2 + 0.1 * (0.5 + 0.5 * Math.sin(Date.now() / 300)));
-      } else {
-        setLevel((l) => l * 0.9);
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-  }, []);
-
-  // ---- send a turn ----
+  // ---- speak queue ----
   const speakNext = useCallback(() => {
     if (!ttsSupported || !voiceOnRef.current) return;
     if (ttsSpeakingRef.current) return;
     const chunk = ttsQueueRef.current.shift();
     if (!chunk) {
-      // nothing queued
       stopSpeechKeepAlive();
-      if (streamDoneRef.current) resumeListening();
+      if (streamDoneRef.current && phaseRef.current === "speaking") {
+        startListeningRef.current();
+      }
       return;
     }
     ttsSpeakingRef.current = true;
@@ -214,7 +203,6 @@ export function VoiceConversation({
     } catch {
       ttsSpeakingRef.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickUtterance, ttsSupported]);
 
   const enqueueSpeakable = useCallback(() => {
@@ -232,31 +220,151 @@ export function VoiceConversation({
     speakNext();
   }, [speakNext]);
 
-  const resumeListening = useCallback(() => {
+  // ---- metering + VAD loop (single RAF) ----
+  const ensureLoop = useCallback(() => {
+    if (rafRef.current) return;
+    const tick = () => {
+      const analyser = analyserRef.current;
+      const data = dataRef.current;
+      let rms = 0;
+      if (analyser && data) {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        rms = Math.sqrt(sum / data.length);
+      }
+      const p = phaseRef.current;
+      if (p === "listening") {
+        setLevel(Math.min(1, rms * 4));
+        const now = Date.now();
+        const primed = now - turnStartRef.current > PRIMING_MS;
+        if (primed && rms > START_RMS) {
+          if (!speechDetectedRef.current) speechStartedAtRef.current = now;
+          speechDetectedRef.current = true;
+          lastLoudRef.current = now;
+        }
+        const heardEnough =
+          speechDetectedRef.current &&
+          now - speechStartedAtRef.current > MIN_SPEECH_MS;
+        const silentLongEnough =
+          speechDetectedRef.current && now - lastLoudRef.current > SILENCE_MS;
+        const tooLong = now - turnStartRef.current > MAX_TURN_MS;
+        if ((heardEnough && silentLongEnough) || (tooLong && speechDetectedRef.current)) {
+          endTurn();
+        }
+      } else if (p === "speaking") {
+        setLevel(0.32 + 0.24 * (0.5 + 0.5 * Math.sin(Date.now() / 170)));
+      } else if (p === "thinking") {
+        setLevel(0.18 + 0.1 * (0.5 + 0.5 * Math.sin(Date.now() / 300)));
+      } else {
+        setLevel((l) => l * 0.9);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- recording control ----
+  const startListening = useCallback(() => {
+    if (teardownRef.current) return;
+    const stream = streamRef.current;
     setReply("");
     replyRef.current = "";
     spokenUpToRef.current = 0;
-    utteranceRef.current = "";
-    setInterim("");
-    setConvState("listening");
-    const now = Date.now();
-    lastActivityRef.current = now;
-    listenStartRef.current = now;
-    // The recognizer is kept alive for the whole session; start() is a no-op if
-    // it is already running, and revives it if Chrome quietly dropped it.
-    if (recognition.supported) recognition.start();
-  }, [recognition]);
+    setError(null);
+    if (!stream) {
+      // No mic — stay idle, the person can type.
+      setPhase("idle");
+      return;
+    }
+    speechDetectedRef.current = false;
+    speechStartedAtRef.current = 0;
+    lastLoudRef.current = 0;
+    turnStartRef.current = Date.now();
+    stoppingRef.current = false;
+    chunksRef.current = [];
+    setPhase("listening");
+    try {
+      const rec = new MediaRecorder(
+        stream,
+        mimeRef.current ? { mimeType: mimeRef.current } : undefined,
+      );
+      recorderRef.current = rec;
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      rec.onstop = () => handleRecordingStopped();
+      rec.start();
+    } catch {
+      setError("Couldn't start recording. You can type below instead.");
+      setPhase("idle");
+    }
+    ensureLoop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ensureLoop]);
+  startListeningRef.current = startListening;
 
-  const sendTurn = useCallback(
+  const endTurn = useCallback(() => {
+    if (stoppingRef.current) return;
+    stoppingRef.current = true;
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      try {
+        rec.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const handleRecordingStopped = useCallback(async () => {
+    if (teardownRef.current) return;
+    const spoke = speechDetectedRef.current;
+    const blob = new Blob(chunksRef.current, {
+      type: mimeRef.current || "audio/webm",
+    });
+    chunksRef.current = [];
+    // Nothing meaningful captured — quietly listen again.
+    if (!spoke || blob.size < 1200) {
+      startListening();
+      return;
+    }
+    setPhase("thinking");
+    try {
+      const fd = new FormData();
+      const ext = (mimeRef.current || "audio/webm").includes("mp4") ? "mp4" : "webm";
+      fd.append("audio", blob, `turn.${ext}`);
+      const tr = await fetch(`${base}api/voice/transcribe`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      if (!tr.ok) throw new Error(`transcribe ${tr.status}`);
+      const { text } = (await tr.json()) as { text?: string };
+      const said = (text || "").trim();
+      if (!said) {
+        // Couldn't make out words — try again without nagging.
+        startListening();
+        return;
+      }
+      sendTextTurnRef.current(said);
+    } catch {
+      setError("I didn't catch that clearly. Let's try again — go ahead.");
+      startListening();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startListening]);
+
+  // ---- companion turn (text → streamed reply → speech) ----
+  const sendTextTurn = useCallback(
     async (content: string) => {
       const text = content.trim();
       if (!text) return;
-      // Note: we intentionally do NOT stop the recognizer here. It stays alive
-      // for the whole session (started once, on the opening tap) which is far
-      // more reliable than stop/restart; results are simply ignored while the
-      // state is "thinking"/"speaking".
       setLastUser(text);
-      setInterim("");
       setReply("");
       replyRef.current = "";
       spokenUpToRef.current = 0;
@@ -264,16 +372,13 @@ export function VoiceConversation({
       streamDoneRef.current = false;
       setCrisis(false);
       setError(null);
-      setConvState("thinking");
+      setPhase("thinking");
       if (ttsSupported) window.speechSynthesis.cancel();
 
       const controller = new AbortController();
       abortRef.current = controller;
       let gotToken = false;
       let timedOut = false;
-      // Watchdog: never let the conversation freeze on "Thinking". If the reply
-      // hasn't begun within the window, abort and recover to listening so the
-      // person can simply try again by speaking.
       const watchdog = window.setTimeout(() => {
         if (!gotToken) {
           timedOut = true;
@@ -284,6 +389,7 @@ export function VoiceConversation({
           }
         }
       }, 28000);
+
       try {
         const res = await fetch(`${base}api/chat/sessions/${sessionId}/messages`, {
           method: "POST",
@@ -303,7 +409,7 @@ export function VoiceConversation({
             if (d.type === "delta" && d.text) {
               gotToken = true;
               window.clearTimeout(watchdog);
-              if (convStateRef.current !== "speaking") setConvState("speaking");
+              if (phaseRef.current !== "speaking") setPhase("speaking");
               replyRef.current += d.text;
               setReply(replyRef.current);
               enqueueSpeakable();
@@ -329,113 +435,144 @@ export function VoiceConversation({
 
         streamDoneRef.current = true;
         enqueueSpeakable();
-        // The model ended without producing anything — give feedback rather than
-        // silently dropping back, so the turn never feels ignored.
         if (!gotToken && !replyRef.current.trim()) {
           setError("The companion had trouble responding. Please try again.");
+          startListening();
+          return;
         }
-        // If nothing to speak (voice off, or empty), go straight back to listening.
+        // Nothing to speak (voice off or empty) → straight back to listening.
         if (!voiceOnRef.current || ttsQueueRef.current.length === 0) {
-          if (!ttsSpeakingRef.current) resumeListening();
+          if (!ttsSpeakingRef.current) startListening();
         }
       } catch (err) {
         const name = (err as Error)?.name;
         if (timedOut) {
           setError("That took a moment too long — I'm still here. Try saying it again.");
-          resumeListening();
+          startListening();
         } else if (name !== "AbortError") {
-          // A genuine failure (network, bad response). A plain user interrupt is
-          // an AbortError with timedOut=false and is handled by interrupt().
           setError("Could not reach the companion. Please try again.");
-          resumeListening();
+          startListening();
         }
       } finally {
         window.clearTimeout(watchdog);
       }
     },
-    [sessionId, ttsSupported, enqueueSpeakable, resumeListening, recognition],
+    [sessionId, ttsSupported, enqueueSpeakable, startListening],
   );
+  sendTextTurnRef.current = sendTextTurn;
 
-  // silence detector — end the user's turn after a pause
+  // ---- start up: mic + greeting ----
+  const begunRef = useRef(false);
   useEffect(() => {
-    silenceTimerRef.current = setInterval(() => {
-      if (convStateRef.current !== "listening") return;
-      const pending = (utteranceRef.current + " " + interim).trim();
-      if (pending && Date.now() - lastActivityRef.current > 1300) {
-        sendTurn(utteranceRef.current || interim);
-      }
-    }, 300);
-    return () => {
-      if (silenceTimerRef.current) clearInterval(silenceTimerRef.current);
-    };
-  }, [interim, sendTurn]);
-
-  // ---- start / stop ----
-  const begin = useCallback(() => {
-    setStarted(true);
-    setError(null);
+    if (begunRef.current) return;
+    begunRef.current = true;
+    teardownRef.current = false;
     unlockSpeech();
-    startMeter();
-    // Start the microphone right away, on this tap, so the browser shows its
-    // permission prompt and the recognizer is live from the first moment.
-    if (recognition.supported) recognition.start();
-    if (greeting && voiceOnRef.current && ttsSupported) {
-      // Speak a short opening, then listen. Because Chrome's utterance "end"
-      // event is unreliable and sometimes never fires, we also arm a fallback
-      // timer so the mic is never left stranded in the "speaking" state.
-      setConvState("speaking");
-      streamDoneRef.current = true;
-      replyRef.current = greeting;
-      setReply(greeting);
-      utteranceRef.current = "";
-      ttsQueueRef.current = [greeting];
-      speakNext();
-      const words = greeting.trim().split(/\s+/).length;
-      const estMs = Math.min(11000, 2200 + words * 360);
-      window.setTimeout(() => {
-        if (convStateRef.current === "speaking") resumeListening();
-      }, estMs);
-    } else {
-      // Show the greeting as text and start listening immediately.
-      if (greeting) {
+    mimeRef.current = pickRecorderMime();
+
+    const setup = async () => {
+      let stream: MediaStream | null = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+      } catch (e) {
+        const name = (e as Error)?.name;
+        if (name === "NotAllowedError" || name === "SecurityError") {
+          setError(
+            "Microphone access is blocked. Allow the mic in your browser's address bar, then reopen — or just type below.",
+          );
+        } else {
+          setError("No microphone was found. You can type below and I'll still speak back.");
+        }
+      }
+      if (teardownRef.current) {
+        stream?.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      if (stream) {
+        streamRef.current = stream;
+        try {
+          const AC =
+            window.AudioContext ||
+            (window as unknown as { webkitAudioContext: typeof AudioContext })
+              .webkitAudioContext;
+          const ac = new AC();
+          acRef.current = ac;
+          const src = ac.createMediaStreamSource(stream);
+          const analyser = ac.createAnalyser();
+          analyser.fftSize = 2048;
+          src.connect(analyser);
+          analyserRef.current = analyser;
+          dataRef.current = new Uint8Array(new ArrayBuffer(analyser.fftSize));
+        } catch {
+          /* metering optional */
+        }
+        setMicReady(true);
+      }
+      ensureLoop();
+
+      // Greeting, then listen.
+      if (greeting && voiceOnRef.current && ttsSupported) {
+        setPhase("speaking");
+        streamDoneRef.current = true;
         replyRef.current = greeting;
         setReply(greeting);
+        ttsQueueRef.current = [greeting];
+        speakNext();
+        const words = greeting.trim().split(/\s+/).length;
+        const estMs = Math.min(11000, 2200 + words * 360);
+        window.setTimeout(() => {
+          if (phaseRef.current === "speaking" && !ttsSpeakingRef.current) {
+            startListening();
+          } else if (phaseRef.current === "speaking") {
+            // speech still going; the queue-drain will hand off to listening
+          }
+        }, estMs);
+      } else {
+        if (greeting) {
+          replyRef.current = greeting;
+          setReply(greeting);
+        }
+        startListening();
       }
-      resumeListening();
-    }
-  }, [greeting, startMeter, speakNext, resumeListening, ttsSupported, recognition]);
+    };
+    setup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Open straight into a live conversation — no extra "start" tap. Opening the
-  // panel is itself the user gesture, so the mic can come up right away.
-  const autoBegunRef = useRef(false);
-  useEffect(() => {
-    if (autoBegunRef.current) return;
-    autoBegunRef.current = true;
-    begin();
-  }, [begin]);
-
+  // ---- interrupt (barge-in via tapping the orb) ----
   const interrupt = useCallback(() => {
-    // barge-in: stop talking / thinking and listen
     stopSpeechKeepAlive();
     if (ttsSupported) window.speechSynthesis.cancel();
     ttsQueueRef.current = [];
     ttsSpeakingRef.current = false;
     abortRef.current?.abort();
-    resumeListening();
-  }, [resumeListening, ttsSupported]);
+    startListening();
+  }, [ttsSupported, startListening]);
 
-  const cleanup = useCallback(() => {
-    if (silenceTimerRef.current) clearInterval(silenceTimerRef.current);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    abortRef.current?.abort();
-    stopSpeechKeepAlive();
-    if (ttsSupported) window.speechSynthesis.cancel();
-    recognition.abort();
-    micStreamRef.current?.getTracks().forEach((t) => t.stop());
-    audioCtxRef.current?.close().catch(() => {});
-  }, [recognition, ttsSupported]);
-
-  useEffect(() => cleanup, [cleanup]);
+  // ---- cleanup ----
+  useEffect(() => {
+    return () => {
+      teardownRef.current = true;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      abortRef.current?.abort();
+      stopSpeechKeepAlive();
+      if (ttsSupported) window.speechSynthesis.cancel();
+      try {
+        const rec = recorderRef.current;
+        if (rec && rec.state !== "inactive") rec.stop();
+      } catch {
+        /* ignore */
+      }
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      acRef.current?.close().catch(() => {});
+    };
+  }, [ttsSupported]);
 
   const toggleVoice = () => {
     setVoiceOn((on) => {
@@ -464,13 +601,15 @@ export function VoiceConversation({
   const voicesForLang = voices.filter((v) => v.lang === activeLang);
 
   const statusLabel =
-    convState === "listening"
+    phase === "listening"
       ? "Listening"
-      : convState === "thinking"
+      : phase === "thinking"
         ? "Thinking"
-        : convState === "speaking"
+        : phase === "speaking"
           ? "Speaking"
-          : "Ready";
+          : micReady
+            ? "Ready"
+            : "Starting…";
 
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-[hsl(215_45%_12%)] to-[hsl(215_50%_8%)] text-white flex flex-col">
@@ -479,11 +618,11 @@ export function VoiceConversation({
         <div className="flex items-center gap-2 text-sm text-white/70">
           <span
             className={`w-2 h-2 rounded-full ${
-              convState === "listening"
+              phase === "listening"
                 ? "bg-emerald-400 animate-pulse"
-                : convState === "speaking"
+                : phase === "speaking"
                   ? "bg-sky-400"
-                  : convState === "thinking"
+                  : phase === "thinking"
                     ? "bg-amber-300"
                     : "bg-white/40"
             }`}
@@ -506,8 +645,7 @@ export function VoiceConversation({
               {pickerOpen && (
                 <div className="absolute right-0 top-11 z-30 w-64 rounded-xl border border-white/15 bg-[hsl(215_45%_14%)] shadow-xl p-4 space-y-3 text-white">
                   <p className="text-xs text-white/60">
-                    Free voices from your device. Change anytime, or say
-                    "speak in Spanish".
+                    The reply voice comes from your device. Change it anytime.
                   </p>
                   <label className="block space-y-1">
                     <span className="text-xs font-medium">Language</span>
@@ -566,52 +704,30 @@ export function VoiceConversation({
         <button
           type="button"
           onClick={() => {
-            if (!started) {
-              begin();
-              return;
-            }
-            if (convState === "speaking" || convState === "thinking") interrupt();
+            if (phase === "speaking" || phase === "thinking") interrupt();
           }}
           className="relative outline-none"
-          aria-label={started ? "Tap to interrupt" : "Tap to begin"}
+          aria-label="Tap to interrupt"
         >
-          <VoiceOrb state={convState} level={level} size={260} />
+          <VoiceOrb state={phase} level={level} size={260} />
         </button>
 
-        {!started ? (
-          <div className="space-y-4 max-w-md">
-            <h2 className="font-serif text-2xl">Talk with your companion</h2>
-            <p className="text-white/70 leading-relaxed">
-              Tap the orb and simply speak. It listens, replies aloud, and waits
-              with you. You can type instead at any time.
+        <div className="min-h-[4rem] max-w-xl space-y-2">
+          {lastUser && phase !== "listening" && (
+            <p className="text-white/45 text-sm">You: {lastUser}</p>
+          )}
+          {reply && (
+            <p className="text-lg leading-relaxed text-white/95 font-serif">{reply}</p>
+          )}
+          {phase === "listening" && (
+            <p className="text-white/40">
+              {speechDetectedRef.current ? "…" : "I'm listening — go ahead."}
             </p>
-            <button
-              type="button"
-              onClick={begin}
-              className="inline-flex items-center gap-2 rounded-full bg-white text-[hsl(215_50%_16%)] px-6 py-3 font-medium hover:bg-white/90 transition-colors"
-            >
-              <Mic className="w-4 h-4" />
-              Start talking
-            </button>
-          </div>
-        ) : (
-          <div className="min-h-[4rem] max-w-xl space-y-2">
-            {interim && convState === "listening" && (
-              <p className="text-white/60 italic">{interim}</p>
-            )}
-            {lastUser && convState !== "listening" && (
-              <p className="text-white/45 text-sm">You: {lastUser}</p>
-            )}
-            {reply && (
-              <p className="text-lg leading-relaxed text-white/95 font-serif">
-                {reply}
-              </p>
-            )}
-            {convState === "listening" && !interim && (
-              <p className="text-white/40">I'm listening…</p>
-            )}
-          </div>
-        )}
+          )}
+          {phase === "thinking" && !reply && (
+            <p className="text-white/40">One moment…</p>
+          )}
+        </div>
 
         {crisis && (
           <a
@@ -623,12 +739,6 @@ export function VoiceConversation({
           </a>
         )}
         {error && <p className="text-amber-200/90 text-sm max-w-md">{error}</p>}
-        {!recognition.supported && started && (
-          <p className="text-white/50 text-xs max-w-md">
-            Your browser can't listen live here, but you can type below and the
-            companion will still speak back.
-          </p>
-        )}
       </div>
 
       {/* Controls */}
@@ -639,26 +749,43 @@ export function VoiceConversation({
             const t = textInput.trim();
             if (!t) return;
             setTextInput("");
-            if (!started) setStarted(true);
-            sendTurn(t);
+            sendTextTurn(t);
           }}
           className="max-w-2xl mx-auto flex items-end gap-2"
         >
           <button
             type="button"
             onClick={() => {
-              if (recognition.listening) recognition.stop();
-              else resumeListening();
+              if (phase === "listening") {
+                // pause listening
+                stoppingRef.current = true;
+                const rec = recorderRef.current;
+                if (rec && rec.state !== "inactive") {
+                  rec.onstop = () => {
+                    chunksRef.current = [];
+                  };
+                  try {
+                    rec.stop();
+                  } catch {
+                    /* ignore */
+                  }
+                }
+                setPhase("idle");
+              } else if (phase === "idle") {
+                startListening();
+              } else {
+                interrupt();
+              }
             }}
             className={`w-11 h-11 shrink-0 rounded-full flex items-center justify-center transition-colors ${
-              recognition.listening
+              phase === "listening"
                 ? "bg-emerald-500/20 text-emerald-300"
                 : "bg-white/10 text-white/70 hover:bg-white/15"
             }`}
-            aria-label={recognition.listening ? "Pause microphone" : "Resume microphone"}
-            title={recognition.listening ? "Pause microphone" : "Resume microphone"}
+            aria-label={phase === "listening" ? "Pause microphone" : "Resume microphone"}
+            title={phase === "listening" ? "Pause microphone" : "Resume microphone"}
           >
-            {recognition.listening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+            {phase === "listening" ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
           </button>
           <input
             value={textInput}

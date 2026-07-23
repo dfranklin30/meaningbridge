@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Send, ArrowLeft, AlertTriangle, User, ImagePlus, X, Volume2, VolumeX, Palette, ChevronDown, Languages, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VoiceInput } from "../../components/voice-input";
-import { VoiceConversation } from "../../components/voice-conversation";
+import { VoiceCompanion } from "../../components/voice-companion";
 import { speak, cancelSpeech, unlockSpeech } from "../../lib/tts";
 
 type PendingImage = { id: string; dataUrl: string };
@@ -948,7 +948,7 @@ export default function CompanionSession() {
         </form>
       </div>
       {voiceConvoOpen && (
-        <VoiceConversation
+        <VoiceCompanion
           sessionId={String(id)}
           greeting="I am here with you. Take your time, and when you are ready, tell me what is on your heart."
           onClose={() => setVoiceConvoOpen(false)}

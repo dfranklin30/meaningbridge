@@ -49,3 +49,5 @@ Thumbs.db
 .local/
 deploy/env.deploy
 *.dump
+
+deploy/env.deploy.bak*
